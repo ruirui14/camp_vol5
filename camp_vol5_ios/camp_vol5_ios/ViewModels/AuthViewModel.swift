@@ -3,18 +3,18 @@ import Combine
 import Foundation
 
 class AuthViewModel: ObservableObject {
-    @Published var email: String = ""
-    @Published var password: String = ""
-    @Published var name: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var isSignUpMode: Bool = false
 
     private let authService = AuthService.shared
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        // 認証サービスの状態を監視
+        setupBindings()
+    }
+
+    private func setupBindings() {
+        // AuthServiceの状態をViewModelに反映
         authService.$isLoading
             .receive(on: DispatchQueue.main)
             .assign(to: \.isLoading, on: self)
@@ -26,33 +26,27 @@ class AuthViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    func signIn() {
-        guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "メールアドレスとパスワードを入力してください"
-            return
-        }
+    // MARK: - Actions
 
-        authService.signIn(email: email, password: password)
+    func signInWithGoogle() {
+        authService.signInWithGoogle()
     }
 
-    func signUp() {
-        guard !email.isEmpty, !password.isEmpty, !name.isEmpty else {
-            errorMessage = "全ての項目を入力してください"
-            return
-        }
-
-        authService.signUp(email: email, password: password, name: name)
+    func clearError() {
+        authService.clearError()
     }
 
-    func toggleMode() {
-        isSignUpMode.toggle()
-        clearFields()
+    // MARK: - Computed Properties
+
+    var isAuthenticated: Bool {
+        return authService.isAuthenticated
     }
 
-    func clearFields() {
-        email = ""
-        password = ""
-        name = ""
-        errorMessage = nil
+    var isAnonymous: Bool {
+        return authService.isAnonymous
+    }
+
+    var isGoogleAuthenticated: Bool {
+        return authService.isGoogleAuthenticated
     }
 }

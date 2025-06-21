@@ -65,4 +65,4 @@ fastlane/test_output
 GoogleService-Info.plist
 
 # info.plist
-./*.Info.plist
+*Info.plist

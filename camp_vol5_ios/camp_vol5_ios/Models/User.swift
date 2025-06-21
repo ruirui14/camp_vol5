@@ -16,7 +16,7 @@ struct User: Codable, Identifiable {
         id: String,
         name: String,
         inviteCode: String = UUID().uuidString,
-        allowQRRegistration: Bool = true,
+        allowQRRegistration: Bool = false,
         followingUserIds: [String] = []
     ) {
         self.id = id
