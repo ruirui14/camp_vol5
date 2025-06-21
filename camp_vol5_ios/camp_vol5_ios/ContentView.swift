@@ -4,59 +4,62 @@ import SwiftUI
 struct ContentView: View {
     
     let items: [CardItem] = [
-        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat"),
-        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat"),
-        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat"),
-        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat")
+        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic"),
+        CardItem(name: "るい", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic"),
+        CardItem(name: "あやか", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic"),
+        CardItem(name: "ドラえもん", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic")
     ]
     var body: some View {
-        ZStack {
-            // 背景グラデーション
-            LinearGradient(
-                gradient: Gradient(colors: [Color(hex: "#FABDC2"), Color(hex: "#F35E6A")]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea() // 全画面にグラデーション適用
-            
-            
-            VStack(spacing: 0) {
-                // カスタムナビゲーションバー
-                CustomNavigationBar(
-                    title: "鼓動一覧",
-                    height: 100,
-                    backgroundColor: .white,
-                    trailingButton:{
-                        Button(action: {
-                            print("QR tapped!")
-                        }) {
-                            Image("plusQR")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 24, height: 24)
-                        }
-                    }
+        NavigationStack {
+            ZStack {
+                // 背景グラデーション
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(hex: "#FABDC2"), Color(hex: "#F35E6A")]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
+                .ignoresSafeArea() // 全画面にグラデーション適用
                 
-                // 👇 GeometryReaderで高さを取って、スクロールエリアを調整！
                 
-                ScrollView {
-                    VStack(spacing: 10) {
-                        ForEach(items) { item in
-                            CardView(item: item)
+                VStack(spacing: 0) {
+                    // カスタムナビゲーションバー
+                    CustomNavigationBar(
+                        title: "鼓動一覧",
+                        height: 100,
+                        backgroundColor: .white,
+                        trailingButton:{
+                            Button(action: {
+                                print("QR tapped!")
+                            }) {
+                                Image("plusQR")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 24, height: 24)
+                            }
                         }
-                    }
-                    .padding(.top, 20)
+                    )
                     
+                    // 👇 GeometryReaderで高さを取って、スクロールエリアを調整！
+                    
+                    ScrollView {
+                        VStack(spacing: 10) {
+                            ForEach(items) { item in
+                                NavigationLink(destination: detail_Card(item: item)) {
+                                    CardView(item: item)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(.top, 20)
+                        
+                    }
                 }
                 
                 
                 
-                // メインコンテンツ
-                
-                
                 // 🔽 カスタムボトムバー
                 CustomBottomBar()
+                    .frame(maxHeight: .infinity, alignment: .bottom)
             }
             
         }
@@ -113,9 +116,10 @@ struct CustomBottomBar: View {
             }
             Spacer()
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 6)
         .background(Color.white.ignoresSafeArea(edges: .bottom))
         .shadow(color: .black.opacity(0.05), radius: 2, y: -1)
+        
     }
 }
 
@@ -145,8 +149,9 @@ extension Color {
 struct CardItem: Identifiable {
     let id = UUID()
     let name: String
-    let imageName: String
+    let imageName: String   //カード用
     let iconImageName: String
+    let detailImageName: String   // 詳細用
 }
 
 // カードビュー
@@ -178,14 +183,14 @@ struct CardView: View {
                     .frame(width: 60, height: 60)
                     .clipShape(Circle())
                     .offset(x:290,y: -36)   //無理やり位置変えた
-                   
+                
                 Text(item.name)     //カード内テキストのスタイル
                     .font(.system(size: 32,weight: .bold))
                     .foregroundColor(Color(hex: "#F6F6F8"))     //テキストの色
                     .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)     //テキストの影ぼんやり黒
                     .offset(x: -50,y:-48)  //無理やり位置変えた
-                    
-                   
+                
+                
             }
             .padding()
         }
