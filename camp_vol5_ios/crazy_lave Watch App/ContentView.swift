@@ -180,6 +180,10 @@ class WatchHeartRateManager: NSObject, ObservableObject {
     private var heartRateTimeoutTimer: Timer?
     private let heartRateTimeout: TimeInterval = 15.0 // 15秒間心拍数が更新されない場合はタイムアウト
     
+    // 自動停止
+    private var consecutiveSendSkips: Int = 0
+    private let maxConsecutiveSendSkips: Int = 5 // 5回連続でスキップしたら停止
+    
     override init() {
         super.init()
         // 保存されたユーザー情報を復元
@@ -352,6 +356,9 @@ class WatchHeartRateManager: NSObject, ObservableObject {
     func startSending() {
         guard !isSending, !isStarting else { return }
         isStarting = true
+        // 送信開始時にスキップカウンターをリセット
+        consecutiveSendSkips = 0
+        
         startContinuousHeartRateMonitoring()
         
         let sendInterval: TimeInterval = 3.0
@@ -361,8 +368,15 @@ class WatchHeartRateManager: NSObject, ObservableObject {
             // 心拍数が有効で、最近更新されている場合のみ送信
             if self.shouldSendHeartRate() {
                 self.sendHeartRateToiPhone(heartRate: self.currentHeartRate)
+                // カウンターをリセット
+                self.consecutiveSendSkips = 0
             } else {
+                self.consecutiveSendSkips += 1
                 print("送信スキップ")
+                
+                if self.consecutiveSendSkips >= self.maxConsecutiveSendSkips {
+                    self.stopSending()
+                }
             }
         }
     }
@@ -558,3 +572,63 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate, HK
     
     func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {}
 }
+
+//import SwiftUI
+//
+///// UIの表示に特化したView
+//struct ContentView: View {
+//    @StateObject private var viewModel = WatchViewModel()
+//    @State private var isBeating = false
+//
+//    var body: some View {
+//        VStack(spacing: 8) {
+//            Text(viewModel.currentUser?.name ?? "iPhoneでユーザー選択")
+//                .font(viewModel.currentUser != nil ? .headline : .caption)
+//                .foregroundColor(viewModel.currentUser != nil ? .primary : .secondary)
+//
+//            Spacer()
+//
+//            ZStack {
+//                Image(systemName: "heart.fill").resizable().aspectRatio(contentMode: .fit)
+//                    .frame(width: 120).foregroundStyle(Color.red.opacity(0.2))
+//                
+//                Image(systemName: "heart.fill").resizable().aspectRatio(contentMode: .fit)
+//                    .frame(width: 120).scaleEffect(isBeating ? 1.1 : 1.0)
+//                    .foregroundStyle(.red).opacity(isBeating ? 1.0 : 0.5)
+//                    .shadow(color: .red, radius: isBeating ? 15 : 0)
+//
+//                if viewModel.currentHeartRate > 0 {
+//                    Text("\(viewModel.currentHeartRate)").font(.system(size: 42, weight: .bold, design: .rounded))
+//                        .foregroundStyle(.white).shadow(radius: 2)
+//                } else if viewModel.isStarting || viewModel.isMonitoring {
+//                    ProgressView()
+//                } else {
+//                    Text("－").font(.system(size: 42, weight: .bold))
+//                }
+//            }.animation(.spring(response: 0.15, dampingFraction: 0.4), value: isBeating)
+//            
+//            Spacer()
+//
+//            Text(viewModel.statusMessage).font(.caption2).foregroundColor(.secondary)
+//
+//            Button(action: {
+//                if viewModel.isMonitoring { viewModel.stopMonitoring() } else { viewModel.startMonitoring() }
+//            }) {
+//                ZStack {
+//                    ProgressView().opacity(viewModel.isStarting ? 1 : 0)
+//                    HStack {
+//                        Image(systemName: viewModel.isMonitoring ? "stop.fill" : "play.fill")
+//                        Text(viewModel.isMonitoring ? "停止" : "開始")
+//                    }.opacity(viewModel.isStarting ? 0 : 1)
+//                }.frame(maxWidth: .infinity).padding(.vertical, 8)
+//            }
+//            .tint(viewModel.isMonitoring ? .red : (viewModel.isStarting ? .gray : .green))
+//            .buttonStyle(.borderedProminent)
+//            .disabled(viewModel.currentUser == nil || viewModel.isStarting)
+//        }
+//        .padding()
+//        .onReceive(viewModel.$currentHeartRate) { _ in
+//            isBeating.toggle()
+//        }
+//    }
+//}
