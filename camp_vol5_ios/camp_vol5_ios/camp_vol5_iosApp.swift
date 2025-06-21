@@ -1,17 +1,19 @@
-//
-//  camp_vol5_iosApp.swift
-//  camp_vol5_ios
-//
-//  Created by rui on 2025/06/19.
-//
-
 import SwiftUI
+import FirebaseCore
 
 @main
 struct camp_vol5_iosApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+    init() {
+        FirebaseApp.configure()
     }
-}
+    
+    @StateObject private var authViewModel = AuthViewModel()
+        @StateObject private var connectivityManager = ConnectivityManager()
+        
+        var body: some Scene {
+            WindowGroup {
+                ContentView()
+                    .environmentObject(authViewModel)
+                    .environmentObject(connectivityManager)
+            }
+        }}
