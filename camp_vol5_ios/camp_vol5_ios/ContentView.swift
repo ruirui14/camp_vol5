@@ -1,290 +1,27 @@
-////
-////  ContentView.swift
-////  camp_vol5_ios
-////
-////  Created by rui on 2025/06/19.
-////
-//
-//import SwiftUI
-//
-//struct ContentView: View {
-//    var body: some View {
-//
-//            NavigationView{
-//
-//                Color.pink.opacity(0.1) //背景pink
-//                    .ignoresSafeArea()  //画面全体に適用
-//
-//
-//                    .toolbar {
-//
-//                        //トップバーカメラ表示ボタン
-//                        ToolbarItem(placement: .navigationBarTrailing){
-//                            Button(action: {
-//                                //遷移するよ
-//                            }) {
-//                                Image("plusQR")
-//                            }
-//                        }
-//                        //トップバーテキスト
-//                        ToolbarItem(placement: .navigationBarLeading){
-//                            Text("鼓動一覧")
-//                                .font(.system(size: 37,weight: .bold))
-//                                .offset(y:50)
-//
-//                        }
-//
-//
-//
-//                        //ボトムバー
-//                        ToolbarItem(placement: .bottomBar){
-//                            HStack {
-//                                Spacer()
-//                                Button(action: {
-//                                    // 画面切り替え処理
-//                                }) {
-//                                    Image("bottom_list_off")
-//                                }
-//                                Spacer()
-//                                Spacer()
-//                                Button(action: {
-//                                    //画面切り替え処理
-//                                }) {
-//                                    Image("setting_off")
-//                                }
-//                                Spacer()
-//                            }
-//
-//                        }
-//
-//                    }
-////                    .toolbarBackground(.white, for: .navigationBar)
-////                    .toolbarBackground(.visible, for: .navigationBar)
-////                    .navigationBarHidden(true)
-//
-////                    .toolbar{
-////                        ToolbarItem {
-////                            Button(action: {
-////                                // 画面切り替え処理
-////                            }) {
-////                                Image("bottom_list_off")
-////                            }
-////                        }
-////                    }
-////                    .toolbarBackground(.gray, for: .tabBar)
-//                // ボトムバーの背景を白に
-//
-//                    .toolbarBackground(Color.white, for: .bottomBar)
-//                    .toolbarBackground(.visible, for: .bottomBar)
-//
-//            }
-//            .ignoresSafeArea(edges: .top)
-//            .statusBar(hidden: true) // 👈 ステータスバー非表示！
-//
-//        }
-//
-//
-//}
-//
-//
-//#Preview {
-//    ContentView()
-//}
 
-
-//import SwiftUI
-//
-//struct ContentView: View {
-//    var body: some View {
-//        NavigationView {
-//            VStack {
-//                Text("Hello, World!")
-//                    .padding()
-//                Spacer()
-//            }
-//            .navigationBarHidden(true) // デフォルトのナビゲーションバーを非表示
-//            .safeAreaInset(edge: .top) {
-//                CustomNavigationBar(
-//                    title: "Custom Navigation Bar",
-//                    height: 100,
-//                    backgroundColor: .blue,
-//                    leadingButton: {
-//                        Button("Button") {
-//                            print("Left button tapped")
-//                        }
-//                        .foregroundColor(.white)
-//                    }
-//                )
-//            }
-//        }
-//    }
-//}
-//
-//// カスタムナビゲーションバーコンポーネント
-//struct CustomNavigationBar<LeadingContent: View>: View {
-//    let title: String
-//    let height: CGFloat
-//    let backgroundColor: Color
-//    let leadingButton: () -> LeadingContent
-//
-//    var body: some View {
-//        ZStack {
-//            // 背景色
-//            backgroundColor
-//                .ignoresSafeArea(edges: .top)
-//
-//            HStack {
-//                // 左側のボタン
-//                leadingButton()
-//                    .padding(.leading, 16)
-//
-//                Spacer()
-//
-//                // タイトル
-//                Text(title)
-//                    .font(.headline)
-//                    .foregroundColor(.white)
-//                    .fontWeight(.semibold)
-//
-//                Spacer()
-//
-//                // 右側のスペース（バランスを取るため）
-//                Color.clear
-//                    .frame(width: 60)
-//            }
-//            .padding(.horizontal)
-//        }
-//        .frame(height: height)
-//    }
-//}
-//
-//// 別のアプローチ：NavigationViewの外観をカスタマイズ
-//struct AlternativeContentView: View {
-//    init() {
-//        // NavigationBarの外観を設定
-//        let appearance = UINavigationBarAppearance()
-//        appearance.configureWithOpaqueBackground()
-//        appearance.backgroundColor = UIColor.systemBlue
-//        appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
-//        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
-//
-//        UINavigationBar.appearance().standardAppearance = appearance
-//        UINavigationBar.appearance().compactAppearance = appearance
-//        UINavigationBar.appearance().scrollEdgeAppearance = appearance
-//    }
-//
-//    var body: some View {
-//        NavigationView {
-//            VStack {
-//                Text("Hello, World!")
-//                    .padding()
-//                Spacer()
-//            }
-//            .navigationTitle("Custom Navigation Bar")
-//            .navigationBarTitleDisplayMode(.large)
-//            .toolbar {
-//                ToolbarItem(placement: .navigationBarLeading) {
-//                    Button("Button") {
-//                        print("Button tapped")
-//                    }
-//                    .foregroundColor(.white)
-//                }
-//            }
-//        }
-//        .accentColor(.white) // ナビゲーションバーのアクセントカラーを設定
-//    }
-//}
-//
-//// より高度なカスタムナビゲーションバー
-//struct AdvancedCustomNavigationBar: View {
-//    let title: String
-//    let height: CGFloat
-//    let gradientColors: [Color]
-//
-//    var body: some View {
-//        ZStack {
-//            // グラデーション背景
-//            LinearGradient(
-//                gradient: Gradient(colors: gradientColors),
-//                startPoint: .topLeading,
-//                endPoint: .bottomTrailing
-//            )
-//            .ignoresSafeArea(edges: .top)
-//
-//            HStack {
-//                Button(action: {
-//                    print("Back button tapped")
-//                }) {
-//                    Image(systemName: "chevron.left")
-//                        .foregroundColor(.white)
-//                        .font(.system(size: 18, weight: .medium))
-//                }
-//                .padding(.leading, 16)
-//
-//                Spacer()
-//
-//                Text(title)
-//                    .font(.title2)
-//                    .foregroundColor(.white)
-//                    .fontWeight(.bold)
-//
-//                Spacer()
-//
-//                Button(action: {
-//                    print("Menu button tapped")
-//                }) {
-//                    Image(systemName: "ellipsis")
-//                        .foregroundColor(.white)
-//                        .font(.system(size: 18, weight: .medium))
-//                }
-//                .padding(.trailing, 16)
-//            }
-//        }
-//        .frame(height: height)
-//        .shadow(color: .black.opacity(0.1), radius: 1, x: 0, y: 1)
-//    }
-//}
-//
-//// 使用例
-//struct ExampleView: View {
-//    var body: some View {
-//        VStack(spacing: 0) {
-//            AdvancedCustomNavigationBar(
-//                title: "Advanced Bar",
-//                height: 120,
-//                gradientColors: [.purple, .blue, .cyan]
-//            )
-//
-//            ScrollView {
-//                VStack(spacing: 20) {
-//                    ForEach(0..<20) { index in
-//                        Text("Item \(index)")
-//                            .frame(maxWidth: .infinity)
-//                            .padding()
-//                            .background(Color.gray.opacity(0.1))
-//                            .cornerRadius(8)
-//                    }
-//                }
-//                .padding()
-//            }
-//        }
-//        .ignoresSafeArea(edges: .top)
-//    }
-//}
-//
-//#Preview {
-//    ContentView()
-//}
 import SwiftUI
 
 struct ContentView: View {
+    
+    let items: [CardItem] = [
+        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat"),
+        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat"),
+        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat"),
+        CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat")
+    ]
     var body: some View {
         ZStack {
-            Color.pink.opacity(0.1)
-                .ignoresSafeArea()
+            // 背景グラデーション
+            LinearGradient(
+                gradient: Gradient(colors: [Color(hex: "#FABDC2"), Color(hex: "#F35E6A")]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea() // 全画面にグラデーション適用
+            
             
             VStack(spacing: 0) {
-                // 🔼 カスタムナビゲーションバー
+                // カスタムナビゲーションバー
                 CustomNavigationBar(
                     title: "鼓動一覧",
                     height: 100,
@@ -301,13 +38,22 @@ struct ContentView: View {
                     }
                 )
                 
-                Spacer()
+                // 👇 GeometryReaderで高さを取って、スクロールエリアを調整！
                 
-                // 🟣 メインコンテンツ
-                Text("こんにちは〜！")
-                    .padding()
+                ScrollView {
+                    VStack(spacing: 10) {
+                        ForEach(items) { item in
+                            CardView(item: item)
+                        }
+                    }
+                    .padding(.top, 20)
+                    
+                }
                 
-                Spacer()
+                
+                
+                // メインコンテンツ
+                
                 
                 // 🔽 カスタムボトムバー
                 CustomBottomBar()
@@ -318,7 +64,7 @@ struct ContentView: View {
     }
 }
 
-// 📌 カスタムナビゲーションバー（左寄せタイトル）
+//  カスタムナビゲーションバー（左寄せタイトル）
 struct CustomNavigationBar<TrailingContent: View>: View {
     let title: String
     let height: CGFloat
@@ -348,7 +94,7 @@ struct CustomNavigationBar<TrailingContent: View>: View {
     }
 }
 
-// 📌 カスタムボトムバー
+// カスタムボトムバー
 struct CustomBottomBar: View {
     var body: some View {
         HStack {
@@ -372,6 +118,81 @@ struct CustomBottomBar: View {
         .shadow(color: .black.opacity(0.05), radius: 2, y: -1)
     }
 }
+
+//ぐラデーション
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        let scanner = Scanner(string: hex)
+        
+        if hex.hasPrefix("#") {
+            scanner.currentIndex = hex.index(after: hex.startIndex)
+        }
+        
+        var rgb: UInt64 = 0
+        scanner.scanHexInt64(&rgb)
+        
+        let r = Double((rgb >> 16) & 0xFF) / 255
+        let g = Double((rgb >> 8) & 0xFF) / 255
+        let b = Double(rgb & 0xFF) / 255
+        
+        self.init(red: r, green: g, blue: b)
+    }
+}
+
+
+// モデル
+struct CardItem: Identifiable {
+    let id = UUID()
+    let name: String
+    let imageName: String
+    let iconImageName: String
+}
+
+// カードビュー
+struct CardView: View {
+    let item: CardItem
+    
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Image(item.imageName)   //カード（写真）のスタイル
+                .resizable()
+                .scaledToFill()
+                .frame(width:370,height: 120)
+                .frame(maxWidth: .infinity)
+                .clipped()
+                .cornerRadius(20)
+                .padding(.horizontal, 15)
+            
+            //            LinearGradient(
+            ////                gradient: Gradient(colors: [Color.black.opacity(0.3), .clear]),
+            ////                startPoint: .bottom,
+            //                endPoint: .top
+            //            )
+            //            .cornerRadius(20)
+            
+            HStack(spacing: 8) {
+                Image(item.iconImageName)   //カード内心臓スタイル
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 60, height: 60)
+                    .clipShape(Circle())
+                    .offset(x:290,y: -36)   //無理やり位置変えた
+                   
+                Text(item.name)     //カード内テキストのスタイル
+                    .font(.system(size: 32,weight: .bold))
+                    .foregroundColor(Color(hex: "#F6F6F8"))     //テキストの色
+                    .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)     //テキストの影ぼんやり黒
+                    .offset(x: -50,y:-48)  //無理やり位置変えた
+                    
+                   
+            }
+            .padding()
+        }
+        //       .shadow(color: .black.opacity(0.15), radius: 5, y: 4)
+    }
+}
+
 
 
 #Preview {
