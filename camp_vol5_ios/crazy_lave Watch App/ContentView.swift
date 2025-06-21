@@ -10,61 +10,58 @@ struct ContentView: View {
     @State private var isBeating: Bool = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            Spacer()
-            
-            // MARK: - 中央の心拍数表示エリア
-            ZStack {
-                // 通常時のハート（小さい）
-                Image("heart")
-                    .renderingMode(.original)
-                    .font(.system(size: 150))
-                    .scaleEffect(isBeating ? 1.25 : 1.0) // 鼓動時に少し大きくなる
-                    .opacity(isBeating ? 0.0 : 1.0)   // 鼓動時に透明になる
-                
-                // 鼓動時のハート（大きい・明るい）
-                Image("heart")
-                    .renderingMode(.original)
-                    .font(.system(size: 150))
-                    .scaleEffect(isBeating ? 1.25 : 1.0)
-                    .opacity(isBeating ? 1.0 : 0.0)
-                    .shadow(color: .red, radius: 10, x: 0, y: 0) // 発光しているように見せる影
-                
-                // 中央の心拍数
-                if watchManager.currentHeartRate > 0 {
-                    Text("\(watchManager.currentHeartRate)")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .shadow(radius: 2)
-                } else {
-                    Text("－")
-                        .font(.system(size: 48, weight: .bold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.8))
+        ScrollView {
+            VStack(spacing: 4) {
+                // MARK: - 中央の心拍数表示エリア
+                ZStack {
+                    // 通常時のハート（小さい）
+                    Image("heart")
+                        .renderingMode(.original)
+                        .font(.system(size: 120))
+                        .scaleEffect(isBeating ? 1.25 : 1.0)
+                        .opacity(isBeating ? 0.0 : 1.0)
+                    
+                    // 鼓動時のハート（大きい・明るい）
+                    Image("heart")
+                        .renderingMode(.original)
+                        .font(.system(size: 120))
+                        .scaleEffect(isBeating ? 1.25 : 1.0)
+                        .opacity(isBeating ? 1.0 : 0.0)
+                        .shadow(color: .red, radius: 10, x: 0, y: 0) // 発光しているように見せる影
+                    
+                    // 中央の心拍数
+                    if watchManager.currentHeartRate > 0 {
+                        Text("\(watchManager.currentHeartRate)")
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .shadow(radius: 2)
+                    } else {
+                        Text("－")
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
                 }
-            }
-            .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isBeating) // isBeatingの変化をアニメーションさせる
-            .frame(height: 120)
-            .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: isBeating) { _, isBeatingNow in
-                // 鼓動した瞬間だけ振動させる
-                return isBeatingNow
-            }
-            
-            Spacer()
-            
-            // MARK: - 下部のコントロールエリア
-            VStack(spacing: 6) {
-                // ステータス表示
-                HStack {
-                    Label("\(watchManager.sentCount)", systemImage: "arrow.up.circle.fill")
-                        .foregroundColor(.blue)
-                    Spacer()
-                    Label(watchManager.isConnected ? "接続OK" : "未接続", systemImage: "antenna.radiowaves.left.and.right")
-                        .foregroundColor(watchManager.isConnected ? .green : .gray)
+                .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isBeating)
+                .frame(height: 100)
+                .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: isBeating) { _, isBeatingNow in
+                    return isBeatingNow
                 }
-                .font(.caption)
-                .padding(.horizontal, 12)
                 
-                // 操作ボタン
+                // MARK: - デバッグ情報表示
+                if watchManager.currentUser == nil {
+                    VStack(spacing: 2) {
+                        Text("受信待機中...")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        
+                        Text("データ受信: \(watchManager.receivedDataCount)")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                    }
+                    .padding(.vertical, 4)
+                }
+                
+                // MARK: - 下部のコントロールエリア
                 if watchManager.currentUser != nil {
                     Button(action: {
                         if watchManager.isSending {
@@ -73,30 +70,54 @@ struct ContentView: View {
                             watchManager.startSending()
                         }
                     }) {
-                        HStack {
-                            Image(systemName: watchManager.isSending ? "stop.fill" : "play.fill")
-                            Text(watchManager.isSending ? "停止" : "開始")
+                        ZStack {
+                            HStack {
+                                Image(systemName: "stop.fill")
+                                    .font(.caption)
+                                Text("停止")
+                                    .font(.caption)
+                            }
+                            .opacity(watchManager.isSending && !watchManager.isStarting ? 1 : 0)
+                            
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .opacity(watchManager.isStarting ? 1 : 0)
+                            
+                            HStack {
+                                Image(systemName: "play.fill")
+                                    .font(.caption)
+                                Text("開始")
+                                    .font(.caption)
+                            }
+                            .opacity(!watchManager.isSending && !watchManager.isStarting ? 1 : 0)
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(watchManager.isSending ? Color.red : Color.green)
-                        .cornerRadius(20)
+                        .frame(height: 32)
+                        .background(
+                            watchManager.isStarting ? Color.gray : (watchManager.isSending ? Color.red : Color.green)
+                        )
+                        .cornerRadius(16)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                    .disabled(!watchManager.isConnected)
+                    .buttonStyle(.plain)
+                    .disabled(!watchManager.isConnected || watchManager.isStarting)
+                    .padding(.horizontal, 8)
                 } else {
-                    Text("iPhoneでユーザーを選択")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.gray.opacity(0.3))
-                        .cornerRadius(20)
+                    // ユーザー情報がない場合のデバッグボタン
+                    Button("再接続") {
+                        watchManager.reconnect()
+                    }
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 8)
                 }
+                
+                // 最下部のスペース
+                Spacer(minLength: 8)
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
         }
-        .padding()
         .onAppear {
             watchManager.setup()
         }
@@ -104,53 +125,79 @@ struct ContentView: View {
             watchManager.cleanup()
         }
         .onReceive(watchManager.heartbeatSubject) { _ in
-            // 鼓動の合図を受け取ったらアニメーションを発火
             isBeating = true
-            // 0.2秒後にアニメーションを元の状態に戻す
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 isBeating = false
             }
         }
     }
+    
+    // 心拍数検知状況に応じた色を返す
+    private var heartRateStatusColor: Color {
+        switch watchManager.heartRateDetectionStatus {
+        case "心拍数正常検知中":
+            return .green
+        case "心拍数未検知", "異常値検知":
+            return .red
+        case "心拍数検知待機中", "監視開始中":
+            return .orange
+        default:
+            return .secondary
+        }
+    }
 }
 
 // MARK: - Data Models
-struct HeartUser: Codable {
+struct HeartUser: Codable, Equatable {
     let id: String
     let name: String
-    let description: String
-    let tag: String
-    let isPublic: Bool
-    let password: String
-    let sendInterval: TimeInterval
-    let isActive: Bool
+    
+    // iPhone側のUserモデルとの互換性を保つ
+    init(id: String, name: String) {
+        self.id = id
+        self.name = name
+    }
 }
 
 // MARK: - Watch Heart Rate Manager
 class WatchHeartRateManager: NSObject, ObservableObject {
-    // UI用プロパティ
-    @Published var currentHeartRate: Int = 0
-    @Published var isSending: Bool = false
-    @Published var sentCount: Int = 0
-    @Published var isConnected: Bool = false
-    @Published var currentUser: HeartUser?
-    @Published var isMonitoringHeartRate: Bool = false
+    @Published var currentHeartRate: Int = 0 // 最新の心拍数
+    @Published var isSending: Bool = false // 心拍数送信中かどうか
+    @Published var sentCount: Int = 0 // 送信した心拍数のカウント
+    @Published var isConnected: Bool = false // Apple Watchとの接続状態
+    @Published var currentUser: HeartUser? // 現在のユーザー情報
+    @Published var isMonitoringHeartRate: Bool = false // 心拍数監視中かどうか
+    @Published var isStarting: Bool = false // 心拍数送信開始中かどうか
+    @Published var receivedDataCount: Int = 0 // デバッグ用
+    @Published var heartRateDetectionStatus: String = "待機中" // 心拍数検知状況
     
-    // 内部用プロパティ
+    let heartbeatSubject = PassthroughSubject<Void, Never>()
     private var healthStore = HKHealthStore()
     private var wcSession: WCSession?
     private var sendingTimer: Timer?
     private var workoutSession: HKWorkoutSession?
-    // Content Vireへ鼓動したことを通知するためのSubject
-    let heartbeatSubject = PassthroughSubject<Void, Never>()
-
+    private var lastHeartRateUpdateTime: Date?
+    private var heartRateTimeoutTimer: Timer?
+    private let heartRateTimeout: TimeInterval = 15.0 // 15秒間心拍数が更新されない場合はタイムアウト
+    
     override init() {
         super.init()
+        // 保存されたユーザー情報を復元
+        restoreUserFromDefaults()
     }
     
     func setup() {
         setupWatchConnectivity()
         requestHealthKitPermission()
+    }
+    
+    func cleanup() {
+        stopSending()
+        heartRateTimeoutTimer?.invalidate()
+    }
+    
+    func reconnect() {
+        wcSession?.activate()
     }
     
     private func setupWatchConnectivity() {
@@ -159,48 +206,100 @@ class WatchHeartRateManager: NSObject, ObservableObject {
             wcSession?.delegate = self
             wcSession?.activate()
         } else {
-            print("Watch Connectivityはサポートされていません")
         }
     }
     
-    func cleanup() {
-        stopSending()
-    }
-    
-    // MARK: - HealthKit
     private func requestHealthKitPermission() {
-        guard HKHealthStore.isHealthDataAvailable() else {
-            print("HealthKitは利用できません")
-            return
-        }
-        
-        let typesToShare: Set = [HKObjectType.workoutType()]
-        let typesToRead: Set = [
-            HKObjectType.quantityType(forIdentifier: .heartRate)!,
-            HKObjectType.workoutType()
-        ]
-        
-        healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
-            if !success {
-                print("HealthKitのアクセスが許可されませんでした: \(error?.localizedDescription ?? "Unknown error")")
-            } else {
-                print("HealthKitのアクセス許可完了")
+        let typesToRead: Set = [HKObjectType.quantityType(forIdentifier: .heartRate)!, HKObjectType.workoutType()]
+        healthStore.requestAuthorization(toShare: nil, read: typesToRead) { success, error in
+            if let error = error {
+                print("HealthKit error: \(error)")
             }
         }
     }
     
-    private func startContinuousHeartRateMonitoring() {
-        print("心拍数の継続監視を開始")
-        DispatchQueue.main.async {
-            self.isMonitoringHeartRate = true
+    // ユーザー情報をUserDefaultsに保存
+    private func saveUserToDefaults(_ user: HeartUser) {
+        let encoder = JSONEncoder()
+        if let encoded = try? encoder.encode(user) {
+            UserDefaults.standard.set(encoded, forKey: "currentWatchUser")
         }
-        startWorkoutSession()
     }
     
+    // ユーザー情報をUserDefaultsから復元
+    private func restoreUserFromDefaults() {
+        if let data = UserDefaults.standard.data(forKey: "currentWatchUser"),
+           let user = try? JSONDecoder().decode(HeartUser.self, from: data) {
+            DispatchQueue.main.async {
+                self.currentUser = user
+            }
+        }
+    }
+    
+    // 心拍数の監視を開始
+    private func startContinuousHeartRateMonitoring() {
+        isMonitoringHeartRate = true
+        heartRateDetectionStatus = "監視開始中"
+        startWorkoutSession()
+        startHeartRateTimeoutMonitoring()
+    }
+    
+    // 心拍数の監視を停止
+    private func stopContinuousHeartRateMonitoring() {
+        workoutSession?.end()
+        workoutSession = nil
+        heartRateTimeoutTimer?.invalidate()
+        heartRateTimeoutTimer = nil
+        lastHeartRateUpdateTime = nil
+        
+        DispatchQueue.main.async {
+            self.isMonitoringHeartRate = false
+            self.currentHeartRate = 0
+            self.heartRateDetectionStatus = "監視停止"
+        }
+    }
+    
+    // 心拍数タイムアウト監視を開始
+    private func startHeartRateTimeoutMonitoring() {
+        heartRateTimeoutTimer?.invalidate()
+        heartRateTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.checkHeartRateTimeout()
+        }
+    }
+    
+    // 心拍数のタイムアウトチェック
+    private func checkHeartRateTimeout() {
+        guard let lastUpdate = lastHeartRateUpdateTime else {
+            // まだ一度も心拍数を受信していない
+            DispatchQueue.main.async {
+                self.heartRateDetectionStatus = "心拍数検知待機中"
+            }
+            return
+        }
+        
+        let timeSinceLastUpdate = Date().timeIntervalSince(lastUpdate)
+        
+        if timeSinceLastUpdate > heartRateTimeout {
+            // タイムアウト：心拍数が検知されていない
+            print("心拍数タイムアウト")
+            DispatchQueue.main.async {
+                self.currentHeartRate = 0
+                self.heartRateDetectionStatus = "心拍数未検知"
+            }
+            
+            // iPhone側にクリア信号を送信
+            sendHeartRateClearToiPhone()
+        } else {
+            DispatchQueue.main.async {
+                self.heartRateDetectionStatus = "心拍数正常検知中"
+            }
+        }
+    }
+    
+    // ワークアウトセッションを開始
     private func startWorkoutSession() {
         let configuration = HKWorkoutConfiguration()
         configuration.activityType = .other
-        
         do {
             workoutSession = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
             let builder = workoutSession?.associatedWorkoutBuilder()
@@ -210,151 +309,252 @@ class WatchHeartRateManager: NSObject, ObservableObject {
             builder?.delegate = self
             
             workoutSession?.startActivity(with: Date())
-            builder?.beginCollection(withStart: Date()) { success, error in
-                if success {
-                    print("ワークアウトセッションを開始しました")
-                } else {
-                    print("ワークアウトセッションの開始に失敗: \(error?.localizedDescription ?? "Unknown error")")
+            builder?.beginCollection(withStart: Date()) { [weak self] success, error in
+                guard let self = self else { return }
+                DispatchQueue.main.async {
+                    if success {
+                        self.isSending = true
+                        self.heartRateDetectionStatus = "ワークアウト開始済み"
+                    } else {
+                        self.heartRateDetectionStatus = "ワークアウト開始失敗"
+                        print("ワークアウトセッション開始失敗")
+                    }
+                    self.isStarting = false
                 }
             }
         } catch {
-            print("ワークアウトセッションの作成に失敗: \(error.localizedDescription)")
-        }
-    }
-    
-    private func stopContinuousHeartRateMonitoring() {
-        print("心拍数の継続監視を停止")
-        workoutSession?.end()
-        workoutSession = nil
-        DispatchQueue.main.async {
-            self.isMonitoringHeartRate = false
-            self.currentHeartRate = 0
-        }
-    }
-    
-    private func updateHeartRate(_ bpm: Int) {
-        DispatchQueue.main.async {
-            self.currentHeartRate = bpm
-            // 有効な心拍数を検知したら、鼓動イベントを送信
-            if bpm > 0 {
-                self.heartbeatSubject.send()
+            print("ワークアウトセッション作成エラー")
+            DispatchQueue.main.async {
+                self.isStarting = false
+                self.heartRateDetectionStatus = "ワークアウト作成エラー"
             }
         }
     }
     
-    // MARK: - Data Sending
-    func startSending() {
-        guard let user = currentUser, isConnected else { return }
+    // 心拍数更新処理
+    private func updateHeartRate(_ bpm: Int) {
+        let now = Date()
+        lastHeartRateUpdateTime = now
         
-        isSending = true
-        startContinuousHeartRateMonitoring()
-        
-        // 即座に最初のデータを送信
-        if currentHeartRate > 0 {
-            sendHeartRateToiPhone(heartRate: currentHeartRate, user: user)
-        }
-        
-        // 定期送信タイマーを開始
-        sendingTimer = Timer.scheduledTimer(withTimeInterval: user.sendInterval, repeats: true) { [weak self] _ in
-            guard let self = self, self.currentHeartRate > 0, self.isSending else { return }
-            self.sendHeartRateToiPhone(heartRate: self.currentHeartRate, user: user)
+        DispatchQueue.main.async {
+            // 有効な心拍数のみ更新（0以下や異常に高い値は除外）
+            if bpm > 0 && bpm <= 220 {
+                self.currentHeartRate = bpm
+                self.heartbeatSubject.send()
+                self.heartRateDetectionStatus = "心拍数正常検知中"
+            } else {
+                self.heartRateDetectionStatus = "異常値検知"
+            }
         }
     }
     
+    // 心拍数送信を開始
+    func startSending() {
+        guard !isSending, !isStarting else { return }
+        isStarting = true
+        startContinuousHeartRateMonitoring()
+        
+        let sendInterval: TimeInterval = 3.0
+        sendingTimer = Timer.scheduledTimer(withTimeInterval: sendInterval, repeats: true) { [weak self] _ in
+            guard let self = self, self.isSending else { return }
+            
+            // 心拍数が有効で、最近更新されている場合のみ送信
+            if self.shouldSendHeartRate() {
+                self.sendHeartRateToiPhone(heartRate: self.currentHeartRate)
+            } else {
+                print("送信スキップ")
+            }
+        }
+    }
+    
+    // 心拍数を送信すべきかどうかの判定
+    private func shouldSendHeartRate() -> Bool {
+        // 心拍数が0以下の場合は送信しない
+        guard currentHeartRate > 0 else {
+            return false
+        }
+        
+        // 最後の心拍数更新から一定時間経過している場合は送信しない
+        guard let lastUpdate = lastHeartRateUpdateTime else {
+            return false
+        }
+        
+        let timeSinceLastUpdate = Date().timeIntervalSince(lastUpdate)
+        if timeSinceLastUpdate > heartRateTimeout {
+            return false
+        }
+        
+        return true
+    }
+    
+    // 心拍数送信を停止
     func stopSending() {
+        isStarting = false
         isSending = false
         sendingTimer?.invalidate()
         sendingTimer = nil
         stopContinuousHeartRateMonitoring()
     }
     
-    private func sendHeartRateToiPhone(heartRate: Int, user: HeartUser) {
-        guard let session = wcSession else { return }
+    private func sendHeartRateToiPhone(heartRate: Int) {
+        guard let session = wcSession, let user = currentUser else {
+            return
+        }
         
         let heartRateData: [String: Any] = [
             "heartNum": heartRate,
             "timestamp": Date().timeIntervalSince1970 * 1000,
             "userId": user.id,
+            "isValidReading": true // 有効な読み取り値であることを明示
         ]
-        let message: [String: Any] = [
-            "type": "heartRate",
-            "data": heartRateData
-        ]
+        let message: [String: Any] = ["type": "heartRate", "data": heartRateData]
         
-        // バックグラウンドで送信
+        // 複数の送信方法を試行
+        sendDataWithRetry(message: message, heartRate: heartRate, userName: user.name)
+    }
+    
+    // 複数の方法でデータ送信を試行
+    private func sendDataWithRetry(message: [String: Any], heartRate: Int, userName: String) {
+        guard let session = wcSession else { return }
+        
         session.transferUserInfo(message)
         
         DispatchQueue.main.async {
             self.sentCount += 1
         }
     }
+    
+    // フォールバック送信
+    private func sendFallbackData(message: [String: Any], heartRate: Int) {
+        guard let session = wcSession else { return }
+        
+        // より確実な送信のため、少し遅延してから再送信
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            session.transferUserInfo(message)
+            print("⌚ 🔄 フォールバック送信: \(heartRate) BPM")
+        }
+    }
+    
+    // 心拍数クリア信号をiPhoneに送信
+    private func sendHeartRateClearToiPhone() {
+        guard let session = wcSession, let user = currentUser else {
+            return
+        }
+        
+        let clearData: [String: Any] = [
+            "heartNum": 0,
+            "timestamp": Date().timeIntervalSince1970 * 1000,
+            "userId": user.id,
+            "isValidReading": false,
+            "status": "disconnected" // 切断状態を明示
+        ]
+        let message: [String: Any] = ["type": "heartRate", "data": clearData]
+        
+        // クリア信号も複数方法で送信
+        session.transferUserInfo(message)
+        if session.isReachable {
+            session.sendMessage(message, replyHandler: nil) { error in
+                print("⌚クリア信号sendMessage失敗")
+            }
+        }
+    }
 }
 
-// MARK: - WCSessionDelegate
-extension WatchHeartRateManager: WCSessionDelegate {
+// MARK: - WCSessionDelegate & HealthKit Delegates
+extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate, HKLiveWorkoutBuilderDelegate {
+    
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
+        if let error = error {
+            print("WCSession activation error")
+        }
         DispatchQueue.main.async {
-            if let error = error {
-                print("WCSessionのアクティベート失敗: \(error.localizedDescription)")
-                self.isConnected = false
-                return
-            }
             self.isConnected = (activationState == .activated)
-            print("WCSession 接続状態: \(self.isConnected)")
         }
     }
     
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any]) {
-        if let type = userInfo["type"] as? String, type == "selectUser",
-           let userData = userInfo["user"] as? [String: Any] {
-            handleUserSelection(userData)
+        
+        DispatchQueue.main.async {
+            self.receivedDataCount += 1
+        }
+        
+        // データタイプを確認
+        guard let type = userInfo["type"] as? String else {
+            return
+        }
+        
+        if type == "selectUser" {
+            // 既存の形式
+            if let userData = userInfo["user"] as? [String: Any] {
+                handleUserSelection(userData)
+            }
+        } else if type == "userInfo" {
+            if let data = userInfo["data"] as? [String: Any] {
+                handleUserInfoData(data)
+            }
+        } else {
+            print("未対応のデータタイプ")
         }
     }
     
     private func handleUserSelection(_ userData: [String: Any]) {
         do {
-            let jsonData = try JSONSerialization.data(withJSONObject: userData, options: [])
+            let jsonData = try JSONSerialization.data(withJSONObject: userData)
             let user = try JSONDecoder().decode(HeartUser.self, from: jsonData)
-            
             DispatchQueue.main.async {
                 self.currentUser = user
-                print("ユーザー情報を受信: \(user.name)")
-                // もし送信中だったら、新しい送信間隔を適用するためにタイマーを再起動
+                self.saveUserToDefaults(user)
                 if self.isSending {
                     self.stopSending()
                     self.startSending()
                 }
             }
         } catch {
-            print("ユーザーデータの解析に失敗: \(error)")
+            print("ユーザーデータの解析に失敗")
         }
     }
-}
-
-extension WatchHeartRateManager: HKWorkoutSessionDelegate {
-    func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
-        print("ワークアウトセッション状態変更: \(toState.rawValue)")
-    }
     
-    func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
-        print("ワークアウトセッションでエラー発生: \(error.localizedDescription)")
-    }
-}
-
-extension WatchHeartRateManager: HKLiveWorkoutBuilderDelegate {
-    func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {
-        for type in collectedTypes {
-            guard type == HKQuantityType.quantityType(forIdentifier: .heartRate) else { continue }
+    private func handleUserInfoData(_ data: [String: Any]) {
+        guard let userId = data["userId"] as? String,
+              let userName = data["userName"] as? String else {
+            return
+        }
+        
+        
+        let user = HeartUser(
+            id: userId,
+            name: userName
+        )
+        
+        DispatchQueue.main.async {
+            self.currentUser = user
+            self.saveUserToDefaults(user)
             
-            if let statistics = workoutBuilder.statistics(for: type as! HKQuantityType),
-               let mostRecentQuantity = statistics.mostRecentQuantity() {
-                let heartRateUnit = HKUnit(from: "count/min")
-                let heartRate = Int(mostRecentQuantity.doubleValue(for: heartRateUnit))
-                updateHeartRate(heartRate)
+            if self.isSending {
+                self.stopSending()
+                self.startSending()
             }
         }
     }
     
-    func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {
+    // HKWorkoutSessionDelegate
+    func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
+        print("ワークアウトセッション状態変更")
     }
+    
+    func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
+        print("ワークアウトセッションエラー:")
+    }
+    
+    // HKLiveWorkoutBuilderDelegate
+    func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {
+        guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate),
+              let statistics = workoutBuilder.statistics(for: heartRateType),
+              let mostRecentQuantity = statistics.mostRecentQuantity() else { return }
+        let heartRateUnit = HKUnit(from: "count/min")
+        let heartRate = Int(mostRecentQuantity.doubleValue(for: heartRateUnit))
+        updateHeartRate(heartRate)
+    }
+    
+    func workoutBuilderDidCollectEvent(_ workoutBuilder: HKLiveWorkoutBuilder) {}
 }
