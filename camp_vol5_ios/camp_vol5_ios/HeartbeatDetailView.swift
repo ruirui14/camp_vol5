@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct detail_Card: View {
+struct HeartbeatDetailView: View {
     @Environment(\.dismiss) var dismiss
     let item: CardItem
     var body: some View {
@@ -18,7 +18,7 @@ struct detail_Card: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .frame(height: 800)
+//            .frame(height: 800)
             .ignoresSafeArea() // 全画面にグラデーション適用
             .zIndex(0)
             
@@ -60,9 +60,7 @@ struct detail_Card: View {
                         .font(.system(size: 25,weight: .bold))
                         .foregroundColor(Color(hex: "#444444"))
                         .offset(x:20,y:-263)
-                    
                 }
-                
             }
             
             
@@ -76,7 +74,7 @@ struct detail_Card: View {
             VStack {
                 Spacer()
                 CustomBottomBar()
-                    .zIndex(999) // 最前面に出す
+                    // .zIndex(999) // 最前面に出す
             }
             .zIndex(999)
         }
@@ -90,6 +88,6 @@ struct detail_Card: View {
 
 
 #Preview {
-    ContentView()
+    ListHeartBeatsView()
 }
 

@@ -1,7 +1,7 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct ListHeartBeatsView: View {
     
     let items: [CardItem] = [
         CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic"),
@@ -9,63 +9,82 @@ struct ContentView: View {
         CardItem(name: "あやか", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic"),
         CardItem(name: "ドラえもん", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic")
     ]
+    
+    @State private var isShowingScanner = false //カメラ
+    @State private var scannedText = ""
+    
     var body: some View {
         NavigationStack {
             ZStack {
-                // 背景グラデーション
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(hex: "#FABDC2"), Color(hex: "#F35E6A")]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea() // 全画面にグラデーション適用
+                // 背景とメインUI
+                mainLayer
                 
-                
-                VStack(spacing: 0) {
-                    // カスタムナビゲーションバー
-                    CustomNavigationBar(
-                        title: "鼓動一覧",
-                        height: 100,
-                        backgroundColor: .white,
-                        trailingButton:{
-                            Button(action: {
-                                print("QR tapped!")
-                            }) {
-                                Image("plusQR")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 24, height: 24)
-                            }
-                        }
-                    )
-                    
-                    // 👇 GeometryReaderで高さを取って、スクロールエリアを調整！
-                    
-                    ScrollView {
-                        VStack(spacing: 10) {
-                            ForEach(items) { item in
-                                NavigationLink(destination: detail_Card(item: item)) {
-                                    CardView(item: item)
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                        .padding(.top, 20)
-                        
-                    }
+                // 👇 カメラスキャナーを全画面表示
+                if isShowingScanner {
+                    QRCodeScannerView(scannedText: $scannedText, isPresented: $isShowingScanner)
+                        .transition(.opacity)
+                        .zIndex(1)
                 }
-                
-                
-                
-                // 🔽 カスタムボトムバー
-                CustomBottomBar()
-                    .frame(maxHeight: .infinity, alignment: .bottom)
             }
-            
         }
-        .statusBar(hidden: true) // ステータスバー非表示
+        .statusBar(hidden: true)
+        
+    }
+    
+    
+    var mainLayer: some View {
+        ZStack {
+            // 背景グラデーション
+            LinearGradient(
+                gradient: Gradient(colors: [Color(hex: "#FABDC2"), Color(hex: "#F35E6A")]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea() // 全画面にグラデーション適用
+            
+            
+            VStack(spacing: 0) {
+                // カスタムナビゲーションバー
+                CustomNavigationBar(
+                    title: "鼓動一覧",
+                    height: 100,
+                    backgroundColor: .white,
+                    trailingButton:{
+                        Button(action: {
+                            isShowingScanner = true // ← これでカメラ表示
+                        }) {
+                            Image("plusQR")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 24, height: 24)
+                        }
+                    }
+                )
+                //  GeometryReaderで高さを取って、スクロールエリアを調整
+                ScrollView {
+                    VStack(spacing: 10) {
+                        ForEach(items) { item in
+                            NavigationLink(destination: detail_Card(item: item)) {
+                                CardView(item: item)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .padding(.top, 20)
+                    
+                }
+            }
+            // カスタムボトムバー
+            CustomBottomBar()
+                .frame(maxHeight: .infinity, alignment: .bottom)
+        }
     }
 }
+
+
+
+
+
 
 //  カスタムナビゲーションバー（左寄せタイトル）
 struct CustomNavigationBar<TrailingContent: View>: View {
@@ -119,6 +138,7 @@ struct CustomBottomBar: View {
         .padding(.vertical, 6)
         .background(Color.white.ignoresSafeArea(edges: .bottom))
         .shadow(color: .black.opacity(0.05), radius: 2, y: -1)
+        .frame(height: 40)
         
     }
 }
@@ -201,5 +221,5 @@ struct CardView: View {
 
 
 #Preview {
-    ContentView()
+    ListHeartBeatsView()
 }
