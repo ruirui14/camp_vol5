@@ -201,8 +201,8 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
                 self.heartRate = 0
             }
             
-            // Firebaseもクリア
-            clearHeartRateData(for: userId)
+            // // Firebaseもクリア
+            // clearHeartRateData(for: userId)
             return
         }
         
@@ -282,24 +282,24 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
     }
     
     // 心拍数データをクリア（Watch外した時やアプリ終了時）
-    func clearHeartRateData(for userId: String) {
-        let heartRateRef = database.child("heartRates").child(userId).child("current")
+    // func clearHeartRateData(for userId: String) {
+    //     let heartRateRef = database.child("heartRates").child(userId).child("current")
         
-        let clearData: [String: Any] = [
-            "heartNum": 0,
-            "status": "disconnected",
-            "lastUpdated": ServerValue.timestamp(),
-            "userId": userId,
-        ]
+    //     let clearData: [String: Any] = [
+    //         "heartNum": 0,
+    //         "status": "disconnected",
+    //         "lastUpdated": ServerValue.timestamp(),
+    //         "userId": userId,
+    //     ]
         
-        heartRateRef.setValue(clearData) { error, _ in
-            if let error = error {
-                print("データクリアエラー")
-            } else {
-                print("データクリア成功")
-            }
-        }
-    }
+    //     heartRateRef.setValue(clearData) { error, _ in
+    //         if let error = error {
+    //             print("データクリアエラー")
+    //         } else {
+    //             print("データクリア成功")
+    //         }
+    //     }
+    // }
 }
 
 // MARK: - データモデル
