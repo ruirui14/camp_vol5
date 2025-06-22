@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ContentView: View {
+struct ContentView2: View {
     @StateObject private var authService = AuthService.shared
 
     var body: some View {
