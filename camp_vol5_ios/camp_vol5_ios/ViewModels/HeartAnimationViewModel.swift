@@ -86,7 +86,8 @@ class HeartAnimationViewModel: ObservableObject {
         heartbeatSubject.send()
     }
     
-    deinit {        beatTimer?.invalidate()
+    deinit {
+        beatTimer?.invalidate()
         beatTimer = nil
     }
 }

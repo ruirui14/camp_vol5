@@ -23,6 +23,11 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
     private var receivedDataQueue: [(userInfo: [String: Any], timestamp: Date)] = []
     private var processingTimer: Timer?
     
+    // ★ タイムアウト管理を追加
+    private var heartRateTimeoutTimer: Timer?
+    private let heartRateTimeout: TimeInterval = 10.0  // 10秒でタイムアウト
+    private var lastHeartRateReceived: Date?
+    
     init(session: WCSession = .default) {
         self.session = session
         self.database = Database.database().reference()
@@ -35,6 +40,41 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         
         // バックグラウンドでのデータ処理タイマーを開始
         startBackgroundProcessingTimer()
+        
+        // ★ 心拍数タイムアウト監視を開始
+        startHeartRateTimeoutMonitoring()
+    }
+    
+    // MARK: - Heart Rate Timeout Management
+    
+    private func startHeartRateTimeoutMonitoring() {
+        heartRateTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.checkHeartRateTimeout()
+        }
+    }
+    
+    private func checkHeartRateTimeout() {
+        guard let lastReceived = lastHeartRateReceived,
+              heartRate > 0 else { return }
+        
+        let timeSinceLastData = Date().timeIntervalSince(lastReceived)
+        
+        if timeSinceLastData >= heartRateTimeout {
+            print("心拍数タイムアウト")
+            DispatchQueue.main.async {
+                self.resetHeartRate()
+            }
+        }
+    }
+    
+    private func resetHeartRate() {
+        heartRate = 0
+        lastHeartRateReceived = nil
+        print("心拍数リセット完了")
+    }
+    
+    private func updateHeartRateReceived() {
+        lastHeartRateReceived = Date()
     }
     
     // MARK: - アプリライフサイクル監視
@@ -151,18 +191,41 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
     func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         DispatchQueue.main.async {
             self.isReachable = (activationState == .activated)
+            
+            // ★ 接続が切れた場合は心拍数をリセット
+            if activationState != .activated {
+                self.resetHeartRate()
+            }
         }
     }
     
     func sessionDidBecomeInactive(_ session: WCSession) {
         DispatchQueue.main.async {
             self.isReachable = false
+            // ★ 接続が切れた場合は心拍数をリセット
+            self.resetHeartRate()
         }
     }
     
     func sessionDidDeactivate(_ session: WCSession) {
+        DispatchQueue.main.async {
+            // ★ 接続が切れた場合は心拍数をリセット
+            self.resetHeartRate()
+        }
         // 再度アクティベートを試みる
         self.session.activate()
+    }
+    
+    // ★ セッション到達可能性変更時
+    func sessionReachabilityDidChange(_ session: WCSession) {
+        DispatchQueue.main.async {
+            self.isReachable = session.isReachable
+            
+            // ★ 到達不可能になったら心拍数をリセット
+            if !session.isReachable {
+                self.resetHeartRate()
+            }
+        }
     }
     
     // Watchからデータを受信したときに呼ばれるメソッド
@@ -182,6 +245,29 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         }
     }
     
+    // ★ リアルタイムメッセージ受信も追加
+    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
+        // 停止メッセージの処理
+        if let type = message["type"] as? String {
+            switch type {
+            case "heartRateStop":
+                print("⏹Watch側から停止通知受信")
+                DispatchQueue.main.async {
+                    self.resetHeartRate()
+                }
+                return
+            case "heartRateStart":
+                print("Watch側から開始通知受信")
+                return
+            default:
+                break
+            }
+        }
+        
+        // 通常の心拍数データ処理
+        processHeartRateData(message)
+    }
+    
     private func processHeartRateData(_ userInfo: [String: Any]) {
         
         // "heartRate"タイプのデータか確認
@@ -193,22 +279,24 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             return
         }
         
-        // クリア信号の確認
-        if let status = data["status"] as? String, status == "disconnected" || bpm == 0 {
-            
-            // UIをクリア
+        // ★ クリア信号の確認を強化
+        if let status = data["status"] as? String, status == "disconnected" || status == "stopped" {
             DispatchQueue.main.async {
-                self.heartRate = 0
+                self.resetHeartRate()
             }
-            
-            // // Firebaseもクリア
-            // clearHeartRateData(for: userId)
+            return
+        }
+        
+        // ★ bpm = 0 の場合も停止として扱う
+        if bpm <= 0 {
+            DispatchQueue.main.async {
+                self.resetHeartRate()
+            }
             return
         }
         
         // 心拍数の妥当性チェック
         guard isValidHeartRate(bpm) else {
-            print("無効な心拍数を受信")
             return
         }
         
@@ -217,7 +305,8 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             return
         }
         
-        print("有効な心拍数を受信")
+        // ★ データ受信時刻を更新
+        updateHeartRateReceived()
         
         // UIをメインスレッドで更新
         DispatchQueue.main.async {
@@ -267,7 +356,6 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         // データベースパス: /{userId}（常に同じ場所を更新）
         let heartRateRef = database.child(userId)
         
-        print("Firebase更新開始")
         
         heartRateRef.setValue(heartRateData) { [weak self] error, _ in
             DispatchQueue.main.async {
@@ -281,25 +369,14 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         }
     }
     
-    // 心拍数データをクリア（Watch外した時やアプリ終了時）
-    // func clearHeartRateData(for userId: String) {
-    //     let heartRateRef = database.child("heartRates").child(userId).child("current")
+    deinit {
+        // タイマーをクリーンアップ
+        processingTimer?.invalidate()
+        heartRateTimeoutTimer?.invalidate()
         
-    //     let clearData: [String: Any] = [
-    //         "heartNum": 0,
-    //         "status": "disconnected",
-    //         "lastUpdated": ServerValue.timestamp(),
-    //         "userId": userId,
-    //     ]
-        
-    //     heartRateRef.setValue(clearData) { error, _ in
-    //         if let error = error {
-    //             print("データクリアエラー")
-    //         } else {
-    //             print("データクリア成功")
-    //         }
-    //     }
-    // }
+        // オブザーバーを削除
+        NotificationCenter.default.removeObserver(self)
+    }
 }
 
 // MARK: - データモデル
