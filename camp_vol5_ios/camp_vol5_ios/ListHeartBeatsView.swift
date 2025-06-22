@@ -7,7 +7,7 @@ struct ListHeartBeatsView: View {
         CardItem(name: "たろう", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic"),
         CardItem(name: "るい", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic"),
         CardItem(name: "あやか", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic"),
-        CardItem(name: "ドラえもん", imageName: "taro", iconImageName: "heart_beat",detailImageName: "detail_pic")
+        CardItem(name: "アユナ", imageName: "ayuna_small", iconImageName: "heart_beat",detailImageName: "detail_pic")
     ]
     
     @State private var isShowingScanner = false //カメラ
@@ -64,7 +64,7 @@ struct ListHeartBeatsView: View {
                 ScrollView {
                     VStack(spacing: 10) {
                         ForEach(items) { item in
-                            NavigationLink(destination: detail_Card(item: item)) {
+                            NavigationLink(destination: HeartbeatDetailView(item: item)) {
                                 CardView(item: item)
                             }
                             .buttonStyle(PlainButtonStyle())
