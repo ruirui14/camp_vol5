@@ -77,11 +77,6 @@ struct ListHeartBeatsView: View {
             .sheet(isPresented: $showingSettingsSheet) {
                 SettingsView()
             }
-            .onAppear {
-                if authService.isGoogleAuthenticated {
-                    viewModel.loadFollowingUsersWithHeartbeats()
-                }
-            }
         }
     }
 
