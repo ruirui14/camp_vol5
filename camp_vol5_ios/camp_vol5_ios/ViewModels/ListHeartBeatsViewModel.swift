@@ -6,19 +6,13 @@ class ListHeartBeatsViewModel: ObservableObject {
     @Published var followingUsersWithHeartbeats: [UserWithHeartbeat] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var user: User?
 
     private let firestoreService = FirestoreService.shared
     private let realtimeService = RealtimeService.shared
     private let authService = AuthService.shared
     private var cancellables = Set<AnyCancellable>()
-    private var hasInitialLoadAttempted = false
 
     init() {
-        setupObservers()
-    }
-
-    private func setupObservers() {
         // 認証状態とローディング状態の監視
         Publishers.CombineLatest(
             authService.$isAuthenticated,
@@ -26,57 +20,48 @@ class ListHeartBeatsViewModel: ObservableObject {
         )
         .receive(on: DispatchQueue.main)
         .sink { [weak self] isAuthenticated, isLoading in
-            if !isAuthenticated && !isLoading {
+            // 認証が完了し、ローディングが終了したらユーザー情報を読み込む
+            if isAuthenticated && !isLoading {
+                self?.loadFollowingUsersWithHeartbeatsIfNeeded()
+            } else if !isAuthenticated && !isLoading {
+                // 認証されていない場合はリストをクリア
                 self?.followingUsersWithHeartbeats = []
                 self?.errorMessage = nil
                 self?.isLoading = false
-                self?.hasInitialLoadAttempted = false
             }
         }
         .store(in: &cancellables)
 
-        // 現在のユーザー情報とローディング状態を同時に監視
-        Publishers.CombineLatest(
-            authService.$currentUser,
-            authService.$isLoading
-        )
-        .receive(on: DispatchQueue.main)
-        .sink { [weak self] currentUser, isLoading in
-            let isGoogleAuthenticated =
-                self?.authService.isGoogleAuthenticated ?? false
-            self?.user = currentUser
-
-            // Google認証済み、ユーザー情報あり、ローディング中でない場合に初回ロード
-            // TODO: 一旦Google認証済みでない場合は、使えないようにしておく
-            if let currentUser = currentUser,
-                isGoogleAuthenticated,
-                !isLoading,
-                !(self?.hasInitialLoadAttempted ?? false)  // 初回ロードがまだ実行されていない場合のみtrue
-            {
-                self?.hasInitialLoadAttempted = true
-                self?.loadFollowingUsersWithHeartbeats()
-            } else if !isGoogleAuthenticated || currentUser == nil {
-                self?.followingUsersWithHeartbeats = []
-                self?.errorMessage = nil
-                if !isLoading {
+        // 現在のユーザー情報の監視（Google認証済みの場合）
+        authService.$currentUser
+            .removeDuplicates { $0?.id == $1?.id }
+            .sink { [weak self] user in
+                if user != nil {
+                    self?.loadFollowingUsersWithHeartbeatsIfNeeded()
+                } else {
+                    self?.followingUsersWithHeartbeats = []
+                    self?.errorMessage = nil
                     self?.isLoading = false
                 }
-                if currentUser == nil {
-                    self?.hasInitialLoadAttempted = false
-                }
             }
-        }
-        .store(in: &cancellables)
+            .store(in: &cancellables)
+    }
+
+    private func loadFollowingUsersWithHeartbeatsIfNeeded() {
+        // 既にデータがある場合は読み込みをスキップ
+        guard followingUsersWithHeartbeats.isEmpty else { return }
+
+        loadFollowingUsersWithHeartbeats()
     }
 
     // フォロー中のユーザー情報と心拍データを取得
     func loadFollowingUsersWithHeartbeats() {
         guard let currentUserId = authService.currentUser?.id else {
+            // 認証が必要な場合はエラーメッセージを表示しない
             return
         }
 
         isLoading = true
-        errorMessage = nil
 
         // 1. フォロー中のユーザー情報を取得
         firestoreService.getFollowingUsers(userId: currentUserId)

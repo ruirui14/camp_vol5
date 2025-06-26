@@ -6,12 +6,14 @@ struct ContentView: View {
     var body: some View {
         Group {
             if authService.isAuthenticated {
-                // 認証済み（匿名またはGoogle）の場合はメインアプリを表示
-                if authService.isAuthenticated {
+                // 1. 匿名ユーザ
+                // 2. 匿名ユーザではなく、カレントユーザを読み込んでいる
+                if (authService.isAnonymous && authService.currentUser == nil) || 
+                   !authService.isAnonymous && (authService.currentUser != nil) {
                     ListHeartBeatsView()
                         .environmentObject(authService)
                 }
-            } else if authService.isLoading {
+            } else if authService.isLoading  {
                 // 認証中の場合はローディング画面を表示
                 LoadingView()
             } else {
