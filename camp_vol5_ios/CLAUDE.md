@@ -22,7 +22,6 @@ xcodebuild test -project camp_vol5_ios.xcodeproj -scheme camp_vol5_ios -destinat
 
 # Format code (automatically handled by SweetPad + Xcode formatter)
 # No manual formatting commands needed - format on save is enabled
-```
 
 ## Architecture Overview
 
