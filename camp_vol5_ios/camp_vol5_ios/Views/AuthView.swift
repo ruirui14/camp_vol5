@@ -1,7 +1,14 @@
 import SwiftUI
 
 struct AuthView: View {
-    @StateObject private var authService = AuthService.shared
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @StateObject private var viewModel: AuthViewModel
+
+    init() {
+        _viewModel = StateObject(wrappedValue: AuthViewModel(
+            authenticationManager: AuthenticationManager()
+        ))
+    }
 
     var body: some View {
         VStack(spacing: 40) {
@@ -34,10 +41,10 @@ struct AuthView: View {
 
                 // Google Sign In Button
                 Button(action: {
-                    authService.signInWithGoogle()
+                    viewModel.signInWithGoogle()
                 }) {
                     HStack(spacing: 12) {
-                        if authService.isLoading {
+                        if viewModel.isLoading {
                             ProgressView()
                                 .scaleEffect(0.8)
                                 .tint(.white)
@@ -47,7 +54,7 @@ struct AuthView: View {
                         }
 
                         Text(
-                            authService.isLoading ? "サインイン中..." : "Googleでサインイン"
+                            viewModel.isLoading ? "サインイン中..." : "Googleでサインイン"
                         )
                         .font(.headline)
                         .fontWeight(.semibold)
@@ -65,15 +72,15 @@ struct AuthView: View {
                     .cornerRadius(12)
                     .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
-                .disabled(authService.isLoading)
-                .scaleEffect(authService.isLoading ? 0.95 : 1.0)
+                .disabled(viewModel.isLoading)
+                .scaleEffect(viewModel.isLoading ? 0.95 : 1.0)
                 .animation(
                     .easeInOut(duration: 0.1),
-                    value: authService.isLoading
+                    value: viewModel.isLoading
                 )
 
                 // Error Message
-                if let errorMessage = authService.errorMessage {
+                if let errorMessage = viewModel.errorMessage {
                     VStack(spacing: 8) {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -87,7 +94,7 @@ struct AuthView: View {
                         .cornerRadius(8)
 
                         Button("再試行") {
-                            authService.clearError()
+                            viewModel.clearError()
                         }
                         .font(.caption)
                         .foregroundColor(.blue)
@@ -131,11 +138,15 @@ struct AuthView: View {
                 endPoint: .bottom
             )
         )
+        .onAppear {
+            viewModel.updateAuthenticationManager(authenticationManager)
+        }
     }
 }
 
 struct AuthView_Previews: PreviewProvider {
     static var previews: some View {
         AuthView()
+            .environmentObject(MockAuthenticationManager(isAuthenticated: false, isAnonymous: true))
     }
 }

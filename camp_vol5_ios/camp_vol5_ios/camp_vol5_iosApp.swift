@@ -6,10 +6,14 @@ import SwiftUI
 struct camp_vol5_iosApp: App {
   // AppDelegate を追加
   @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+  
+  // AuthenticationManager をStateObjectとして管理
+  @StateObject private var authenticationManager = AuthenticationManager()
 
   var body: some Scene {
     WindowGroup {
       ContentView()
+        .environmentObject(authenticationManager)
         .onOpenURL { url in
           GIDSignIn.sharedInstance.handle(url)
         }

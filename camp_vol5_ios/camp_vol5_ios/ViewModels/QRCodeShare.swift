@@ -6,12 +6,22 @@ class QRCodeShareViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    private let authService = AuthService.shared
-    private let firestoreService = FirestoreService.shared
+    private var authenticationManager: AuthenticationManager
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
-        authService.$currentUser
+    init(authenticationManager: AuthenticationManager) {
+        self.authenticationManager = authenticationManager
+        setupBindings()
+    }
+
+    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
+        self.authenticationManager = authenticationManager
+        cancellables.removeAll()
+        setupBindings()
+    }
+
+    private func setupBindings() {
+        authenticationManager.$currentUser
             .map { $0?.inviteCode }
             .receive(on: DispatchQueue.main)
             .assign(to: \.inviteCode, on: self)
@@ -19,7 +29,7 @@ class QRCodeShareViewModel: ObservableObject {
     }
 
     func generateNewInviteCode() {
-        guard let userId = authService.currentUserId else {
+        guard let userId = authenticationManager.currentUserId else {
             errorMessage = "User not logged in"
             return
         }
@@ -27,7 +37,13 @@ class QRCodeShareViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        firestoreService.generateNewInviteCode(for: userId)
+        guard let currentUser = authenticationManager.currentUser else {
+            errorMessage = "User not logged in"
+            isLoading = false
+            return
+        }
+        
+        UserService.shared.generateNewInviteCode(for: currentUser)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
@@ -37,7 +53,7 @@ class QRCodeShareViewModel: ObservableObject {
                     }
                 },
                 receiveValue: { [weak self] _ in
-                    self?.authService.refreshCurrentUser()
+                    self?.authenticationManager.refreshCurrentUser()
                 }
             )
             .store(in: &cancellables)

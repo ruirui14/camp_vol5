@@ -7,44 +7,46 @@ class ListHeartBeatsViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
-    private let firestoreService = FirestoreService.shared
-    private let realtimeService = RealtimeService.shared
-    private let authService = AuthService.shared
+    private var authenticationManager: AuthenticationManager
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
-        // 認証状態とローディング状態の監視
-        Publishers.CombineLatest(
-            authService.$isAuthenticated,
-            authService.$isLoading
+    init(authenticationManager: AuthenticationManager) {
+        self.authenticationManager = authenticationManager
+        setupBindings()
+    }
+
+    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
+        self.authenticationManager = authenticationManager
+        cancellables.removeAll()
+        setupBindings()
+    }
+
+    private func setupBindings() {
+        // 認証状態、ローディング状態、ユーザー情報を統合して監視
+        Publishers.CombineLatest3(
+            authenticationManager.$isAuthenticated,
+            authenticationManager.$isLoading,
+            authenticationManager.$currentUser
         )
+        .removeDuplicates { prev, current in
+            // 重複実行を防ぐため、変更があった場合のみ処理
+            prev.0 == current.0 && prev.1 == current.1 && prev.2?.id == current.2?.id
+        }
         .receive(on: DispatchQueue.main)
-        .sink { [weak self] isAuthenticated, isLoading in
-            // 認証が完了し、ローディングが終了したらユーザー情報を読み込む
-            if isAuthenticated && !isLoading {
+        .sink { [weak self] isAuthenticated, isLoading, currentUser in
+            guard !isLoading else { return }  // ローディング中は何もしない
+
+            if isAuthenticated && currentUser != nil {
+                // 認証済みでユーザー情報がある場合のみデータを読み込む
                 self?.loadFollowingUsersWithHeartbeatsIfNeeded()
-            } else if !isAuthenticated && !isLoading {
-                // 認証されていない場合はリストをクリア
+            } else {
+                // 認証されていない、またはユーザー情報がない場合はリストをクリア
                 self?.followingUsersWithHeartbeats = []
                 self?.errorMessage = nil
                 self?.isLoading = false
             }
         }
         .store(in: &cancellables)
-
-        // 現在のユーザー情報の監視（Google認証済みの場合）
-        authService.$currentUser
-            .removeDuplicates { $0?.id == $1?.id }
-            .sink { [weak self] user in
-                if user != nil {
-                    self?.loadFollowingUsersWithHeartbeatsIfNeeded()
-                } else {
-                    self?.followingUsersWithHeartbeats = []
-                    self?.errorMessage = nil
-                    self?.isLoading = false
-                }
-            }
-            .store(in: &cancellables)
     }
 
     private func loadFollowingUsersWithHeartbeatsIfNeeded() {
@@ -56,45 +58,29 @@ class ListHeartBeatsViewModel: ObservableObject {
 
     // フォロー中のユーザー情報と心拍データを取得
     func loadFollowingUsersWithHeartbeats() {
-        guard let currentUserId = authService.currentUser?.id else {
-            // 認証が必要な場合はエラーメッセージを表示しない
+        guard let currentUser = authenticationManager.currentUser else {
+            self.isLoading = false
             return
         }
 
         isLoading = true
 
-        // 1. フォロー中のユーザー情報を取得
-        firestoreService.getFollowingUsers(userId: currentUserId)
-            .flatMap {
-                [weak self] users -> AnyPublisher<[UserWithHeartbeat], Error> in
-                guard let self = self else {
-                    return Just([])
-                        .setFailureType(to: Error.self)
-                        .eraseToAnyPublisher()
-                }
-
-                // ユーザーがいない場合は空配列を返す
+        UserService.shared.getFollowingUsers(followingUserIds: currentUser.followingUserIds)
+            .flatMap { users -> AnyPublisher<[UserWithHeartbeat], Error> in
                 guard !users.isEmpty else {
-                    return Just([])
-                        .setFailureType(to: Error.self)
-                        .eraseToAnyPublisher()
+                    return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
                 }
-
-                // 2. 各ユーザーの心拍データを並行取得
                 let heartbeatPublishers = users.map { user in
-                    self.realtimeService.getHeartbeatOnce(userId: user.id)
+                    HeartbeatService.shared.getHeartbeatOnce(userId: user.id)
                         .map { heartbeat in
                             UserWithHeartbeat(user: user, heartbeat: heartbeat)
                         }
                         .catch { _ in
-                            // エラーが発生した場合は心拍データなしのUserWithHeartbeatを返す
                             Just(UserWithHeartbeat(user: user, heartbeat: nil))
                                 .setFailureType(to: Error.self)
                         }
                         .eraseToAnyPublisher()
                 }
-
-                // すべての心拍データ取得を並行実行し、結果を収集
                 return Publishers.MergeMany(heartbeatPublishers)
                     .collect()
                     .eraseToAnyPublisher()
