@@ -1,4 +1,8 @@
 // Models/User.swift
+// ユーザー情報を表すデータモデル
+// Firebase操作はUserServiceで実行される
+
+import Firebase
 import FirebaseFirestore
 import Foundation
 
@@ -70,3 +74,4 @@ struct User: Codable, Identifiable {
         ]
     }
 }
+

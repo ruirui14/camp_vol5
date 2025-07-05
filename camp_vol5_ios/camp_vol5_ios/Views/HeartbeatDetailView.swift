@@ -4,9 +4,7 @@ struct HeartbeatDetailView: View {
     @StateObject private var viewModel: HeartbeatDetailViewModel
 
     init(userId: String) {
-        _viewModel = StateObject(
-            wrappedValue: HeartbeatDetailViewModel(userId: userId)
-        )
+        _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
     }
 
     var body: some View {
@@ -20,13 +18,19 @@ struct HeartbeatDetailView: View {
                     .font(.largeTitle)
             }
 
-            Text(viewModel.connectionStatus.displayName)
-                .font(.caption)
-                .foregroundColor(viewModel.connectionStatus.color)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(viewModel.connectionStatus.color.opacity(0.2))
-                .cornerRadius(10)
+            // 監視状態を表示
+            HStack {
+                Circle()
+                    .fill(viewModel.isMonitoring ? Color.green : Color.red)
+                    .frame(width: 10, height: 10)
+                Text(viewModel.isMonitoring ? "Monitoring" : "Not Monitoring")
+                    .font(.caption)
+                    .foregroundColor(viewModel.isMonitoring ? .green : .red)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background((viewModel.isMonitoring ? Color.green : Color.red).opacity(0.2))
+            .cornerRadius(10)
 
             if let heartbeat = viewModel.currentHeartbeat {
                 Text("\(heartbeat.bpm)")
@@ -78,28 +82,9 @@ struct HeartbeatDetailView: View {
     }
 }
 
-extension RealtimeService.ConnectionStatus {
-    var displayName: String {
-        switch self {
-        case .connected: return "Connected"
-        case .disconnected: return "Disconnected"
-        case .error(_):
-            return "Error"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .connected: return .green
-        case .disconnected: return .red
-        case .error(_):
-            return .red
-        }
-    }
-}
-
 struct HeartbeatDetailView_Previews: PreviewProvider {
     static var previews: some View {
         HeartbeatDetailView(userId: "preview_user_id")
+            .environmentObject(MockAuthenticationManager(isAuthenticated: true, isAnonymous: false))
     }
 }

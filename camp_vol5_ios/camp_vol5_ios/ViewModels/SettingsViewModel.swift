@@ -11,18 +11,24 @@ class SettingsViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var successMessage: String?
 
-    private let authService = AuthService.shared
-    private let firestoreService = FirestoreService.shared
-    private let realtimeService = RealtimeService.shared
+    private var authenticationManager: AuthenticationManager
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
+    init(authenticationManager: AuthenticationManager) {
+        self.authenticationManager = authenticationManager
+        setupBindings()
+    }
+
+    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
+        self.authenticationManager = authenticationManager
+        cancellables.removeAll()
         setupBindings()
     }
 
     private func setupBindings() {
         // 認証状態の監視
-        authService.$currentUser
+        print("SettingsViewModel: 認証状態の監視を開始")
+        authenticationManager.$currentUser
             .receive(on: DispatchQueue.main)
             .sink { [weak self] user in
                 self?.currentUser = user
@@ -34,9 +40,10 @@ class SettingsViewModel: ObservableObject {
             .store(in: &cancellables)
 
         // 認証状態とローディング状態の監視
+        print("SettingsViewModel: 認証状態とローディング状態の監視を開始")
         Publishers.CombineLatest(
-            authService.$isAuthenticated,
-            authService.$isLoading
+            authenticationManager.$isAuthenticated,
+            authenticationManager.$isLoading
         )
         .receive(on: DispatchQueue.main)
         .sink { [weak self] isAuthenticated, isLoading in
@@ -50,23 +57,34 @@ class SettingsViewModel: ObservableObject {
 
     private func loadCurrentUserIfNeeded() {
         // 既にユーザー情報がある場合は読み込みをスキップ
-        guard currentUser == nil else { return }
+        print("SettingsViewModel: ユーザー情報の読み込みをチェック中...")
+        print(currentUser as Any)
+        // AuthenticationManagerから基本情報は取得済みだが、詳細情報が必要な場合は再取得する
+        // guard currentUser == nil else { return }
 
-        guard let userId = authService.currentUserId else {
+        guard let userId = authenticationManager.currentUserId else {
             // 認証が必要な場合はエラーメッセージを表示しない
             return
         }
 
-        firestoreService.getUser(uid: userId)
+        print("SettingsViewModel: ユーザー情報を読み込み中...")
+
+        UserService.shared.getUser(uid: userId)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: {
                     [weak self] (completion: Subscribers.Completion<Error>) in
+                    print("SettingsViewModel: ユーザー情報読み込み完了")
                     if case .failure(let error) = completion {
+                        print("SettingsViewModel: エラー - \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
+                        // エラーの場合も空のユーザーオブジェクトを設定してUIの読み込み状態を終了
+                        self?.currentUser = User(
+                            id: userId, name: "Unknown", inviteCode: "", allowQRRegistration: false)
                     }
                 },
                 receiveValue: { [weak self] (user: User?) in
+                    print("SettingsViewModel: ユーザー情報取得成功 - \(user?.name ?? "nil")")
                     self?.currentUser = user
                     if let user = user {
                         self?.inviteCode = user.inviteCode
@@ -79,12 +97,13 @@ class SettingsViewModel: ObservableObject {
     }
 
     func loadCurrentUser() {
-        guard let userId = authService.currentUserId else {
+        print("SettingsViewModel: ユーザー情報を読み込み中...")
+        guard let userId = authenticationManager.currentUserId else {
             errorMessage = "認証が必要です"
             return
         }
 
-        firestoreService.getUser(uid: userId)
+        UserService.shared.getUser(uid: userId)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: {
@@ -107,9 +126,9 @@ class SettingsViewModel: ObservableObject {
 
     // 自分の心拍データを取得
     private func loadCurrentHeartbeat() {
-        guard let userId = authService.currentUserId else { return }
+        guard let userId = authenticationManager.currentUserId else { return }
 
-        realtimeService.getHeartbeatOnce(userId: userId)
+        HeartbeatService.shared.getHeartbeatOnce(userId: userId)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
@@ -126,14 +145,20 @@ class SettingsViewModel: ObservableObject {
 
     // 新しい招待コードを生成
     func generateNewInviteCode() {
-        guard let userId = authService.currentUserId else {
+        guard let userId = authenticationManager.currentUserId else {
             errorMessage = "認証が必要です"
             return
         }
 
         isLoading = true
 
-        firestoreService.generateNewInviteCode(for: userId)
+        guard let currentUser = authenticationManager.currentUser else {
+            errorMessage = "Current user not found"
+            isLoading = false
+            return
+        }
+
+        UserService.shared.generateNewInviteCode(for: currentUser)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
@@ -146,7 +171,7 @@ class SettingsViewModel: ObservableObject {
                     self?.inviteCode = newInviteCode
                     self?.successMessage = "新しい招待コードを生成しました"
                     // AuthServiceの現在のユーザー情報を更新
-                    self?.authService.refreshCurrentUser()
+                    self?.authenticationManager.refreshCurrentUser()
                 }
             )
             .store(in: &cancellables)
@@ -154,7 +179,7 @@ class SettingsViewModel: ObservableObject {
 
     // QR登録許可設定を切り替え
     func toggleQRRegistration() {
-        guard let userId = authService.currentUserId else {
+        guard let userId = authenticationManager.currentUserId else {
             errorMessage = "認証が必要です"
             return
         }
@@ -163,34 +188,36 @@ class SettingsViewModel: ObservableObject {
         let newValue = allowQRRegistration
         isLoading = true
 
-        firestoreService.updateQRRegistrationSetting(
-            userId: userId,
-            allowQRRegistration: newValue
-        )
-        .receive(on: DispatchQueue.main)
-        .sink(
-            receiveCompletion: { [weak self] completion in
-                self?.isLoading = false
-                if case .failure(let error) = completion {
-                    // エラーの場合、トグルを元に戻す
-                    self?.allowQRRegistration = !newValue
-                    self?.errorMessage = error.localizedDescription
-                } else {
-                    // 成功メッセージを表示
-                    self?.successMessage =
-                        newValue ? "QR登録を許可しました" : "QR登録を無効にしました"
-                    // AuthServiceの現在のユーザー情報を更新
-                    self?.authService.refreshCurrentUser()
-                }
-            },
-            receiveValue: { _ in }
-        )
-        .store(in: &cancellables)
+        guard let currentUser = authenticationManager.currentUser else {
+            errorMessage = "Current user not found"
+            return
+        }
+
+        UserService.shared.updateQRRegistrationSetting(for: currentUser, allow: newValue)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    self?.isLoading = false
+                    if case .failure(let error) = completion {
+                        // エラーの場合、トグルを元に戻す
+                        self?.allowQRRegistration = !newValue
+                        self?.errorMessage = error.localizedDescription
+                    } else {
+                        // 成功メッセージを表示
+                        self?.successMessage =
+                            newValue ? "QR登録を許可しました" : "QR登録を無効にしました"
+                        // AuthServiceの現在のユーザー情報を更新
+                        self?.authenticationManager.refreshCurrentUser()
+                    }
+                },
+                receiveValue: { _ in }
+            )
+            .store(in: &cancellables)
     }
 
     // 心拍データを手動更新
     func refreshHeartbeat() {
-        guard let userId = authService.currentUserId else {
+        guard let userId = authenticationManager.currentUserId else {
             errorMessage = "認証が必要です"
             return
         }
@@ -201,7 +228,7 @@ class SettingsViewModel: ObservableObject {
     // MARK: - Authentication
 
     func signOut() {
-        authService.signOut()
+        authenticationManager.signOut()
     }
 
     // エラーメッセージをクリア

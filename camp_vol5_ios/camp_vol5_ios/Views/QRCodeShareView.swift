@@ -2,17 +2,23 @@ import CoreImage.CIFilterBuiltins
 import SwiftUI
 
 struct QRCodeShareView: View {
-    @StateObject private var viewModel = QRCodeShareViewModel()
-    @StateObject private var authService = AuthService.shared
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @StateObject private var viewModel: QRCodeShareViewModel
     @Environment(\.presentationMode) var presentationMode
 
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
 
+    init() {
+        _viewModel = StateObject(wrappedValue: QRCodeShareViewModel(
+            authenticationManager: AuthenticationManager()
+        ))
+    }
+
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                if authService.isGoogleAuthenticated {
+                if authenticationManager.isGoogleAuthenticated {
                     authenticatedContent
                 } else {
                     guestUserContent
@@ -21,6 +27,13 @@ struct QRCodeShareView: View {
             .padding()
             .navigationTitle("QRコード共有")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                viewModel.updateAuthenticationManager(authenticationManager)
+                // Google認証済みの場合、ユーザー情報を読み込み
+                if authenticationManager.isGoogleAuthenticated {
+                    authenticationManager.refreshCurrentUser()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("完了") {
@@ -136,17 +149,17 @@ struct QRCodeShareView: View {
             }
 
             Button(action: {
-                authService.signInWithGoogle()
+                authenticationManager.signInWithGoogle()
             }) {
                 HStack {
-                    if authService.isLoading {
+                    if authenticationManager.isLoading {
                         ProgressView()
                             .scaleEffect(0.8)
                             .tint(.white)
                     } else {
                         Image(systemName: "globe")
                     }
-                    Text(authService.isLoading ? "認証中..." : "Googleで認証")
+                    Text(authenticationManager.isLoading ? "認証中..." : "Googleで認証")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -154,15 +167,15 @@ struct QRCodeShareView: View {
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }
-            .disabled(authService.isLoading)
+            .disabled(authenticationManager.isLoading)
 
-            if let errorMessage = authService.errorMessage {
+            if let errorMessage = authenticationManager.errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
                     .font(.caption)
                     .multilineTextAlignment(.center)
                     .onTapGesture {
-                        authService.clearError()
+                        authenticationManager.clearError()
                     }
             }
 
@@ -195,5 +208,6 @@ struct QRCodeShareView: View {
 struct QRCodeShareView_Previews: PreviewProvider {
     static var previews: some View {
         QRCodeShareView()
+            .environmentObject(MockAuthenticationManager(isAuthenticated: true, isAnonymous: false))
     }
 }

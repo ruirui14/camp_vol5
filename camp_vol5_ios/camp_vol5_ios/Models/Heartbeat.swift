@@ -1,4 +1,9 @@
 // Models/Heartbeat.swift
+// 心拍データを表すデータモデル
+// Firebase操作はHeartbeatServiceで実行される
+
+import Firebase
+import FirebaseDatabase
 import Foundation
 
 struct Heartbeat: Codable, Identifiable {
@@ -49,3 +54,4 @@ struct HeartbeatData: Codable {
         ]
     }
 }
+

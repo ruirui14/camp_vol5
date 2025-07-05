@@ -1,19 +1,20 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var authService = AuthService.shared
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
 
     var body: some View {
         Group {
-            if authService.isAuthenticated {
+            if authenticationManager.isAuthenticated {
                 // 1. 匿名ユーザ
                 // 2. 匿名ユーザではなく、カレントユーザを読み込んでいる
-                if (authService.isAnonymous && authService.currentUser == nil) || 
-                   !authService.isAnonymous && (authService.currentUser != nil) {
+                if (authenticationManager.isAnonymous && authenticationManager.currentUser == nil)
+                    || !authenticationManager.isAnonymous
+                        && (authenticationManager.currentUser != nil)
+                {
                     ListHeartBeatsView()
-                        .environmentObject(authService)
                 }
-            } else if authService.isLoading  {
+            } else if authenticationManager.isLoading {
                 // 認証中の場合はローディング画面を表示
                 LoadingView()
             } else {
@@ -23,7 +24,7 @@ struct ContentView: View {
         }
         .animation(
             .easeInOut(duration: 1.0),
-            value: authService.isAuthenticated
+            value: authenticationManager.isAuthenticated
         )
     }
 }
@@ -57,6 +58,8 @@ struct LoadingView: View {
 }
 
 struct ErrorView: View {
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
+
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle.fill")
@@ -67,7 +70,7 @@ struct ErrorView: View {
                 .font(.title)
                 .fontWeight(.bold)
 
-            if let errorMessage = AuthService.shared.errorMessage {
+            if let errorMessage = authenticationManager.errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
@@ -75,8 +78,8 @@ struct ErrorView: View {
             }
 
             Button("再試行") {
-                AuthService.shared.clearError()
-                AuthService.shared.signInAnonymously()
+                authenticationManager.clearError()
+                authenticationManager.signInAnonymously()
             }
             .buttonStyle(.borderedProminent)
         }

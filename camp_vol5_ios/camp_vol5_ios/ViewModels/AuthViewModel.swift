@@ -1,4 +1,7 @@
 // ViewModels/AuthViewModel.swift
+// AuthenticationManagerを使用した認証状態管理
+// 注意: AuthenticationManagerが直接ObservableObjectなので、このViewModelは簡素化されている
+
 import Combine
 import Foundation
 
@@ -6,21 +9,28 @@ class AuthViewModel: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
-    private let authService = AuthService.shared
+    private var authenticationManager: AuthenticationManager
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
+    init(authenticationManager: AuthenticationManager) {
+        self.authenticationManager = authenticationManager
+        setupBindings()
+    }
+
+    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
+        self.authenticationManager = authenticationManager
+        cancellables.removeAll()
         setupBindings()
     }
 
     private func setupBindings() {
-        // AuthServiceの状態をViewModelに反映
-        authService.$isLoading
+        // AuthenticationManagerの状態をViewModelに反映
+        authenticationManager.$isLoading
             .receive(on: DispatchQueue.main)
             .assign(to: \.isLoading, on: self)
             .store(in: &cancellables)
 
-        authService.$errorMessage
+        authenticationManager.$errorMessage
             .receive(on: DispatchQueue.main)
             .assign(to: \.errorMessage, on: self)
             .store(in: &cancellables)
@@ -29,24 +39,24 @@ class AuthViewModel: ObservableObject {
     // MARK: - Actions
 
     func signInWithGoogle() {
-        authService.signInWithGoogle()
+        authenticationManager.signInWithGoogle()
     }
 
     func clearError() {
-        authService.clearError()
+        authenticationManager.clearError()
     }
 
     // MARK: - Computed Properties
 
     var isAuthenticated: Bool {
-        return authService.isAuthenticated
+        return authenticationManager.isAuthenticated
     }
 
     var isAnonymous: Bool {
-        return authService.isAnonymous
+        return authenticationManager.isAnonymous
     }
 
     var isGoogleAuthenticated: Bool {
-        return authService.isGoogleAuthenticated
+        return authenticationManager.isGoogleAuthenticated
     }
 }

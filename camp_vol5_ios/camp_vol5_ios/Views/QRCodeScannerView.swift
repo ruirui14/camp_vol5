@@ -1,17 +1,23 @@
 import SwiftUI
 
 struct QRCodeScannerView: View {
-    @StateObject private var viewModel = QRCodeScannerViewModel()
-    @StateObject private var authService = AuthService.shared
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @StateObject private var viewModel: QRCodeScannerViewModel
     @State private var showingQRScanner = false
     @State private var showingFollowConfirmation = false
     @State private var showingAuthRequired = false
     @Environment(\.presentationMode) var presentationMode
 
+    init() {
+        _viewModel = StateObject(wrappedValue: QRCodeScannerViewModel(
+            authenticationManager: AuthenticationManager()
+        ))
+    }
+
     var body: some View {
         NavigationView {
             VStack(spacing: 20) {
-                manualInputSection
+                manualInputSection(viewModel: viewModel)
 
                 // QR Scanner Button
                 qrScannerButton
@@ -29,6 +35,16 @@ struct QRCodeScannerView: View {
             .padding()
             .navigationTitle("フォローユーザー追加")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                viewModel.updateAuthenticationManager(authenticationManager)
+            }
+            .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
+                print("shouldDismiss changed to: \(shouldDismiss)")
+                if shouldDismiss {
+                    print("Dismissing QRCodeScannerView")
+                    presentationMode.wrappedValue.dismiss()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("キャンセル") {
@@ -75,17 +91,17 @@ struct QRCodeScannerView: View {
             }
 
             Button(action: {
-                authService.signInWithGoogle()
+                authenticationManager.signInWithGoogle()
             }) {
                 HStack {
-                    if authService.isLoading {
+                    if authenticationManager.isLoading {
                         ProgressView()
                             .scaleEffect(0.8)
                             .tint(.white)
                     } else {
                         Image(systemName: "globe")
                     }
-                    Text(authService.isLoading ? "認証中..." : "Googleで認証")
+                    Text(authenticationManager.isLoading ? "認証中..." : "Googleで認証")
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -93,41 +109,54 @@ struct QRCodeScannerView: View {
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }
-            .disabled(authService.isLoading)
+            .disabled(authenticationManager.isLoading)
 
-            if let errorMessage = authService.errorMessage {
+            if let errorMessage = authenticationManager.errorMessage {
                 Text(errorMessage)
                     .foregroundColor(.red)
                     .font(.caption)
                     .multilineTextAlignment(.center)
                     .onTapGesture {
-                        authService.clearError()
+                        authenticationManager.clearError()
                     }
             }
         }
         .padding(.horizontal)
     }
 
-    private var manualInputSection: some View {
+    private func manualInputSection(viewModel: QRCodeScannerViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("招待コードを入力")
                 .font(.headline)
 
             HStack {
-                TextField("招待コードを入力してください", text: $viewModel.inviteCode)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
+                TextField(
+                    "招待コードを入力してください",
+                    text: $viewModel.inviteCode
+                )
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
 
                 Button("検索") {
-                    if authService.isGoogleAuthenticated {
+                    print("検索ボタンが押されました")
+                    print(
+                        "authenticationManager.isGoogleAuthenticated: \(authenticationManager.isGoogleAuthenticated)"
+                    )
+                    print("viewModel.inviteCode: \(viewModel.inviteCode)")
+                    print("viewModel.isLoading: \(viewModel.isLoading)")
+
+                    if authenticationManager.isGoogleAuthenticated {
                         viewModel.searchUserByInviteCode(viewModel.inviteCode)
                     } else {
                         showingAuthRequired = true
                     }
                 }
                 .buttonStyle(.bordered)
-                .disabled(viewModel.inviteCode.isEmpty || viewModel.isLoading)
+                // 入力されているかつローディング状態でない場合のみ表示させる
+                .disabled(viewModel.inviteCode.isEmpty)
+
+                // .disabled(viewModel.inviteCode.isEmpty || viewModel.isLoading)
             }
         }
     }
@@ -141,7 +170,7 @@ struct QRCodeScannerView: View {
                 .foregroundColor(.secondary)
 
             Button(action: {
-                if authService.isGoogleAuthenticated {
+                if authenticationManager.isGoogleAuthenticated {
                     showingQRScanner = true
                 } else {
                     showingAuthRequired = true
@@ -272,9 +301,12 @@ struct QRCodeScannerView: View {
     }
 }
 
+
 // MARK: - Preview
 struct QRCodeScannerView_Previews: PreviewProvider {
     static var previews: some View {
+        let mockAuthManager = MockAuthenticationManager(isAuthenticated: true, isAnonymous: false)
         QRCodeScannerView()
+            .environmentObject(mockAuthManager)
     }
 }

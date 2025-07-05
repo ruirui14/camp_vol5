@@ -1,11 +1,19 @@
 import SwiftUI
 
 struct ListHeartBeatsView: View {
-    @StateObject private var viewModel = ListHeartBeatsViewModel()
-    @StateObject private var authService = AuthService.shared
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @StateObject private var viewModel: ListHeartBeatsViewModel
     @State private var showingQRShareSheet = false
     @State private var showingQRScannerSheet = false
     @State private var showingSettingsSheet = false
+
+    init() {
+        // 初期化時はダミーの AuthenticationManager を使用
+        // 実際の AuthenticationManager は @EnvironmentObject で注入される
+        _viewModel = StateObject(wrappedValue: ListHeartBeatsViewModel(
+            authenticationManager: AuthenticationManager()
+        ))
+    }
 
     var body: some View {
         NavigationView {
@@ -26,7 +34,7 @@ struct ListHeartBeatsView: View {
 
                         Button("再試行") {
                             viewModel.clearError()
-                            if authService.isGoogleAuthenticated {
+                            if authenticationManager.isGoogleAuthenticated {
                                 viewModel.loadFollowingUsersWithHeartbeats()
                             }
                         }
@@ -42,9 +50,12 @@ struct ListHeartBeatsView: View {
                 }
             }
             .navigationTitle(
-                authService.isGoogleAuthenticated
+                authenticationManager.isGoogleAuthenticated
                     ? "フォロー中" : "Heart Beat Monitor"
             )
+            .onAppear {
+                viewModel.updateAuthenticationManager(authenticationManager)
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
@@ -70,12 +81,15 @@ struct ListHeartBeatsView: View {
             }
             .sheet(isPresented: $showingQRShareSheet) {
                 QRCodeShareView()
+                    .environmentObject(authenticationManager)
             }
             .sheet(isPresented: $showingQRScannerSheet) {
                 QRCodeScannerView()
+                    .environmentObject(authenticationManager)
             }
             .sheet(isPresented: $showingSettingsSheet) {
                 SettingsView()
+                    .environmentObject(authenticationManager)
             }
         }
     }
@@ -110,9 +124,7 @@ struct ListHeartBeatsView: View {
             ForEach(viewModel.followingUsersWithHeartbeats) {
                 userWithHeartbeat in
                 NavigationLink(
-                    destination: HeartbeatDetailView(
-                        userId: userWithHeartbeat.user.id
-                    )
+                    destination: HeartbeatDetailView(userId: userWithHeartbeat.user.id)
                 ) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -196,5 +208,6 @@ struct FeatureRow: View {
 struct ListHeartBeatsView_Previews: PreviewProvider {
     static var previews: some View {
         ListHeartBeatsView()
+            .environmentObject(MockAuthenticationManager(isAuthenticated: true, isAnonymous: false))
     }
 }
