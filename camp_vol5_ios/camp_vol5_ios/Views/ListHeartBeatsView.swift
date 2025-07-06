@@ -10,9 +10,10 @@ struct ListHeartBeatsView: View {
     init() {
         // 初期化時はダミーの AuthenticationManager を使用
         // 実際の AuthenticationManager は @EnvironmentObject で注入される
-        _viewModel = StateObject(wrappedValue: ListHeartBeatsViewModel(
-            authenticationManager: AuthenticationManager()
-        ))
+        _viewModel = StateObject(
+            wrappedValue: ListHeartBeatsViewModel(
+                authenticationManager: AuthenticationManager()
+            ))
     }
 
     var body: some View {
@@ -208,6 +209,6 @@ struct FeatureRow: View {
 struct ListHeartBeatsView_Previews: PreviewProvider {
     static var previews: some View {
         ListHeartBeatsView()
-            .environmentObject(MockAuthenticationManager(isAuthenticated: true, isAnonymous: false))
+            .environmentObject(AuthenticationManager())
     }
 }
