@@ -127,49 +127,7 @@ struct ListHeartBeatsView: View {
                 NavigationLink(
                     destination: HeartbeatDetailView(userId: userWithHeartbeat.user.id)
                 ) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(userWithHeartbeat.user.name)
-                                .font(.headline)
-
-                            if let heartbeat = userWithHeartbeat.heartbeat {
-                                Text(
-                                    "更新: \(timeAgoString(from: heartbeat.timestamp))"
-                                )
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            } else {
-                                Text("データなし")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-
-                        Spacer()
-
-                        VStack(alignment: .trailing) {
-                            if let heartbeat = userWithHeartbeat.heartbeat {
-                                HStack {
-                                    Text("\(heartbeat.bpm)")
-                                        .font(.title2)
-                                        .fontWeight(.bold)
-                                    Text("bpm")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-
-                                Image(systemName: "heart.fill")
-                                    .foregroundColor(.red)
-                                    .font(.caption)
-                            } else {
-                                Text("--")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
+                    UserHeartbeatCard(userWithHeartbeat: userWithHeartbeat)
                 }
             }
         }
@@ -178,13 +136,6 @@ struct ListHeartBeatsView: View {
         }
     }
 
-    // MARK: - Helper Methods
-
-    private func timeAgoString(from date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
-    }
 }
 
 struct FeatureRow: View {
