@@ -10,9 +10,10 @@ struct QRCodeShareView: View {
     let filter = CIFilter.qrCodeGenerator()
 
     init() {
-        _viewModel = StateObject(wrappedValue: QRCodeShareViewModel(
-            authenticationManager: AuthenticationManager()
-        ))
+        _viewModel = StateObject(
+            wrappedValue: QRCodeShareViewModel(
+                authenticationManager: AuthenticationManager()
+            ))
     }
 
     var body: some View {
@@ -207,7 +208,32 @@ struct QRCodeShareView: View {
 
 struct QRCodeShareView_Previews: PreviewProvider {
     static var previews: some View {
-        QRCodeShareView()
-            .environmentObject(MockAuthenticationManager(isAuthenticated: true, isAnonymous: false))
+        Group {
+            // 未認証状態（デフォルト）
+            QRCodeShareView()
+                .environmentObject(AuthenticationManager())
+                .previewDisplayName("未認証状態")
+
+            // 認証済み状態をシミュレーション
+            QRCodeShareView()
+                .environmentObject(
+                    {
+                        let mockUser = User(
+                            id: "preview_user_id",
+                            name: "プレビューユーザー",
+                            inviteCode: "PREVIEW-CODE-123",
+                            allowQRRegistration: true,
+                            followingUserIds: []
+                        )
+                        let mockAuth = MockAuthenticationManager(
+                            isAuthenticated: true,
+                            isAnonymous: false,
+                            currentUser: mockUser
+                        )
+                        return unsafeBitCast(mockAuth, to: AuthenticationManager.self)
+                    }()
+                )
+                .previewDisplayName("Google認証済み状態")
+        }
     }
 }

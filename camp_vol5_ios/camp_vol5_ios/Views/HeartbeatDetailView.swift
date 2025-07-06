@@ -85,6 +85,6 @@ struct HeartbeatDetailView: View {
 struct HeartbeatDetailView_Previews: PreviewProvider {
     static var previews: some View {
         HeartbeatDetailView(userId: "preview_user_id")
-            .environmentObject(MockAuthenticationManager(isAuthenticated: true, isAnonymous: false))
+            .environmentObject(AuthenticationManager())
     }
 }

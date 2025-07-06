@@ -305,8 +305,7 @@ struct QRCodeScannerView: View {
 // MARK: - Preview
 struct QRCodeScannerView_Previews: PreviewProvider {
     static var previews: some View {
-        let mockAuthManager = MockAuthenticationManager(isAuthenticated: true, isAnonymous: false)
         QRCodeScannerView()
-            .environmentObject(mockAuthManager)
+            .environmentObject(AuthenticationManager())
     }
 }
