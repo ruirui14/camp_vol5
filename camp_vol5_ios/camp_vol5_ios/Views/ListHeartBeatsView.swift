@@ -52,7 +52,7 @@ struct ListHeartBeatsView: View {
             }
             .navigationTitle(
                 authenticationManager.isGoogleAuthenticated
-                    ? "フォロー中" : "Heart Beat Monitor"
+                    ? "鼓動一覧" : "Heart Beat Monitor"
             )
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
@@ -121,15 +121,18 @@ struct ListHeartBeatsView: View {
     }
 
     private var followingUsersList: some View {
-        List {
-            ForEach(viewModel.followingUsersWithHeartbeats) {
-                userWithHeartbeat in
-                NavigationLink(
-                    destination: HeartbeatDetailView(userId: userWithHeartbeat.user.id)
-                ) {
-                    UserHeartbeatCard(userWithHeartbeat: userWithHeartbeat)
+        ScrollView {
+            VStack(spacing: 10) {
+                ForEach(viewModel.followingUsersWithHeartbeats) { userWithHeartbeat in
+                    NavigationLink(
+                        destination: HeartbeatDetailView(userId: userWithHeartbeat.user.id)
+                    ) {
+                        UserHeartbeatCard(userWithHeartbeat: userWithHeartbeat)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
+            .padding(.top, 20)
         }
         .refreshable {
             viewModel.loadFollowingUsersWithHeartbeats()

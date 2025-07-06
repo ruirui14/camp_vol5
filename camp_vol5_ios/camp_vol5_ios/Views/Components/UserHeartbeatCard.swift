@@ -8,49 +8,31 @@ struct UserHeartbeatCard: View {
     let userWithHeartbeat: UserWithHeartbeat
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
+        ZStack(alignment: .bottomLeading) {
+            Image(userWithHeartbeat.user.imageName ?? "detail_pic")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 370, height: 120)
+                .clipped()
+                .cornerRadius(20)
+
+            HStack(spacing: 8) {
+                Image("heart_beat")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 60, height: 60)
+                    .clipShape(Circle())
+                    .offset(x: 290, y: -36)
+
                 Text(userWithHeartbeat.user.name)
-                    .font(.headline)
-
-                if let heartbeat = userWithHeartbeat.heartbeat {
-                    Text(
-                        "更新: \(timeAgoString(from: heartbeat.timestamp))"
-                    )
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                } else {
-                    Text("データなし")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundColor(Color(hex: "#F6F6F8"))
+                    .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+                    .offset(x: -50, y: -48)
             }
-
-            Spacer()
-
-            VStack(alignment: .trailing) {
-                if let heartbeat = userWithHeartbeat.heartbeat {
-                    HStack {
-                        Text("\(heartbeat.bpm)")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        Text("bpm")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Image(systemName: "heart.fill")
-                        .foregroundColor(.red)
-                        .font(.caption)
-                } else {
-                    Text("--")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.gray)
-                }
-            }
+            .padding()
         }
-        .padding(.vertical, 4)
+        .frame(width: 370, height: 120)
     }
 
     private func timeAgoString(from date: Date) -> String {
@@ -58,4 +40,48 @@ struct UserHeartbeatCard: View {
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: date, relativeTo: Date())
     }
+}
+
+#Preview {
+    VStack(spacing: 20) {
+        // データありのカード
+        UserHeartbeatCard(
+            userWithHeartbeat: UserWithHeartbeat(
+                user: User(
+                    id: "user1",
+                    name: "たろう",
+                    imageName: "taro"
+                ),
+                heartbeat: Heartbeat(
+                    userId: "user1",
+                    bpm: 72
+                )
+            ))
+
+        // 異なる画像のカード
+        UserHeartbeatCard(
+            userWithHeartbeat: UserWithHeartbeat(
+                user: User(
+                    id: "user2",
+                    name: "あやか",
+                    imageName: "ayuna_small"
+                ),
+                heartbeat: Heartbeat(
+                    userId: "user2",
+                    bpm: 85
+                )
+            ))
+
+        // データなしのカード
+        UserHeartbeatCard(
+            userWithHeartbeat: UserWithHeartbeat(
+                user: User(
+                    id: "user3",
+                    name: "るい",
+                    imageName: "taro"
+                ),
+                heartbeat: nil
+            ))
+    }
+    .padding()
 }
