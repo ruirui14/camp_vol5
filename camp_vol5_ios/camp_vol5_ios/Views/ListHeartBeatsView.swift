@@ -18,42 +18,55 @@ struct ListHeartBeatsView: View {
 
     var body: some View {
         NavigationView {
-            VStack {
-                if viewModel.isLoading {
-                    ProgressView("読み込み中...")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let errorMessage = viewModel.errorMessage {
-                    VStack(spacing: 20) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.largeTitle)
-                            .foregroundColor(.orange)
+            ZStack {
+                // 背景グラデーション
+                LinearGradient(
+                    gradient: Gradient(colors: [.main, .accent]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                            .padding()
+                VStack {
+                    if viewModel.isLoading {
+                        ProgressView("読み込み中...")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if let errorMessage = viewModel.errorMessage {
+                        VStack(spacing: 20) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.largeTitle)
+                                .foregroundColor(.orange)
 
-                        Button("再試行") {
-                            viewModel.clearError()
-                            if authenticationManager.isGoogleAuthenticated {
-                                viewModel.loadFollowingUsersWithHeartbeats()
+                            Text(errorMessage)
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.center)
+                                .padding()
+
+                            Button("再試行") {
+                                viewModel.clearError()
+                                if authenticationManager.isGoogleAuthenticated {
+                                    viewModel.loadFollowingUsersWithHeartbeats()
+                                }
                             }
+                            .buttonStyle(.borderedProminent)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if viewModel.followingUsersWithHeartbeats.isEmpty {
+                        // フォローユーザーがいない場合の表示
+                        emptyFollowingContent
+                    } else {
+                        // フォローユーザーのリスト表示
+                        followingUsersList
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if viewModel.followingUsersWithHeartbeats.isEmpty {
-                    // フォローユーザーがいない場合の表示
-                    emptyFollowingContent
-                } else {
-                    // フォローユーザーのリスト表示
-                    followingUsersList
                 }
             }
-            .navigationTitle(
-                authenticationManager.isGoogleAuthenticated
-                    ? "鼓動一覧" : "Heart Beat Monitor"
-            )
+            // .navigationTitle(
+            //     authenticationManager.isGoogleAuthenticated
+            //         ? "鼓動一覧" : "Heart Beat Monitor"
+            // )
+            // .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(Color.white, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
             }
@@ -64,6 +77,7 @@ struct ListHeartBeatsView: View {
                     }) {
                         Image(systemName: "gearshape")
                     }
+                    .foregroundColor(.main)
                 }
 
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
@@ -72,12 +86,14 @@ struct ListHeartBeatsView: View {
                     }) {
                         Image(systemName: "person.badge.plus")
                     }
+                    .foregroundColor(.main)
 
                     Button(action: {
                         showingQRShareSheet = true
                     }) {
                         Image(systemName: "qrcode")
                     }
+                    .foregroundColor(.main)
                 }
             }
             .sheet(isPresented: $showingQRShareSheet) {
@@ -98,24 +114,29 @@ struct ListHeartBeatsView: View {
     // MARK: - View Components
 
     private var emptyFollowingContent: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 10) {
             Image(systemName: "person.2.circle")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundColor(.white)
 
             Text("フォロー中のユーザーがいません")
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundColor(.white)
 
             Text("QRコードスキャンでユーザーを追加してみましょう")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(.white)
                 .multilineTextAlignment(.center)
+                .padding(.bottom, 20)
 
             Button("ユーザーを追加") {
                 showingQRScannerSheet = true
             }
-            .buttonStyle(.borderedProminent)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+            .background(Color.white)
+            .foregroundColor(.accent)
+            .cornerRadius(8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

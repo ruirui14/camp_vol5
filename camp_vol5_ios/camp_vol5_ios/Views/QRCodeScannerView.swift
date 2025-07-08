@@ -9,9 +9,10 @@ struct QRCodeScannerView: View {
     @Environment(\.presentationMode) var presentationMode
 
     init() {
-        _viewModel = StateObject(wrappedValue: QRCodeScannerViewModel(
-            authenticationManager: AuthenticationManager()
-        ))
+        _viewModel = StateObject(
+            wrappedValue: QRCodeScannerViewModel(
+                authenticationManager: AuthenticationManager()
+            ))
     }
 
     var body: some View {
@@ -35,6 +36,9 @@ struct QRCodeScannerView: View {
             .padding()
             .navigationTitle("フォローユーザー追加")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.main, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
             }
@@ -128,6 +132,7 @@ struct QRCodeScannerView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("招待コードを入力")
                 .font(.headline)
+                .foregroundColor(Color.text)
 
             HStack {
                 TextField(
@@ -179,14 +184,20 @@ struct QRCodeScannerView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "qrcode.viewfinder")
                         .font(.title2)
-                    Text("QRコードをスキャン")
+                    Text("QRコードで追加する")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
                         .font(.headline)
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
+                .foregroundColor(.text)
                 .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(.main, lineWidth: 1)
+                )
             }
             .disabled(viewModel.isLoading)
         }
@@ -300,7 +311,6 @@ struct QRCodeScannerView: View {
         }
     }
 }
-
 
 // MARK: - Preview
 struct QRCodeScannerView_Previews: PreviewProvider {

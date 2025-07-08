@@ -28,6 +28,9 @@ struct QRCodeShareView: View {
             .padding()
             .navigationTitle("QRコード共有")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(.main, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
                 // Google認証済みの場合、ユーザー情報を読み込み
@@ -51,9 +54,28 @@ struct QRCodeShareView: View {
         VStack(spacing: 30) {
             if let inviteCode = viewModel.inviteCode {
                 VStack(spacing: 20) {
-                    Text("このコードをスキャンして\nフォローしてもらいましょう")
-                        .font(.headline)
-                        .multilineTextAlignment(.center)
+                    VStack(spacing: 8) {
+                        Text("あなたの招待コード")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.accent)
+
+                        HStack {
+                            Text(inviteCode)
+                                .font(.system(.body, design: .monospaced))
+                                .foregroundColor(.primary)
+
+                            Button(action: {
+                                UIPasteboard.general.string = inviteCode
+                            }) {
+                                Image(systemName: "doc.on.doc")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    }
 
                     Image(uiImage: generateQRCode(from: inviteCode))
                         .resizable()
@@ -69,37 +91,31 @@ struct QRCodeShareView: View {
                             y: 4
                         )
 
-                    VStack(spacing: 8) {
-                        Text("招待コード")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-
-                        Text(inviteCode)
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(8)
-                    }
-
                     Button(action: {
                         viewModel.generateNewInviteCode()
                     }) {
-                        HStack {
+                        HStack(spacing: 8) {
                             if viewModel.isLoading {
                                 ProgressView()
                                     .scaleEffect(0.8)
                             } else {
                                 Image(systemName: "arrow.clockwise")
+                                    .font(.title2)
                             }
                             Text("新しいコードを生成")
+                                .font(.headline)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.headline)
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
+                        .foregroundColor(.text)
                         .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(.main, lineWidth: 1)
+                        )
                     }
                     .disabled(viewModel.isLoading)
                 }
