@@ -73,7 +73,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
             }
             return
         }
-                
+        
         let typesToRead: Set = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,
             HKObjectType.workoutType()
@@ -83,7 +83,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
         let typesToShare: Set = [
             HKObjectType.workoutType()
         ]
-                
+        
         healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { success, error in
             
             DispatchQueue.main.async {
@@ -93,7 +93,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
                     // 実際の権限状態を再確認
                     let heartRateAuth = self.healthStore.authorizationStatus(for: HKObjectType.quantityType(forIdentifier: .heartRate)!)
                     let workoutAuth = self.healthStore.authorizationStatus(for: HKObjectType.workoutType())
-
+                    
                     switch heartRateAuth {
                     case .sharingAuthorized:
                         self.heartRateDetectionStatus = "HealthKit権限OK"
@@ -243,7 +243,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
     }
     
     func startSending() {
-        guard !isSending, !isStarting else { 
+        guard !isSending, !isStarting else {
             return
         }
         
@@ -269,13 +269,13 @@ class WatchHeartRateManager: NSObject, ObservableObject {
                 self.heartRateDetectionStatus = "HealthKit権限が必要です"
             }
             return
-//        case .sharingDenied:
-//            DispatchQueue.main.async {
-//                // self.isStarting = false
-//                self.heartRateDetectionStatus = "HealthKit権限が拒否されています"
-//            }
-//            return
-//        case .sharingAuthorized:
+            //        case .sharingDenied:
+            //            DispatchQueue.main.async {
+            //                // self.isStarting = false
+            //                self.heartRateDetectionStatus = "HealthKit権限が拒否されています"
+            //            }
+            //            return
+            //        case .sharingAuthorized:
         @unknown default:
             print("HealthKit authorization: unknown")
         }
@@ -405,7 +405,7 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate, HK
         guard let type = userInfo["type"] as? String else {
             return
         }
-                
+        
         if type == "selectUser" {
             if let userData = userInfo["user"] as? [String: Any] {
                 handleUserSelection(userData)
@@ -429,7 +429,11 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate, HK
                     self.startSending()
                 }
             }
-        } 
+        } catch {
+            DispatchQueue.main.async {
+                print("error decoding user: \(error)")
+            }
+        }
     }
     
     private func handleUserInfoData(_ data: [String: Any]) {
@@ -485,7 +489,7 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate, HK
         }
     }
     
-    func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {        
+    func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {
         for type in collectedTypes {
             if type == HKObjectType.quantityType(forIdentifier: .heartRate) {
                 guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate),
