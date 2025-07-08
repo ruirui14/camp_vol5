@@ -111,14 +111,16 @@ struct ListHeartBeatsView: View {
     private var emptyFollowingContent: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(spacing: 10) {
+                VStack(spacing: 0) {
                     Image(systemName: "person.2.circle")
                         .font(.system(size: 60))
                         .foregroundColor(.white)
+                        .padding(.bottom, 10)
 
                     Text("フォロー中のユーザーがいません")
                         .font(.headline)
                         .foregroundColor(.white)
+                        .padding(.bottom, 5)
 
                     Text("QRコードスキャンでユーザーを追加してみましょう")
                         .font(.caption)
@@ -132,6 +134,8 @@ struct ListHeartBeatsView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
                     .background(Color.white)
+                    .font(.headline)
+                    .fontWeight(.bold)
                     .foregroundColor(.accent)
                     .cornerRadius(8)
                 }
