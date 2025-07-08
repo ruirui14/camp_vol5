@@ -60,11 +60,6 @@ struct ListHeartBeatsView: View {
                     }
                 }
             }
-            // .navigationTitle(
-            //     authenticationManager.isGoogleAuthenticated
-            //         ? "鼓動一覧" : "Heart Beat Monitor"
-            // )
-            // .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(Color.white, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
@@ -114,31 +109,41 @@ struct ListHeartBeatsView: View {
     // MARK: - View Components
 
     private var emptyFollowingContent: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "person.2.circle")
-                .font(.system(size: 60))
-                .foregroundColor(.white)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 10) {
+                    Image(systemName: "person.2.circle")
+                        .font(.system(size: 60))
+                        .foregroundColor(.white)
 
-            Text("フォロー中のユーザーがいません")
-                .font(.headline)
-                .foregroundColor(.white)
+                    Text("フォロー中のユーザーがいません")
+                        .font(.headline)
+                        .foregroundColor(.white)
 
-            Text("QRコードスキャンでユーザーを追加してみましょう")
-                .font(.caption)
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-                .padding(.bottom, 20)
+                    Text("QRコードスキャンでユーザーを追加してみましょう")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 20)
 
-            Button("ユーザーを追加") {
-                showingQRScannerSheet = true
+                    Button("ユーザーを追加") {
+                        showingQRScannerSheet = true
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+                    .foregroundColor(.accent)
+                    .cornerRadius(8)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: geometry.size.height)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(Color.white)
-            .foregroundColor(.accent)
-            .cornerRadius(8)
+            .refreshable {
+                print("refresh")
+                viewModel.loadFollowingUsersWithHeartbeats()
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var followingUsersList: some View {
