@@ -189,7 +189,6 @@ extension QRScannerViewController: AVCaptureMetadataOutputObjectsDelegate {
             AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
 
             delegate?.didScanQRCode(stringValue)
-            dismiss(animated: true)
         }
     }
 }
