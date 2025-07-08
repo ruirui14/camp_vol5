@@ -134,6 +134,13 @@ class QRCodeScannerViewModel: ObservableObject {
                     } else {
                         self?.isFollowingUser = true
                         self?.successMessage = "\(user.name)さんをフォローしました"
+
+                        // フォロー成功後、現在のユーザー情報を更新
+                        if let currentUserId = self?.authenticationManager.currentUserId {
+                            self?.authenticationManager.loadCurrentUser(
+                                uid: currentUserId)
+                        }
+
                         // フォロー成功後、2秒後にページを閉じる
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                             self?.shouldDismiss = true
@@ -169,6 +176,12 @@ class QRCodeScannerViewModel: ObservableObject {
                     } else {
                         self?.isFollowingUser = false
                         self?.successMessage = "\(user.name)さんのフォローを解除しました"
+
+                        // フォロー成功後、現在のユーザー情報を更新
+                        if let currentUserId = self?.authenticationManager.currentUserId {
+                            self?.authenticationManager.loadCurrentUser(
+                                uid: currentUserId)
+                        }
                     }
                 },
                 receiveValue: { _ in }

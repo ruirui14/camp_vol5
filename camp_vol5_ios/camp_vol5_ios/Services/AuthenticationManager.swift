@@ -147,7 +147,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
     /// Firestoreからユーザー情報を取得
     /// - Parameter uid: ユーザーID
-    private func loadCurrentUser(uid: String) {
+    func loadCurrentUser(uid: String) {
         UserService.shared.getUser(uid: uid)
             .receive(on: DispatchQueue.main)
             .sink(
