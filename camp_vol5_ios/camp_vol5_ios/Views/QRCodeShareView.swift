@@ -5,7 +5,6 @@ struct QRCodeShareView: View {
     @StateObject private var viewModel: QRCodeShareViewModel
     @Environment(\.presentationMode) var presentationMode
 
-
     init() {
         _viewModel = StateObject(
             wrappedValue: QRCodeShareViewModel(
@@ -88,32 +87,49 @@ struct QRCodeShareView: View {
                         Button(action: {
                             viewModel.generateNewInviteCode()
                         }) {
-                            HStack {
+                            VStack {
                                 Image(systemName: "arrow.clockwise")
+                                    .foregroundColor(.text)
+                                Text("更新")
+                                    .font(.caption)
+                                    .foregroundColor(.text)
                             }
                         }
                         // リンク
                         Button(action: {
                             UIPasteboard.general.string = inviteCode
                         }) {
-                            HStack {
+                            VStack {
                                 Image(systemName: "link")
+                                    .foregroundColor(.text)
+                                Text("リンクをコピー")
+                                    .font(.caption)
+                                    .foregroundColor(.text)
                             }
                         }
 
                         // シェア
                         ShareLink(item: URL(string: "https://developer.apple.com/xcode/swiftui/")!)
                         {
-                            Image(systemName: "square.and.arrow.up")
-                                .foregroundColor(.blue)
+                            VStack {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundColor(.text)
+                                Text("シェア")
+                                    .font(.caption)
+                                    .foregroundColor(.text)
+                            }
                         }
 
                         // 保存
                         Button(action: {
                             viewModel.saveQRCodeToPhotos()
                         }) {
-                            HStack {
+                            VStack {
                                 Image(systemName: "arrow.down.to.line")
+                                    .foregroundColor(.text)
+                                Text("保存")
+                                    .font(.caption)
+                                    .foregroundColor(.text)
                             }
                         }
                     }
