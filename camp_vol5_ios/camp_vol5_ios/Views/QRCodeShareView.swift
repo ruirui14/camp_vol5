@@ -63,8 +63,10 @@ struct QRCodeShareView: View {
 
     private var authenticatedContent: some View {
         VStack(spacing: 30) {
+            Spacer()
+
             if let inviteCode = viewModel.inviteCode {
-                VStack(spacing: 20) {
+                VStack(spacing: 40) {
                     //QRコード
                     Image(uiImage: viewModel.generateQRCode(from: inviteCode))
                         .resizable()
@@ -82,55 +84,63 @@ struct QRCodeShareView: View {
 
                     // ボタンたち
 
-                    HStack(spacing: 20) {
+                    HStack(alignment: .top, spacing: 20) {
                         // 更新
                         Button(action: {
                             viewModel.generateNewInviteCode()
                         }) {
-                            VStack {
+                            VStack(spacing: 8) {
                                 Image(systemName: "arrow.clockwise")
                                     .foregroundColor(.text)
+                                    .font(.title3)
                                 Text("更新")
-                                    .font(.caption)
+                                    .font(.caption.weight(.semibold))
                                     .foregroundColor(.text)
                             }
+                            .frame(minWidth: 60)
                         }
                         // リンク
                         Button(action: {
                             UIPasteboard.general.string = inviteCode
                         }) {
-                            VStack {
+                            VStack(spacing: 8) {
                                 Image(systemName: "link")
                                     .foregroundColor(.text)
+                                    .font(.title3)
                                 Text("リンクをコピー")
-                                    .font(.caption)
+                                    .font(.caption.weight(.semibold))
                                     .foregroundColor(.text)
                             }
+                            .frame(minWidth: 60)
                         }
 
                         // シェア
                         ShareLink(item: URL(string: "https://developer.apple.com/xcode/swiftui/")!)
                         {
-                            VStack {
+                            VStack(spacing: 8) {
                                 Image(systemName: "square.and.arrow.up")
                                     .foregroundColor(.text)
+                                    .font(.title3)
                                 Text("シェア")
-                                    .font(.caption)
+                                    .font(.caption.weight(.semibold))
                                     .foregroundColor(.text)
                             }
+                            .frame(minWidth: 60)
                         }
 
                         // 保存
                         Button(action: {
                             viewModel.saveQRCodeToPhotos()
                         }) {
-                            VStack {
+                            VStack(spacing: 8) {
                                 Image(systemName: "arrow.down.to.line")
                                     .foregroundColor(.text)
+                                    .font(.title3)
                                 Text("保存")
-                                    .font(.caption)
+                                    .font(.caption.weight(.semibold))
                                     .foregroundColor(.text)
                             }
+                            .frame(minWidth: 60)
                         }
                     }
                 }
