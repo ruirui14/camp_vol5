@@ -1,10 +1,17 @@
 import CoreImage.CIFilterBuiltins
+import Photos
 import SwiftUI
 
 struct QRCodeShareView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel: QRCodeShareViewModel
     @Environment(\.presentationMode) var presentationMode
+
+    // QRコード保存関連
+    @State private var showingSaveAlert = false
+    @State private var saveAlertTitle = ""
+    @State private var saveAlertMessage = ""
+    @State private var showingPermissionAlert = false
 
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
@@ -38,6 +45,21 @@ struct QRCodeShareView: View {
                     authenticationManager.refreshCurrentUser()
                 }
             }
+            .alert("保存完了", isPresented: $showingSaveAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(saveAlertMessage)
+            }
+            .alert("写真へのアクセス許可", isPresented: $showingPermissionAlert) {
+                Button("キャンセル", role: .cancel) {}
+                Button("設定を開く") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+            } message: {
+                Text("QRコードを保存するには、設定で写真へのアクセスを許可してください。")
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("完了") {
@@ -54,29 +76,7 @@ struct QRCodeShareView: View {
         VStack(spacing: 30) {
             if let inviteCode = viewModel.inviteCode {
                 VStack(spacing: 20) {
-                    VStack(spacing: 8) {
-                        Text("あなたの招待コード")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.accent)
-
-                        HStack {
-                            Text(inviteCode)
-                                .font(.system(.body, design: .monospaced))
-                                .foregroundColor(.primary)
-
-                            Button(action: {
-                                UIPasteboard.general.string = inviteCode
-                            }) {
-                                Image(systemName: "doc.on.doc")
-                                    .foregroundColor(.blue)
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                    }
-
+                    //QRコード
                     Image(uiImage: generateQRCode(from: inviteCode))
                         .resizable()
                         .interpolation(.none)
@@ -91,33 +91,42 @@ struct QRCodeShareView: View {
                             y: 4
                         )
 
-                    Button(action: {
-                        viewModel.generateNewInviteCode()
-                    }) {
-                        HStack(spacing: 8) {
-                            if viewModel.isLoading {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            } else {
+                    // ボタンたち
+
+                    HStack(spacing: 20) {
+                        // 更新
+                        Button(action: {
+                            viewModel.generateNewInviteCode()
+                        }) {
+                            HStack {
                                 Image(systemName: "arrow.clockwise")
-                                    .font(.title2)
                             }
-                            Text("新しいコードを生成")
-                                .font(.headline)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.headline)
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .foregroundColor(.text)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(.main, lineWidth: 1)
-                        )
+                        // リンク
+                        Button(action: {
+                            UIPasteboard.general.string = inviteCode
+                        }) {
+                            HStack {
+                                Image(systemName: "link")
+                            }
+                        }
+
+                        // シェア
+                        ShareLink(item: URL(string: "https://developer.apple.com/xcode/swiftui/")!)
+                        {
+                            Image(systemName: "square.and.arrow.up")
+                                .foregroundColor(.blue)
+                        }
+
+                        // 保存
+                        Button(action: {
+                            saveQRCodeToPhotos()
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.down.to.line")
+                            }
+                        }
                     }
-                    .disabled(viewModel.isLoading)
                 }
             } else {
                 VStack(spacing: 20) {
@@ -219,6 +228,122 @@ struct QRCodeShareView: View {
         }
 
         return UIImage(systemName: "xmark.circle") ?? UIImage()
+    }
+
+    // MARK: - Save to Photos
+
+    private func saveQRCodeToPhotos() {
+        guard let inviteCode = viewModel.inviteCode else { return }
+
+        // 高解像度のQRコードを生成
+        let qrImage = generateHighResolutionQRCode(from: inviteCode)
+
+        // 写真ライブラリへのアクセス権限を確認
+        checkPhotoLibraryPermission { authorized in
+            if authorized {
+                // 権限がある場合は保存
+                saveImageToPhotoLibrary(qrImage)
+            } else {
+                // 権限がない場合はアラートを表示
+                showingPermissionAlert = true
+            }
+        }
+    }
+
+    private func saveImageToPhotoLibrary(_ image: UIImage) {
+        // PHPhotoLibraryを使用して保存
+        PHPhotoLibrary.shared().performChanges {
+            PHAssetChangeRequest.creationRequestForAsset(from: image)
+        } completionHandler: { success, error in
+            DispatchQueue.main.async {
+                if let error = error {
+                    self.saveAlertTitle = "保存エラー"
+                    self.saveAlertMessage = error.localizedDescription
+                } else if success {
+                    self.saveAlertTitle = "保存完了"
+                    self.saveAlertMessage = "QRコードが写真に保存されました"
+                } else {
+                    self.saveAlertTitle = "保存エラー"
+                    self.saveAlertMessage = "QRコードの保存に失敗しました"
+                }
+                self.showingSaveAlert = true
+            }
+        }
+    }
+
+    private func generateHighResolutionQRCode(from string: String) -> UIImage {
+        filter.message = Data(string.utf8)
+
+        if let outputImage = filter.outputImage {
+            // より高解像度で生成（20倍）
+            let transform = CGAffineTransform(scaleX: 20, y: 20)
+            let scaledImage = outputImage.transformed(by: transform)
+
+            if let cgimg = context.createCGImage(scaledImage, from: scaledImage.extent) {
+                let uiImage = UIImage(cgImage: cgimg)
+
+                // 背景サイズを計算（QRコードのみ）
+                let padding: CGFloat = 50
+                let size = CGSize(
+                    width: uiImage.size.width + (padding * 2),
+                    height: uiImage.size.height + (padding * 2)
+                )
+
+                UIGraphicsBeginImageContextWithOptions(size, false, 0)
+
+                // グラデーション背景を描画
+                let colorSpace = CGColorSpaceCreateDeviceRGB()
+                let colors = [
+                    UIColor(Color.main).cgColor,
+                    UIColor(Color.accent).cgColor,
+                ]
+                let gradient = CGGradient(
+                    colorsSpace: colorSpace, colors: colors as CFArray, locations: [0.0, 1.0])!
+
+                let context = UIGraphicsGetCurrentContext()!
+                context.drawLinearGradient(
+                    gradient,
+                    start: CGPoint(x: 0, y: 0),
+                    end: CGPoint(x: size.width, y: size.height),
+                    options: []
+                )
+
+                // QRコードを中央に描画
+                let qrDrawRect = CGRect(
+                    x: (size.width - uiImage.size.width) / 2,
+                    y: (size.height - uiImage.size.height) / 2,
+                    width: uiImage.size.width,
+                    height: uiImage.size.height
+                )
+                uiImage.draw(in: qrDrawRect)
+
+                let finalImage = UIGraphicsGetImageFromCurrentImageContext()
+                UIGraphicsEndImageContext()
+
+                return finalImage ?? uiImage
+            }
+        }
+
+        return UIImage(systemName: "xmark.circle") ?? UIImage()
+    }
+
+    private func checkPhotoLibraryPermission(completion: @escaping (Bool) -> Void) {
+        let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
+
+        switch status {
+        case .authorized, .limited:
+            completion(true)
+        case .denied, .restricted:
+            completion(false)
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .addOnly) { newStatus in
+                DispatchQueue.main.async {
+                    completion(newStatus == .authorized || newStatus == .limited)
+                }
+            }
+        @unknown default:
+            completion(false)
+        }
     }
 }
 
