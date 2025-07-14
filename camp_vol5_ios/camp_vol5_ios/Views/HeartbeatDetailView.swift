@@ -1,61 +1,71 @@
+import PhotosUI
 import SwiftUI
 
 struct HeartbeatDetailView: View {
     @StateObject private var viewModel: HeartbeatDetailViewModel
+    @State private var selectedImageItem: PhotosPickerItem?
+    @State private var backgroundImage: UIImage?
+    @State private var showingImagePicker = false
 
     init(userId: String) {
         _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
     }
-    
+
     init(userWithHeartbeat: UserWithHeartbeat) {
-        _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat))
+        _viewModel = StateObject(
+            wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat))
     }
 
     var body: some View {
-        VStack(spacing: 20) {
-            // 監視状態を表示
-            HStack {
-                Circle()
-                    .fill(viewModel.isMonitoring ? Color.green : Color.red)
-                    .frame(width: 10, height: 10)
-                Text(viewModel.isMonitoring ? "Monitoring" : "Not Monitoring")
-                    .font(.caption)
-                    .foregroundColor(viewModel.isMonitoring ? .green : .red)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background((viewModel.isMonitoring ? Color.green : Color.red).opacity(0.2))
-            .cornerRadius(10)
+        ZStack {
+            // Background image or gradient
+            backgroundView
 
-            if let heartbeat = viewModel.currentHeartbeat {
-                Text("\(heartbeat.bpm)")
-                    .font(.system(size: 80, weight: .bold))
-                Text("bpm")
-                    .font(.title)
-                Text(
-                    "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
-                )
-                .font(.caption)
-                .foregroundColor(.gray)
-            } else {
-                Text("--")
-                    .font(.system(size: 80, weight: .bold))
-                Text("bpm")
-                    .font(.title)
-                Text("No data available")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
+            VStack(spacing: 20) {
+                Spacer()
+                Spacer()
+                Spacer()
+                heartbeatDisplayView
 
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .padding()
+                if let heartbeat = viewModel.currentHeartbeat {
+                    Text(
+                        "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
+                    )
+                    .font(.caption)
+                    .foregroundColor(backgroundImage != nil ? .white : .gray)
+                    .shadow(
+                        color: backgroundImage != nil ? Color.black.opacity(0.5) : Color.clear,
+                        radius: 1, x: 0, y: 1)
+                } else {
+                    Text("No data available")
+                        .font(.caption)
+                        .foregroundColor(backgroundImage != nil ? .white : .gray)
+                        .shadow(
+                            color: backgroundImage != nil ? Color.black.opacity(0.5) : Color.clear,
+                            radius: 1, x: 0, y: 1)
+                }
+
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .padding()
+                }
+                
+                Spacer()
             }
+            .padding()
         }
         .navigationTitle(viewModel.user?.name ?? "読み込み中...")
         .navigationBarTitleDisplayMode(.inline)
         .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                PhotosPicker(selection: $selectedImageItem, matching: .images) {
+                    Image(systemName: "photo")
+                        .foregroundColor(.white)
+                }
+            }
+        }
         .onAppear {
             viewModel.startContinuousMonitoring()
         }
@@ -69,7 +79,52 @@ struct HeartbeatDetailView: View {
                 viewModel.stopMonitoring()
             }
         }
-        .padding()
+        .onChange(of: selectedImageItem) { _ in
+            Task {
+                if let data = try? await selectedImageItem?.loadTransferable(type: Data.self) {
+                    backgroundImage = UIImage(data: data)
+                }
+            }
+        }
+    }
+
+    // MARK: - View Components
+
+    private var backgroundView: some View {
+        Group {
+            if let backgroundImage = backgroundImage {
+                Image(uiImage: backgroundImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .overlay(
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                    )
+            } else {
+                LinearGradient(
+                    gradient: Gradient(colors: [.main, .accent]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+            }
+        }
+    }
+
+    private var heartbeatDisplayView: some View {
+        ZStack {
+            Image("heart_beat")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 105, height: 92)
+                .clipShape(Circle())
+
+            Text(viewModel.currentHeartbeat?.bpm.description ?? "--")
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+        }
     }
 
     private var dateFormatter: DateFormatter {
