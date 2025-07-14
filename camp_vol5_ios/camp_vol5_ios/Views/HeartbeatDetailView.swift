@@ -102,7 +102,7 @@ struct HeartbeatDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingImageEditor) {
+        .fullScreenCover(isPresented: $showingImageEditor) {
             if let image = previewImage {
                 ImageEditorView(
                     image: image,

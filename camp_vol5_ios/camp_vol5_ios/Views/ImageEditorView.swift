@@ -8,95 +8,106 @@ struct ImageEditorView: View {
     @Binding var lastScale: CGFloat
     let onApply: () -> Void
     let onCancel: () -> Void
-    
+
     @State private var lastOffset: CGSize = .zero
-    
+
     var body: some View {
-        NavigationView {
-            ZStack {
-                // 背景
-                Color.black.ignoresSafeArea()
-                
-                // 編集可能な画像
+        ZStack {
+            Group {
                 Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
+                    .aspectRatio(contentMode: .fill)
                     .scaleEffect(scale)
                     .offset(offset)
-                    .clipped()
-                    .gesture(
-                        SimultaneousGesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    offset = CGSize(
-                                        width: lastOffset.width + value.translation.width,
-                                        height: lastOffset.height + value.translation.height
-                                    )
-                                }
-                                .onEnded { value in
-                                    lastOffset = offset
-                                },
-                            MagnificationGesture()
-                                .onChanged { value in
-                                    let newScale = lastScale * value
-                                    scale = max(0.5, min(newScale, 3.0)) // 0.5x から 3.0x に制限
-                                }
-                                .onEnded { value in
-                                    lastScale = scale
-                                }
-                        )
+                    .ignoresSafeArea()
+                    .overlay(
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
                     )
-                
-                // オーバーレイ（ジェスチャーを妨げないように画像の外に配置）
-                ZStack {
-                    Color.clear
-                    VStack {
-                        Rectangle()
-                            .fill(Color.black.opacity(0.3))
-                            .frame(height: 100)
-                        Spacer()
-                        Rectangle()
-                            .fill(Color.black.opacity(0.3))
-                            .frame(height: 100)
-                    }
-                }
-                .allowsHitTesting(false)
-                
-                // 操作説明
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 8) {
-                            Text("ドラッグで移動")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                            Text("ピンチで拡大縮小")
-                                .font(.caption)
-                                .foregroundColor(.white)
-                        }
-                        .padding()
-                        .background(Color.black.opacity(0.6))
-                        .cornerRadius(8)
-                        .padding()
-                    }
-                }
             }
-            .navigationTitle("画像を調整")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button("キャンセル") {
-                    onCancel()
-                }
-                .foregroundColor(.white),
-                trailing: Button("適用") {
-                    onApply()
-                }
-                .foregroundColor(.white)
-                .fontWeight(.bold)
+            .gesture(
+                SimultaneousGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            offset = CGSize(
+                                width: lastOffset.width + value.translation.width,
+                                height: lastOffset.height + value.translation.height
+                            )
+                        }
+                        .onEnded { value in
+                            lastOffset = offset
+                        },
+                    MagnificationGesture()
+                        .onChanged { value in
+                            let newScale = lastScale * value
+                            scale = max(0.5, min(newScale, 3.0))  // 0.5x から 3.0x に制限
+                        }
+                        .onEnded { value in
+                            lastScale = scale
+                        }
+                )
             )
-            .toolbarBackground(Color.black, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+
+            VStack(spacing: 20) {
+                Spacer()
+                Spacer()
+                Spacer()
+
+                ZStack {
+                    Image("heart_beat")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 105, height: 92)
+                        .clipShape(Circle())
+
+                    Text("--")
+                        .font(.system(size: 32, weight: .semibold))
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                }
+
+                Text("No data available")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+
+                // エラーメッセージの領域（空だが構造を一致させるため）
+                Color.clear
+                    .frame(height: 0)
+
+                Spacer()
+            }
+            .padding()
+            .allowsHitTesting(false)
+
+            VStack {
+                HStack {
+                    Button("キャンセル") {
+                        onCancel()
+                    }
+                    .foregroundColor(.white)
+                    .padding()
+
+                    Spacer()
+
+                    Text("画像を調整")
+                        .foregroundColor(.white)
+                        .font(.headline)
+
+                    Spacer()
+
+                    Button("適用") {
+                        onApply()
+                    }
+                    .foregroundColor(.white)
+                    .fontWeight(.bold)
+                    .padding()
+                }
+                .background(Color.black.opacity(0.3))
+
+                Spacer()
+            }
+            .allowsHitTesting(true)
         }
     }
 }
