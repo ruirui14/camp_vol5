@@ -6,6 +6,10 @@ struct HeartbeatDetailView: View {
     init(userId: String) {
         _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
     }
+    
+    init(userWithHeartbeat: UserWithHeartbeat) {
+        _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat))
+    }
 
     var body: some View {
         VStack(spacing: 20) {

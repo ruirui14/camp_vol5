@@ -155,7 +155,7 @@ struct ListHeartBeatsView: View {
             VStack(spacing: 10) {
                 ForEach(viewModel.followingUsersWithHeartbeats) { userWithHeartbeat in
                     NavigationLink(
-                        destination: HeartbeatDetailView(userId: userWithHeartbeat.user.id)
+                        destination: HeartbeatDetailView(userWithHeartbeat: userWithHeartbeat)
                     ) {
                         UserHeartbeatCard(userWithHeartbeat: userWithHeartbeat)
                     }

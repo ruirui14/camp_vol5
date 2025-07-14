@@ -16,6 +16,12 @@ class HeartbeatDetailViewModel: ObservableObject {
         self.userId = userId
         loadUserInfo()
     }
+    
+    init(userWithHeartbeat: UserWithHeartbeat) {
+        self.userId = userWithHeartbeat.user.id
+        self.user = userWithHeartbeat.user
+        self.currentHeartbeat = userWithHeartbeat.heartbeat
+    }
 
     // ユーザー情報を取得
     private func loadUserInfo() {
