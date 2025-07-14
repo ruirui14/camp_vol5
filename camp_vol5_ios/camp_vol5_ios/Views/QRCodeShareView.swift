@@ -24,9 +24,7 @@ struct QRCodeShareView: View {
             .padding()
             .navigationTitle("QRコード共有")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(.main, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
                 // Google認証済みの場合、ユーザー情報を読み込み
@@ -54,6 +52,7 @@ struct QRCodeShareView: View {
                     Button("完了") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .foregroundColor(.white)
                 }
             }
         }

@@ -28,6 +28,7 @@ struct SettingsView: View {
             }
             .navigationTitle("設定")
             .navigationBarTitleDisplayMode(.inline)
+            .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
                 if authenticationManager.isGoogleAuthenticated {
@@ -53,6 +54,7 @@ struct SettingsView: View {
                     Button("完了") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .foregroundColor(.white)
                 }
             }
             .alert(

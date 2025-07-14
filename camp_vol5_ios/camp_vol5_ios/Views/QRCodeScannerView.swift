@@ -36,9 +36,7 @@ struct QRCodeScannerView: View {
             .padding()
             .navigationTitle("フォローユーザー追加")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbarBackground(.main, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
             }
@@ -54,6 +52,7 @@ struct QRCodeScannerView: View {
                     Button("キャンセル") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .foregroundColor(.white)
                 }
             }
             .sheet(isPresented: $showingQRScanner) {
