@@ -9,15 +9,6 @@ struct HeartbeatDetailView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            if let user = viewModel.user {
-                Text(user.name)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-            } else {
-                Text("Loading user...")
-                    .font(.largeTitle)
-            }
-
             // 監視状態を表示
             HStack {
                 Circle()
@@ -58,6 +49,9 @@ struct HeartbeatDetailView: View {
                     .padding()
             }
         }
+        .navigationTitle(viewModel.user?.name ?? "読み込み中...")
+        .navigationBarTitleDisplayMode(.inline)
+        .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
         .onAppear {
             viewModel.startContinuousMonitoring()
         }
