@@ -1,8 +1,6 @@
 // Views/ImageEditorView.swift
-
+// 画像編集用のモーダルビュー - 修正版
 import SwiftUI
-
-// 画像編集用のモーダルビュー
 
 struct ImageEditorView: View {
     let image: UIImage
@@ -18,124 +16,143 @@ struct ImageEditorView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Group {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .scaleEffect(scale)
-                        .offset(offset)
-                        .ignoresSafeArea()
-                        .overlay(
-                            Color.black.opacity(0.3)
-                                .ignoresSafeArea()
-                        )
-                }
-                .gesture(
-                    SimultaneousGesture(
-                        DragGesture()
-                            .onChanged { value in
-                                offset = CGSize(
-                                    width: lastOffset.width + value.translation.width,
-                                    height: lastOffset.height + value.translation.height
-                                )
-                            }
-                            .onEnded { value in
-                                lastOffset = offset
-                            },
-                        MagnificationGesture()
-                            .onChanged { value in
-                                let newScale = lastScale * value
-                                scale = max(0.5, min(newScale, 3.0))  // 0.5x から 3.0x に制限
-                            }
-                            .onEnded { value in
-                                lastScale = scale
-                            }
-                    )
-                )
-                VStack(spacing: 20) {
-                    Spacer()
-                    Spacer()
-                    Spacer()
-                    VStack(spacing: 8) {
-                        ZStack {
-                            Image("heart_beat")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 105, height: 92)
-                                .clipShape(Circle())
-                            Text("--")
-                                .font(.system(size: 32, weight: .semibold))
-                                .foregroundColor(.white)
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                        }
+                // 背景画像レイヤー
+                backgroundImageLayer(geometry: geometry)
 
-                        // HeartbeatDetailViewと同じ条件分岐構造にする
-                        Text("No data available")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                            .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
-                    }
-                    .offset(heartOffset)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                heartOffset = CGSize(
-                                    width: lastHeartOffset.width + value.translation.width,
-                                    height: lastHeartOffset.height + value.translation.height
-                                )
-                            }
-                            .onEnded { value in
-                                lastHeartOffset = heartOffset
-                            }
-                    )
-                    Spacer()
-                }
-                .padding()
-                .padding(.top, 118)  // NavigationBar + Safe Areaの高さ分を補正
-                .allowsHitTesting(true)
-                VStack {
-                    HStack {
-                        Button("キャンセル") {
-                            onCancel()
-                        }
-                        .foregroundColor(.white)
-                        Spacer()
-                        Text("画像を調整")
-                            .foregroundColor(.white)
-                            .font(.headline)
-                        Spacer()
-                        Button("適用") {
-                            onApply()
-                        }
-                        .foregroundColor(.white)
-                        .fontWeight(.bold)
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, 60)  // セーフエリアを考慮してトップパディングを増加
-                    .background(Color.black.opacity(0.3))
-                    .frame(maxWidth: .infinity)
-                    Spacer()
-                }
-                .frame(maxHeight: .infinity, alignment: .top)
-                .allowsHitTesting(true)
+                // ハートエリア
+                heartAreaLayer
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .clipped()
+            .onAppear {
+                lastOffset = offset
+                lastHeartOffset = heartOffset
             }
         }
         .ignoresSafeArea()
-        .onAppear {
-            lastHeartOffset = heartOffset
+        .overlay(controlsOverlay, alignment: .top)
+    }
+
+    private func backgroundImageLayer(geometry: GeometryProxy) -> some View {
+        Image(uiImage: image)
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+            .frame(
+                width: geometry.size.width * scale,
+                height: geometry.size.height * scale
+            )
+            .position(
+                x: geometry.size.width / 2 + offset.width,
+                y: geometry.size.height / 2 + offset.height
+            )
+            .clipped()
+            .frame(width: geometry.size.width, height: geometry.size.height)
+            .overlay(
+                Color.black.opacity(0.3)
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+            )
+            .contentShape(Rectangle())
+            .gesture(
+                SimultaneousGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            offset = CGSize(
+                                width: lastOffset.width + value.translation.width,
+                                height: lastOffset.height + value.translation.height
+                            )
+                        }
+                        .onEnded { _ in
+                            lastOffset = offset
+                        },
+                    MagnificationGesture()
+                        .onChanged { value in
+                            let newScale = lastScale * value
+                            scale = max(0.5, min(newScale, 3.0))
+                        }
+                        .onEnded { _ in
+                            lastScale = scale
+                        }
+                )
+            )
+    }
+
+    private var heartAreaLayer: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Spacer()
+            Spacer()
+            VStack(spacing: 8) {
+                ZStack {
+                    Image("heart_beat")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 105, height: 92)
+                        .clipShape(Circle())
+                    Text("--")
+                        .font(.system(size: 32, weight: .semibold))
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                }
+
+                Text("No data available")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+            }
+            .offset(heartOffset)
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        heartOffset = CGSize(
+                            width: lastHeartOffset.width + value.translation.width,
+                            height: lastHeartOffset.height + value.translation.height
+                        )
+                    }
+                    .onEnded { _ in
+                        lastHeartOffset = heartOffset
+                    }
+            )
+            Spacer()
+        }
+        .padding()
+        .padding(.top, 118)  // NavigationBar分の補正
+    }
+
+    private var controlsOverlay: some View {
+        VStack {
+            HStack {
+                Button("キャンセル") {
+                    onCancel()
+                }
+                .foregroundColor(.white)
+
+                Spacer()
+
+                Text("画像を調整")
+                    .foregroundColor(.white)
+                    .font(.headline)
+
+                Spacer()
+
+                Button("適用") {
+                    onApply()
+                }
+                .foregroundColor(.white)
+                .fontWeight(.bold)
+            }
+            .padding(.horizontal)
+            .padding(.top, 60)
+            .padding(.bottom, 20)
+            .background(Color.black.opacity(0.5))
+
+            Spacer()
         }
     }
 }
-struct ImageEditorView_Previews: PreviewProvider {
+
+struct HeartbeatDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        ImageEditorView(
-            image: UIImage(systemName: "photo")!,
-            offset: .constant(.zero),
-            scale: .constant(1.0),
-            lastScale: .constant(1.0),
-            heartOffset: .constant(.zero),
-            onApply: {},
-            onCancel: {}
-        )
+        HeartbeatDetailView(userId: "preview_user_id")
+            .environmentObject(AuthenticationManager())
     }
 }
