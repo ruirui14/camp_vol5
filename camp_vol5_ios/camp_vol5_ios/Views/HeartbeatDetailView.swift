@@ -20,6 +20,8 @@ struct HeartbeatDetailView: View {
     @State private var tempImageOffset: CGSize = .zero
     @State private var tempImageScale: CGFloat = 1.0
     @State private var tempLastScale: CGFloat = 1.0
+    @State private var heartOffset: CGSize = .zero
+    @State private var tempHeartOffset: CGSize = .zero
 
     init(userId: String) {
         _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
@@ -39,25 +41,28 @@ struct HeartbeatDetailView: View {
                 Spacer()
                 Spacer()
                 Spacer()
-                heartbeatDisplayView
+                VStack(spacing: 8) {
+                    heartbeatDisplayView
 
-                if let heartbeat = viewModel.currentHeartbeat {
-                    Text(
-                        "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
-                    )
-                    .font(.caption)
-                    .foregroundColor(backgroundImage != nil ? .white : .gray)
-                    .shadow(
-                        color: backgroundImage != nil ? Color.black.opacity(0.5) : Color.clear,
-                        radius: 1, x: 0, y: 1)
-                } else {
-                    Text("No data available")
+                    if let heartbeat = viewModel.currentHeartbeat {
+                        Text(
+                            "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
+                        )
                         .font(.caption)
                         .foregroundColor(backgroundImage != nil ? .white : .gray)
                         .shadow(
                             color: backgroundImage != nil ? Color.black.opacity(0.5) : Color.clear,
                             radius: 1, x: 0, y: 1)
+                    } else {
+                        Text("No data available")
+                            .font(.caption)
+                            .foregroundColor(backgroundImage != nil ? .white : .gray)
+                            .shadow(
+                                color: backgroundImage != nil ? Color.black.opacity(0.5) : Color.clear,
+                                radius: 1, x: 0, y: 1)
+                    }
                 }
+                .offset(heartOffset)  // ハート全体のオフセットを適用
 
                 if let errorMessage = viewModel.errorMessage {
                     Text(errorMessage)
@@ -102,6 +107,7 @@ struct HeartbeatDetailView: View {
                 tempImageOffset = .zero
                 tempImageScale = 1.0
                 tempLastScale = 1.0
+                tempHeartOffset = .zero
 
                 print("Preview image set, size: \(selectedImage.size)")
 
@@ -135,6 +141,7 @@ struct HeartbeatDetailView: View {
                 offset: $tempImageOffset,
                 scale: $tempImageScale,
                 lastScale: $tempLastScale,
+                heartOffset: $tempHeartOffset,
                 onApply: {
                     // 適用ボタンが押されたら背景に設定
                     print("FullScreenCover: Applying image with size: \(imageWrapper.image.size)")
@@ -142,6 +149,7 @@ struct HeartbeatDetailView: View {
                     imageOffset = tempImageOffset
                     imageScale = tempImageScale
                     lastScale = tempLastScale
+                    heartOffset = tempHeartOffset  // ハートのオフセットも保存
                     editorImage = nil
                 },
                 onCancel: {
