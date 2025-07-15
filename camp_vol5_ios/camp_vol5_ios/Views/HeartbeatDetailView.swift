@@ -1,5 +1,11 @@
 import PhotosUI
 import SwiftUI
+import UIKit
+
+struct ImageWrapper: Identifiable {
+    let id = UUID()
+    let image: UIImage
+}
 
 struct HeartbeatDetailView: View {
     @StateObject private var viewModel: HeartbeatDetailViewModel
@@ -7,6 +13,7 @@ struct HeartbeatDetailView: View {
     @State private var showingImagePicker = false
     @State private var showingImageEditor = false
     @State private var previewImage: UIImage?
+    @State private var editorImage: UIImage?
     @State private var imageOffset: CGSize = .zero
     @State private var imageScale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
@@ -90,47 +97,58 @@ struct HeartbeatDetailView: View {
         .sheet(isPresented: $showingImagePicker) {
             PHPickerViewControllerWrapper(isPresented: $showingImagePicker) { selectedImage in
                 print("Setting previewImage: \(selectedImage.size)")
+
                 // プレビュー用の変形をリセット
                 tempImageOffset = .zero
                 tempImageScale = 1.0
                 tempLastScale = 1.0
 
-                // 直接エディタを表示
+                print("Preview image set, size: \(selectedImage.size)")
+
+                // 画像を設定してエディタを表示 (メインスレッドで実行)
                 DispatchQueue.main.async {
-                    previewImage = selectedImage
-                    showingImageEditor = true
+                    self.previewImage = selectedImage
+                    self.editorImage = selectedImage
+                    print("Setting editorImage on main thread, exists: \(self.editorImage != nil)")
+                    // fullScreenCover will automatically trigger when editorImage becomes non-nil
                 }
             }
         }
-        .fullScreenCover(isPresented: $showingImageEditor) {
-            if let image = previewImage {
-                ImageEditorView(
-                    image: image,
-                    offset: $tempImageOffset,
-                    scale: $tempImageScale,
-                    lastScale: $tempLastScale,
-                    onApply: {
-                        // 適用ボタンが押されたら背景に設定
-                        backgroundImage = image
-                        imageOffset = tempImageOffset
-                        imageScale = tempImageScale
-                        lastScale = tempLastScale
-                        showingImageEditor = false
-                    },
-                    onCancel: {
-                        // キャンセルボタンが押されたら何もしない
-                        showingImageEditor = false
+        .fullScreenCover(
+            item: Binding<ImageWrapper?>(
+                get: {
+                    if let editorImage = editorImage {
+                        print(
+                            "FullScreenCover: Creating ImageWrapper with image size: \(editorImage.size)"
+                        )
+                        return ImageWrapper(image: editorImage)
+                    } else {
+                        print("FullScreenCover: editorImage is nil, returning nil")
+                        return nil
                     }
-                )
-            } else {
-                VStack {
-                    Text("画像の読み込みに失敗しました")
-                        .foregroundColor(.red)
-                    Button("閉じる") {
-                        showingImageEditor = false
-                    }
+                },
+                set: { _ in editorImage = nil }
+            )
+        ) { imageWrapper in
+            ImageEditorView(
+                image: imageWrapper.image,
+                offset: $tempImageOffset,
+                scale: $tempImageScale,
+                lastScale: $tempLastScale,
+                onApply: {
+                    // 適用ボタンが押されたら背景に設定
+                    print("FullScreenCover: Applying image with size: \(imageWrapper.image.size)")
+                    backgroundImage = imageWrapper.image
+                    imageOffset = tempImageOffset
+                    imageScale = tempImageScale
+                    lastScale = tempLastScale
+                    editorImage = nil
+                },
+                onCancel: {
+                    // キャンセルボタンが押されたらクリア
+                    editorImage = nil
                 }
-            }
+            )
         }
 
     }
