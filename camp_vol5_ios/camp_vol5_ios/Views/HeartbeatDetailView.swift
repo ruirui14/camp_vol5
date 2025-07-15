@@ -29,7 +29,7 @@ struct HeartbeatDetailView: View {
         _viewModel = StateObject(
             wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat))
         _backgroundImageManager = StateObject(
-            wrappedValue: BackgroundImageManager(userId: userWithHeartbeat.userId))
+            wrappedValue: BackgroundImageManager(userId: userWithHeartbeat.user.id))
     }
 
     var body: some View {
