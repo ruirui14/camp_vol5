@@ -143,5 +143,39 @@ Views (SwiftUI) → ViewModels → Services → Firebase
 - **QR scanner page dismisses immediately**: Check shouldDismiss state management and Combine subscription lifecycle
 - **Build fails with device not found**: Use iPhone 16 or iPhone 15 Pro instead of iPhone 15 (not available)
 
+### Background Image Management System (Latest Addition)
+
+**New Enhanced Background Image Architecture**:
+- **BackgroundImageManager.swift**: Core service for managing background images with persistent storage
+- **ImagePersistenceManager.swift**: Handles image processing, storage, and retrieval with advanced compression
+- **EnhancedPhotoPickerView.swift**: Photo selection with proper permission handling
+- **EnhancedImageEditView.swift**: Touch-based image editing with scale/pan gestures
+
+**Key Features**:
+- **Persistent Storage**: Images saved to Documents/BackgroundImages with UserDefaults metadata
+- **Multi-Format Support**: Original, edited, and thumbnail versions automatically generated
+- **Memory Management**: Downsampling and compression for performance
+- **Transform System**: Normalized coordinate system for consistent positioning across devices
+- **Reactive Updates**: @Published properties for real-time UI updates
+
+**Integration Pattern**:
+```swift
+@StateObject private var backgroundImageManager: BackgroundImageManager
+
+init(userId: String) {
+    _backgroundImageManager = StateObject(wrappedValue: BackgroundImageManager(userId: userId))
+}
+```
+
+**Image Processing Pipeline**:
+1. Original image → Downsample → Transform → Edited image
+2. Parallel thumbnail generation for list views
+3. Persistent storage with cleanup of old versions
+4. Reactive loading with progress indicators
+
 ### コメント
 - 各ファイルの冒頭には必ず日本語のコメントで仕様を記述すること。
+
+### テスト
+- 生成されたコードは、必ずコマンドを実行してビルドとテストを行うこと。
+
