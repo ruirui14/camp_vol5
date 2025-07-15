@@ -1,5 +1,5 @@
 // Views/HeartbeatDetailView.swift
-// 修正版 - 画像位置を正確に再現
+// 修正版 - 画像位置を正確に再現 + 背景画像管理機能
 
 import PhotosUI
 import SwiftUI
@@ -12,28 +12,24 @@ struct ImageWrapper: Identifiable {
 
 struct HeartbeatDetailView: View {
     @StateObject private var viewModel: HeartbeatDetailViewModel
-    @State private var backgroundImage: UIImage?
+    @StateObject private var backgroundImageManager: BackgroundImageManager
     @State private var showingImagePicker = false
     @State private var showingImageEditor = false
-    @State private var previewImage: UIImage?
-    @State private var editorImage: UIImage?
-    @State private var imageOffset: CGSize = .zero
-    @State private var imageScale: CGFloat = 1.0
-    @State private var lastScale: CGFloat = 1.0
-    @State private var tempImageOffset: CGSize = .zero
-    @State private var tempImageScale: CGFloat = 1.0
-    @State private var tempLastScale: CGFloat = 1.0
+    @State private var selectedImage: UIImage?
     @State private var heartOffset: CGSize = .zero
     @State private var tempHeartOffset: CGSize = .zero
     @State private var viewSize: CGSize = .zero
 
     init(userId: String) {
         _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
+        _backgroundImageManager = StateObject(wrappedValue: BackgroundImageManager(userId: userId))
     }
 
     init(userWithHeartbeat: UserWithHeartbeat) {
         _viewModel = StateObject(
             wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat))
+        _backgroundImageManager = StateObject(
+            wrappedValue: BackgroundImageManager(userId: userWithHeartbeat.userId))
     }
 
     var body: some View {
@@ -54,17 +50,23 @@ struct HeartbeatDetailView: View {
                                 "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
                             )
                             .font(.caption)
-                            .foregroundColor(backgroundImage != nil ? .white : .gray)
+                            .foregroundColor(
+                                backgroundImageManager.getFinalDisplayImage() != nil
+                                    ? .white : .gray
+                            )
                             .shadow(
-                                color: backgroundImage != nil
+                                color: backgroundImageManager.getFinalDisplayImage() != nil
                                     ? Color.black.opacity(0.5) : Color.clear,
                                 radius: 1, x: 0, y: 1)
                         } else {
                             Text("No data available")
                                 .font(.caption)
-                                .foregroundColor(backgroundImage != nil ? .white : .gray)
+                                .foregroundColor(
+                                    backgroundImageManager.getFinalDisplayImage() != nil
+                                        ? .white : .gray
+                                )
                                 .shadow(
-                                    color: backgroundImage != nil
+                                    color: backgroundImageManager.getFinalDisplayImage() != nil
                                         ? Color.black.opacity(0.5) : Color.clear,
                                     radius: 1, x: 0, y: 1)
                         }
@@ -91,9 +93,28 @@ struct HeartbeatDetailView: View {
         .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
         .navigationBarItems(
             trailing:
-                Button(action: {
-                    showingImagePicker = true
-                }) {
+                Menu {
+                    Button("新しい画像を選択") {
+                        showingImagePicker = true
+                    }
+
+                    if backgroundImageManager.getOriginalImageForReEdit() != nil {
+                        Button("現在の画像を再編集") {
+                            if let originalImage =
+                                backgroundImageManager.getOriginalImageForReEdit()
+                            {
+                                selectedImage = originalImage
+                                showingImageEditor = true
+                            }
+                        }
+                    }
+
+                    if backgroundImageManager.getFinalDisplayImage() != nil {
+                        Button("背景画像をリセット", role: .destructive) {
+                            backgroundImageManager.resetBackgroundImage()
+                        }
+                    }
+                } label: {
                     Image(systemName: "photo")
                         .foregroundColor(.white)
                 }
@@ -105,47 +126,28 @@ struct HeartbeatDetailView: View {
             viewModel.stopMonitoring()
         }
         .sheet(isPresented: $showingImagePicker) {
-            PHPickerViewControllerWrapper(isPresented: $showingImagePicker) { selectedImage in
-                tempImageOffset = .zero
-                tempImageScale = 1.0
-                tempLastScale = 1.0
-                tempHeartOffset = .zero
-
-                DispatchQueue.main.async {
-                    self.previewImage = selectedImage
-                    self.editorImage = selectedImage
-                }
+            PHPickerViewControllerWrapper(isPresented: $showingImagePicker) { image in
+                backgroundImageManager.setOriginalImage(image)
+                selectedImage = image
+                showingImageEditor = true
             }
         }
-        .fullScreenCover(
-            item: Binding<ImageWrapper?>(
-                get: {
-                    if let editorImage = editorImage {
-                        return ImageWrapper(image: editorImage)
+        .fullScreenCover(isPresented: $showingImageEditor) {
+            if let image = selectedImage {
+                ImageEditView(
+                    image: image,
+                    initialTransform: backgroundImageManager.currentTransform,
+                    onComplete: { transform in
+                        backgroundImageManager.saveEditedResult(transform)
+                        showingImageEditor = false
+                        selectedImage = nil
+                    },
+                    onCancel: {
+                        showingImageEditor = false
+                        selectedImage = nil
                     }
-                    return nil
-                },
-                set: { _ in editorImage = nil }
-            )
-        ) { imageWrapper in
-            ImageEditorView(
-                image: imageWrapper.image,
-                offset: $tempImageOffset,
-                scale: $tempImageScale,
-                lastScale: $tempLastScale,
-                heartOffset: $tempHeartOffset,
-                onApply: {
-                    backgroundImage = imageWrapper.image
-                    imageOffset = tempImageOffset
-                    imageScale = tempImageScale
-                    lastScale = tempLastScale
-                    heartOffset = tempHeartOffset
-                    editorImage = nil
-                },
-                onCancel: {
-                    editorImage = nil
-                }
-            )
+                )
+            }
         }
     }
 
@@ -153,20 +155,12 @@ struct HeartbeatDetailView: View {
 
     private func backgroundView(geometry: GeometryProxy) -> some View {
         Group {
-            if let backgroundImage = backgroundImage {
-                Image(uiImage: backgroundImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(
-                        width: geometry.size.width * imageScale,
-                        height: geometry.size.height * imageScale
-                    )
-                    .position(
-                        x: geometry.size.width / 2 + imageOffset.width,
-                        y: geometry.size.height / 2 + imageOffset.height
-                    )
-                    .clipped()
-                    .frame(width: geometry.size.width, height: geometry.size.height)
+            if backgroundImageManager.isLoading {
+                ProgressView("背景画像を読み込み中...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.1))
+            } else if let editedImage = backgroundImageManager.getFinalDisplayImage() {
+                SimpleBackgroundImageView(image: editedImage)
                     .overlay(
                         Color.black.opacity(0.3)
                             .frame(width: geometry.size.width, height: geometry.size.height)
@@ -177,6 +171,22 @@ struct HeartbeatDetailView: View {
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
+            }
+
+            // 保存中のオーバーレイ
+            if backgroundImageManager.isSaving {
+                ZStack {
+                    Color.black.opacity(0.5)
+                        .ignoresSafeArea()
+
+                    VStack {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("編集結果を保存中...")
+                            .foregroundColor(.white)
+                            .padding(.top)
+                    }
+                }
             }
         }
     }
