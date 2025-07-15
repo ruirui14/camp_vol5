@@ -68,6 +68,8 @@ struct ImageEditorView: View {
                                 .foregroundColor(.white)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                         }
+
+                        // HeartbeatDetailViewと同じ条件分岐構造にする
                         Text("No data available")
                             .font(.caption)
                             .foregroundColor(.white)
@@ -86,12 +88,10 @@ struct ImageEditorView: View {
                                 lastHeartOffset = heartOffset
                             }
                     )
-                    // エラーメッセージの領域（空だが構造を一致させるため）
-                    Color.clear
-                        .frame(height: 0)
                     Spacer()
                 }
                 .padding()
+                .padding(.top, 118)  // NavigationBar + Safe Areaの高さ分を補正
                 .allowsHitTesting(true)
                 VStack {
                     HStack {
