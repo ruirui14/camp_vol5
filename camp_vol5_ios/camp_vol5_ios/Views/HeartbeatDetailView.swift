@@ -55,6 +55,7 @@ struct HeartbeatDetailView: View {
             }
 
             VStack(spacing: 20) {
+                // 既存のコンテンツ
                 Spacer()
                 Spacer()
                 Spacer()
@@ -66,23 +67,13 @@ struct HeartbeatDetailView: View {
                             "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
                         )
                         .font(.caption)
-                        .foregroundColor(
-                            editedImage != nil || selectedImage != nil ? .white : .gray
-                        )
-                        .shadow(
-                            color: editedImage != nil || selectedImage != nil
-                                ? Color.black.opacity(0.5) : Color.clear,
-                            radius: 1, x: 0, y: 1)
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                     } else {
                         Text("No data available")
                             .font(.caption)
-                            .foregroundColor(
-                                editedImage != nil || selectedImage != nil ? .white : .gray
-                            )
-                            .shadow(
-                                color: editedImage != nil || selectedImage != nil
-                                    ? Color.black.opacity(0.5) : Color.clear,
-                                radius: 1, x: 0, y: 1)
+                            .foregroundColor(.white)
+                            .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                     }
                 }
 
@@ -99,7 +90,9 @@ struct HeartbeatDetailView: View {
         }
         .navigationTitle(viewModel.user?.name ?? "読み込み中...")
         .navigationBarTitleDisplayMode(.inline)
-        .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
+        // 透明なナビゲーションバーの設定
+        .navigationBarBackgroundTransparent()
+        .navigationBarTitleTextColor(.white)
         .navigationBarItems(
             trailing:
                 Menu {
@@ -125,6 +118,7 @@ struct HeartbeatDetailView: View {
                 } label: {
                     Image(systemName: "photo")
                         .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                 }
         )
         .onAppear {
@@ -189,7 +183,6 @@ struct HeartbeatDetailView: View {
             Text(viewModel.currentHeartbeat?.bpm.description ?? "--")
                 .font(.system(size: 32, weight: .semibold))
                 .foregroundColor(.white)
-                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
         }
     }
 

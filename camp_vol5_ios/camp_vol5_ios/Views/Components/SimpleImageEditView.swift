@@ -16,14 +16,14 @@ struct ImageEditView: View {
     @State private var tempScale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @Environment(\.presentationMode) var presentationMode
-    
+
     var body: some View {
         NavigationView {
             ZStack {
                 // 黒い背景
                 Color.black
                     .ignoresSafeArea()
-                
+
                 // 画像表示とジェスチャー
                 if let image = image {
                     Image(uiImage: image)
@@ -57,7 +57,7 @@ struct ImageEditView: View {
                             )
                         )
                 }
-                
+
                 // ハートビート表示エリア（プレビュー用）
                 VStack(spacing: 20) {
                     Spacer()
@@ -75,7 +75,7 @@ struct ImageEditView: View {
                                 .foregroundColor(.white)
                                 .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                         }
-                        
+
                         Text("プレビュー")
                             .font(.caption)
                             .foregroundColor(.white)
@@ -88,14 +88,18 @@ struct ImageEditView: View {
             }
             .navigationTitle("画像を編集")
             .navigationBarTitleDisplayMode(.inline)
+            // 透明なナビゲーションバーの設定
+            .navigationBarBackgroundTransparent()
+            .navigationBarTitleTextColor(.white)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("キャンセル") {
                         presentationMode.wrappedValue.dismiss()
                     }
                     .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                 }
-                
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("適用") {
                         // 編集内容を適用
@@ -105,6 +109,7 @@ struct ImageEditView: View {
                     }
                     .foregroundColor(.white)
                     .fontWeight(.semibold)
+                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                 }
             }
         }
