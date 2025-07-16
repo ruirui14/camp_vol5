@@ -12,81 +12,90 @@ struct ImageWrapper: Identifiable {
 
 struct HeartbeatDetailView: View {
     @StateObject private var viewModel: HeartbeatDetailViewModel
-    @StateObject private var backgroundImageManager: BackgroundImageManager
+    @State private var selectedImage: UIImage?
+    @State private var editedImage: UIImage?
     @State private var showingImagePicker = false
     @State private var showingImageEditor = false
-    @State private var selectedImage: UIImage?
-    @State private var heartOffset: CGSize = .zero
-    @State private var tempHeartOffset: CGSize = .zero
-    @State private var viewSize: CGSize = .zero
+    @State private var imageOffset = CGSize.zero
+    @State private var imageScale: CGFloat = 1.0
+
+    private let persistenceManager = PersistenceManager.shared
 
     init(userId: String) {
         _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
-        _backgroundImageManager = StateObject(wrappedValue: BackgroundImageManager(userId: userId))
     }
 
     init(userWithHeartbeat: UserWithHeartbeat) {
         _viewModel = StateObject(
             wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat))
-        _backgroundImageManager = StateObject(
-            wrappedValue: BackgroundImageManager(userId: userWithHeartbeat.user.id))
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Background image or gradient
-                backgroundView(geometry: geometry)
+        ZStack {
+            // 白い背景
+            Color.white
+                .ignoresSafeArea()
 
-                VStack(spacing: 20) {
-                    Spacer()
-                    Spacer()
-                    Spacer()
-                    VStack(spacing: 8) {
-                        heartbeatDisplayView
+            // 背景画像（編集された状態を反映）
+            if let image = editedImage ?? selectedImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .scaleEffect(imageScale)
+                    .offset(imageOffset)
+                    .ignoresSafeArea()
+            } else {
+                // デフォルトのグラデーション背景
+                LinearGradient(
+                    gradient: Gradient(colors: [.main, .accent]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+            }
 
-                        if let heartbeat = viewModel.currentHeartbeat {
-                            Text(
-                                "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
-                            )
+            VStack(spacing: 20) {
+                Spacer()
+                Spacer()
+                Spacer()
+                VStack(spacing: 8) {
+                    heartbeatDisplayView
+
+                    if let heartbeat = viewModel.currentHeartbeat {
+                        Text(
+                            "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
+                        )
+                        .font(.caption)
+                        .foregroundColor(
+                            editedImage != nil || selectedImage != nil ? .white : .gray
+                        )
+                        .shadow(
+                            color: editedImage != nil || selectedImage != nil
+                                ? Color.black.opacity(0.5) : Color.clear,
+                            radius: 1, x: 0, y: 1)
+                    } else {
+                        Text("No data available")
                             .font(.caption)
                             .foregroundColor(
-                                backgroundImageManager.getFinalDisplayImage() != nil
-                                    ? .white : .gray
+                                editedImage != nil || selectedImage != nil ? .white : .gray
                             )
                             .shadow(
-                                color: backgroundImageManager.getFinalDisplayImage() != nil
+                                color: editedImage != nil || selectedImage != nil
                                     ? Color.black.opacity(0.5) : Color.clear,
                                 radius: 1, x: 0, y: 1)
-                        } else {
-                            Text("No data available")
-                                .font(.caption)
-                                .foregroundColor(
-                                    backgroundImageManager.getFinalDisplayImage() != nil
-                                        ? .white : .gray
-                                )
-                                .shadow(
-                                    color: backgroundImageManager.getFinalDisplayImage() != nil
-                                        ? Color.black.opacity(0.5) : Color.clear,
-                                    radius: 1, x: 0, y: 1)
-                        }
                     }
-                    .offset(heartOffset)
-
-                    if let errorMessage = viewModel.errorMessage {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .padding()
-                    }
-
-                    Spacer()
                 }
-                .padding()
-                .padding(.top, 118)  // NavigationBar分の補正
+
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .padding()
+                }
+
+                Spacer()
             }
-            .onAppear {
-                viewSize = geometry.size
-            }
+            .padding()
+            .padding(.top, 118)  // NavigationBar分の補正
         }
         .navigationTitle(viewModel.user?.name ?? "読み込み中...")
         .navigationBarTitleDisplayMode(.inline)
@@ -98,20 +107,19 @@ struct HeartbeatDetailView: View {
                         showingImagePicker = true
                     }
 
-                    if backgroundImageManager.getOriginalImageForReEdit() != nil {
+                    if selectedImage != nil {
                         Button("現在の画像を再編集") {
-                            if let originalImage =
-                                backgroundImageManager.getOriginalImageForReEdit()
-                            {
-                                selectedImage = originalImage
-                                showingImageEditor = true
-                            }
+                            showingImageEditor = true
                         }
                     }
 
-                    if backgroundImageManager.getFinalDisplayImage() != nil {
+                    if selectedImage != nil {
                         Button("背景画像をリセット", role: .destructive) {
-                            backgroundImageManager.resetBackgroundImage()
+                            selectedImage = nil
+                            editedImage = nil
+                            imageOffset = CGSize.zero
+                            imageScale = 1.0
+                            persistenceManager.clearAllData()
                         }
                     }
                 } label: {
@@ -121,74 +129,53 @@ struct HeartbeatDetailView: View {
         )
         .onAppear {
             viewModel.startContinuousMonitoring()
+            loadPersistedData()
         }
         .onDisappear {
             viewModel.stopMonitoring()
         }
         .sheet(isPresented: $showingImagePicker) {
-            PHPickerViewControllerWrapper(isPresented: $showingImagePicker) { image in
-                backgroundImageManager.setOriginalImage(image)
-                selectedImage = image
-                showingImageEditor = true
-            }
+            SimplePhotoPickerView(
+                selectedImage: $selectedImage,
+                onImageSelected: {
+                    if selectedImage != nil {
+                        showingImageEditor = true
+                    }
+                })
         }
         .fullScreenCover(isPresented: $showingImageEditor) {
-            if let image = selectedImage {
-                ImageEditView(
-                    image: image,
-                    initialTransform: backgroundImageManager.currentTransform,
-                    onComplete: { transform in
-                        backgroundImageManager.saveEditedResult(transform)
-                        showingImageEditor = false
-                        selectedImage = nil
-                    },
-                    onCancel: {
-                        showingImageEditor = false
-                        selectedImage = nil
+            ImageEditView(
+                image: $selectedImage,
+                imageOffset: $imageOffset,
+                imageScale: $imageScale,
+                onApply: {
+                    editedImage = selectedImage
+
+                    // 画像と変形情報を永続化
+                    if let image = selectedImage {
+                        persistenceManager.saveBackgroundImage(image)
                     }
-                )
-            }
+                    persistenceManager.saveImageTransform(offset: imageOffset, scale: imageScale)
+
+                    showingImageEditor = false
+                }
+            )
         }
     }
 
-    // MARK: - View Components
+    // MARK: - Helper Methods
 
-    private func backgroundView(geometry: GeometryProxy) -> some View {
-        Group {
-            if backgroundImageManager.isLoading {
-                ProgressView("背景画像を読み込み中...")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black.opacity(0.1))
-            } else if let editedImage = backgroundImageManager.getFinalDisplayImage() {
-                SimpleBackgroundImageView(image: editedImage)
-                    .overlay(
-                        Color.black.opacity(0.3)
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                    )
-            } else {
-                LinearGradient(
-                    gradient: Gradient(colors: [.main, .accent]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-
-            // 保存中のオーバーレイ
-            if backgroundImageManager.isSaving {
-                ZStack {
-                    Color.black.opacity(0.5)
-                        .ignoresSafeArea()
-
-                    VStack {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                        Text("編集結果を保存中...")
-                            .foregroundColor(.white)
-                            .padding(.top)
-                    }
-                }
-            }
+    private func loadPersistedData() {
+        // 保存された画像を読み込み
+        if let savedImage = persistenceManager.loadBackgroundImage() {
+            selectedImage = savedImage
+            editedImage = savedImage
         }
+
+        // 保存された変形情報を読み込み
+        let transform = persistenceManager.loadImageTransform()
+        imageOffset = transform.offset
+        imageScale = transform.scale
     }
 
     private var heartbeatDisplayView: some View {
