@@ -18,6 +18,7 @@ struct HeartbeatDetailView: View {
     @State private var showingImageEditor = false
     @State private var imageOffset = CGSize.zero
     @State private var imageScale: CGFloat = 1.0
+    @State private var heartOffset = CGSize.zero
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -60,7 +61,6 @@ struct HeartbeatDetailView: View {
                 Spacer()
                 Spacer()
                 VStack(spacing: 8) {
-                    heartbeatDisplayView
 
                     if let heartbeat = viewModel.currentHeartbeat {
                         Text(
@@ -87,6 +87,10 @@ struct HeartbeatDetailView: View {
             }
             .padding()
             .padding(.top, 118)  // NavigationBar分の補正
+            
+            heartbeatDisplayView
+                .offset(heartOffset)
+                .ignoresSafeArea()
         }
         .whiteCapsuleTitle(viewModel.user?.name ?? "読み込み中...")
         .navigationTitle("")
@@ -137,7 +141,11 @@ struct HeartbeatDetailView: View {
                     }
                 })
         }
-        .fullScreenCover(isPresented: $showingImageEditor) {
+        .fullScreenCover(isPresented: $showingImageEditor, onDismiss: {
+            // ImageEditViewが閉じられたときにハートの位置を再読み込み
+            let heartPosition = persistenceManager.loadHeartPosition()
+            heartOffset = heartPosition
+        }) {
             ImageEditView(
                 image: $selectedImage,
                 imageOffset: $imageOffset,
@@ -170,6 +178,10 @@ struct HeartbeatDetailView: View {
         let transform = persistenceManager.loadImageTransform()
         imageOffset = transform.offset
         imageScale = transform.scale
+        
+        // ハートの位置を読み込み
+        let heartPosition = persistenceManager.loadHeartPosition()
+        heartOffset = heartPosition
     }
 
     private var heartbeatDisplayView: some View {

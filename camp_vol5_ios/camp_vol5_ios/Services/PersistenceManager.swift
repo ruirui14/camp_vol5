@@ -16,6 +16,8 @@ class PersistenceManager {
     private let imageOffsetXKey = "imageOffsetX"
     private let imageOffsetYKey = "imageOffsetY"
     private let imageScaleKey = "imageScale"
+    private let heartOffsetXKey = "heartOffsetX"
+    private let heartOffsetYKey = "heartOffsetY"
 
     private init() {}
 
@@ -81,5 +83,20 @@ class PersistenceManager {
         userDefaults.removeObject(forKey: imageOffsetXKey)
         userDefaults.removeObject(forKey: imageOffsetYKey)
         userDefaults.removeObject(forKey: imageScaleKey)
+        userDefaults.removeObject(forKey: heartOffsetXKey)
+        userDefaults.removeObject(forKey: heartOffsetYKey)
+    }
+    
+    // ハートの位置を保存
+    func saveHeartPosition(_ offset: CGSize) {
+        userDefaults.set(Double(offset.width), forKey: heartOffsetXKey)
+        userDefaults.set(Double(offset.height), forKey: heartOffsetYKey)
+    }
+    
+    // ハートの位置を読み込み
+    func loadHeartPosition() -> CGSize {
+        let x = userDefaults.double(forKey: heartOffsetXKey)
+        let y = userDefaults.double(forKey: heartOffsetYKey)
+        return CGSize(width: x, height: y)
     }
 }

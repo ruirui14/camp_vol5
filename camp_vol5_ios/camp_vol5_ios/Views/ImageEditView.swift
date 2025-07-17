@@ -16,7 +16,11 @@ struct ImageEditView: View {
     @State private var lastOffset = CGSize.zero
     @State private var tempScale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
+    @State private var heartOffset = CGSize.zero
+    @State private var lastHeartOffset = CGSize.zero
     @Environment(\.presentationMode) var presentationMode
+    
+    private let persistenceManager = PersistenceManager.shared
 
     var body: some View {
         NavigationView {
@@ -65,34 +69,45 @@ struct ImageEditView: View {
                         )
                 }
 
-                // ハートビート表示エリア（プレビュー用）
-                VStack(spacing: 20) {
+                // 説明テキスト（画面下部）
+                VStack {
                     Spacer()
-                    Spacer()
-                    Spacer()
-                    VStack(spacing: 8) {
-                        ZStack {
-                            Image("heart_beat")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 105, height: 92)
-                                .clipShape(Circle())
-                            Text("--")
-                                .font(.system(size: 32, weight: .semibold))
-                                .foregroundColor(.white)
-                                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                        }
-
-                        Text("プレビュー")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                            .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
-                    }
-                    Spacer()
+                    Text("ハートとイメージを自由に配置してください")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                        .padding(.bottom, 40)
                 }
-                .padding()
-                .padding(.top, 118)
             }
+            .overlay(
+                // ドラッグ可能なハートビュー
+                ZStack {
+                    Image("heart_beat")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 105, height: 92)
+                        .clipShape(Circle())
+                    Text("--")
+                        .font(.system(size: 32, weight: .semibold))
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                }
+                .offset(heartOffset)
+                .ignoresSafeArea()
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            heartOffset = CGSize(
+                                width: lastHeartOffset.width + value.translation.width,
+                                height: lastHeartOffset.height + value.translation.height
+                            )
+                        }
+                        .onEnded { value in
+                            lastHeartOffset = heartOffset
+                        }
+                ),
+                alignment: .center
+            )
             .whiteCapsuleTitle("画像を編集")
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -112,6 +127,8 @@ struct ImageEditView: View {
                         // 編集内容を適用
                         imageOffset = tempOffset
                         imageScale = tempScale
+                        // ハートの位置を保存
+                        persistenceManager.saveHeartPosition(heartOffset)
                         onApply()
                     }
                     .foregroundColor(.white)
@@ -127,6 +144,11 @@ struct ImageEditView: View {
             lastOffset = imageOffset
             tempScale = imageScale
             lastScale = imageScale
+            
+            // ハートの位置を読み込み
+            let heartPosition = persistenceManager.loadHeartPosition()
+            heartOffset = heartPosition
+            lastHeartOffset = heartPosition
         }
     }
 }
