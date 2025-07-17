@@ -13,6 +13,7 @@ struct ImageEditView: View {
     @Binding var imageScale: CGFloat
     let onApply: () -> Void
     @State private var tempOffset = CGSize.zero
+    @State private var lastOffset = CGSize.zero
     @State private var tempScale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @Environment(\.presentationMode) var presentationMode
@@ -36,7 +37,13 @@ struct ImageEditView: View {
                                 // ドラッグジェスチャー
                                 DragGesture()
                                     .onChanged { value in
-                                        tempOffset = value.translation
+                                        tempOffset = CGSize(
+                                            width: lastOffset.width + value.translation.width,
+                                            height: lastOffset.height + value.translation.height
+                                        )
+                                    }
+                                    .onEnded { value in
+                                        lastOffset = tempOffset
                                     },
                                 // ズームジェスチャー
                                 MagnificationGesture()
@@ -117,6 +124,7 @@ struct ImageEditView: View {
         .onAppear {
             // 現在の状態を編集画面に反映
             tempOffset = imageOffset
+            lastOffset = imageOffset
             tempScale = imageScale
             lastScale = imageScale
         }
