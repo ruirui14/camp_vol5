@@ -1,10 +1,3 @@
-//
-//  ImageEditView.swift
-//  camp_vol5_ios
-//
-//  シンプルな画像編集ビュー
-//
-
 import SwiftUI
 
 struct ImageEditView: View {
@@ -19,14 +12,14 @@ struct ImageEditView: View {
     @State private var heartOffset = CGSize.zero
     @State private var lastHeartOffset = CGSize.zero
     @Environment(\.presentationMode) var presentationMode
-    
+
     private let persistenceManager = PersistenceManager.shared
 
     var body: some View {
         NavigationView {
             ZStack {
-                // 黒い背景
-                Color.black
+                // 白い背景（表示画面と同じ）
+                Color.white
                     .ignoresSafeArea()
 
                 // 画像表示とジェスチャー
@@ -36,6 +29,7 @@ struct ImageEditView: View {
                         .aspectRatio(contentMode: .fit)
                         .scaleEffect(tempScale)
                         .offset(tempOffset)
+                        .ignoresSafeArea()
                         .gesture(
                             SimultaneousGesture(
                                 // ドラッグジェスチャー
@@ -69,7 +63,7 @@ struct ImageEditView: View {
                         )
                 }
 
-                // 説明テキスト（画面下部）
+                // 説明テキスト
                 VStack {
                     Spacer()
                     Text("ハートとイメージを自由に配置してください")
@@ -78,9 +72,10 @@ struct ImageEditView: View {
                         .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                         .padding(.bottom, 40)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
             .overlay(
-                // ドラッグ可能なハートビュー
+                // ドラッグ可能なハートビュー（HeartbeatDetailViewと同じ位置）
                 ZStack {
                     Image("heart_beat")
                         .resizable()
@@ -90,7 +85,7 @@ struct ImageEditView: View {
                     Text("--")
                         .font(.system(size: 32, weight: .semibold))
                         .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                        .shadow(color: Color.black.opacity(0.8), radius: 2, x: 0, y: 1)
                 }
                 .offset(heartOffset)
                 .ignoresSafeArea()
@@ -108,10 +103,8 @@ struct ImageEditView: View {
                 ),
                 alignment: .center
             )
-            .whiteCapsuleTitle("画像を編集")
-            .navigationTitle("")
+            .whiteCapsuleTitle("画像を編集中")
             .navigationBarTitleDisplayMode(.inline)
-            // 透明なナビゲーションバーの設定
             .navigationBarBackgroundTransparent()
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -127,8 +120,14 @@ struct ImageEditView: View {
                         // 編集内容を適用
                         imageOffset = tempOffset
                         imageScale = tempScale
+
                         // ハートの位置を保存
                         persistenceManager.saveHeartPosition(heartOffset)
+
+                        // 画像の変形情報を直接保存
+                        persistenceManager.saveImageTransform(
+                            offset: tempOffset, scale: tempScale)
+
                         onApply()
                     }
                     .foregroundColor(.white)
@@ -139,12 +138,17 @@ struct ImageEditView: View {
         }
         .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
+            // 永続化されたデータを再読み込み
+            let transform = persistenceManager.loadImageTransform()
+            imageOffset = transform.offset
+            imageScale = transform.scale
+
             // 現在の状態を編集画面に反映
-            tempOffset = imageOffset
-            lastOffset = imageOffset
-            tempScale = imageScale
-            lastScale = imageScale
-            
+            tempOffset = transform.offset
+            lastOffset = transform.offset
+            tempScale = transform.scale
+            lastScale = transform.scale
+
             // ハートの位置を読み込み
             let heartPosition = persistenceManager.loadHeartPosition()
             heartOffset = heartPosition

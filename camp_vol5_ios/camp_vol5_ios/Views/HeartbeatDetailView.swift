@@ -32,65 +32,68 @@ struct HeartbeatDetailView: View {
     }
 
     var body: some View {
-        ZStack {
-            // 白い背景
-            Color.white
-                .ignoresSafeArea()
-
-            // 背景画像（編集された状態を反映）
-            if let image = editedImage ?? selectedImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .scaleEffect(imageScale)
-                    .offset(imageOffset)
+        GeometryReader { geometry in
+            ZStack {
+                // 白い背景
+                Color.white
                     .ignoresSafeArea()
-            } else {
-                // デフォルトのグラデーション背景
-                LinearGradient(
-                    gradient: Gradient(colors: [.main, .accent]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-            }
 
-            VStack(spacing: 20) {
-                // 既存のコンテンツ
-                Spacer()
-                Spacer()
-                Spacer()
-                VStack(spacing: 8) {
+                // 背景画像（編集された状態を反映）
+                if let image = editedImage ?? selectedImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .scaleEffect(imageScale)
+                        .offset(imageOffset)
+                        .ignoresSafeArea()
+                } else {
+                    // デフォルトのグラデーション背景
+                    LinearGradient(
+                        gradient: Gradient(colors: [.main, .accent]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    .ignoresSafeArea()
+                }
 
-                    if let heartbeat = viewModel.currentHeartbeat {
-                        Text(
-                            "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
-                        )
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
-                    } else {
-                        Text("No data available")
+                VStack(spacing: 20) {
+                    // 既存のコンテンツ
+                    Spacer()
+                    Spacer()
+                    Spacer()
+                    VStack(spacing: 8) {
+
+                        if let heartbeat = viewModel.currentHeartbeat {
+                            Text(
+                                "Last updated: \(heartbeat.timestamp, formatter: dateFormatter)"
+                            )
                             .font(.caption)
                             .foregroundColor(.white)
                             .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                        } else {
+                            Text("No data available")
+                                .font(.caption)
+                                .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                        }
                     }
-                }
 
-                if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
-                        .foregroundColor(.red)
-                        .padding()
-                }
+                    if let errorMessage = viewModel.errorMessage {
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .padding()
+                    }
 
-                Spacer()
+                    Spacer()
+                }
+                .padding()
+                .padding(.top, 118)  // NavigationBar分の補正
+
+                // ハートビュー（ImageEditViewと同じ位置）
+                heartbeatDisplayView
+                    .offset(heartOffset)
+                    .ignoresSafeArea()
             }
-            .padding()
-            .padding(.top, 118)  // NavigationBar分の補正
-            
-            heartbeatDisplayView
-                .offset(heartOffset)
-                .ignoresSafeArea()
         }
         .whiteCapsuleTitle(viewModel.user?.name ?? "読み込み中...")
         .navigationTitle("")
@@ -141,11 +144,14 @@ struct HeartbeatDetailView: View {
                     }
                 })
         }
-        .fullScreenCover(isPresented: $showingImageEditor, onDismiss: {
-            // ImageEditViewが閉じられたときにハートの位置を再読み込み
-            let heartPosition = persistenceManager.loadHeartPosition()
-            heartOffset = heartPosition
-        }) {
+        .fullScreenCover(
+            isPresented: $showingImageEditor,
+            onDismiss: {
+                // ImageEditViewが閉じられたときにハートの位置を再読み込み
+                let heartPosition = persistenceManager.loadHeartPosition()
+                heartOffset = heartPosition
+            }
+        ) {
             ImageEditView(
                 image: $selectedImage,
                 imageOffset: $imageOffset,
@@ -165,8 +171,6 @@ struct HeartbeatDetailView: View {
         }
     }
 
-    // MARK: - Helper Methods
-
     private func loadPersistedData() {
         // 保存された画像を読み込み
         if let savedImage = persistenceManager.loadBackgroundImage() {
@@ -178,7 +182,6 @@ struct HeartbeatDetailView: View {
         let transform = persistenceManager.loadImageTransform()
         imageOffset = transform.offset
         imageScale = transform.scale
-        
         // ハートの位置を読み込み
         let heartPosition = persistenceManager.loadHeartPosition()
         heartOffset = heartPosition
