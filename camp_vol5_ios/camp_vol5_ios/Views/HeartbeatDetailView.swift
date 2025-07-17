@@ -88,32 +88,7 @@ struct HeartbeatDetailView: View {
             .padding()
             .padding(.top, 118)  // NavigationBar分の補正
         }
-        .overlay(
-            // カスタムタイトルビュー
-            VStack {
-                HStack {
-                    Spacer()
-                    
-                    Text(viewModel.user?.name ?? "読み込み中...")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule()
-                                .fill(Color.black.opacity(0.3))
-                        )
-                        .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
-                    
-                    Spacer()
-                }
-                .padding(.top, 52) // ステータスバー + NavigationBar分
-                
-                Spacer()
-            }
-            .ignoresSafeArea(.container, edges: .top)
-        )
+        .whiteCapsuleTitle(viewModel.user?.name ?? "読み込み中...")
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         // 透明なナビゲーションバーの設定

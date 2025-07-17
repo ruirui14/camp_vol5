@@ -86,11 +86,11 @@ struct ImageEditView: View {
                 .padding()
                 .padding(.top, 118)
             }
-            .navigationTitle("画像を編集")
+            .whiteCapsuleTitle("画像を編集")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             // 透明なナビゲーションバーの設定
             .navigationBarBackgroundTransparent()
-            .navigationBarTitleTextColor(.white)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("キャンセル") {
