@@ -18,9 +18,7 @@ struct CardBackgroundEditView: View {
 
     // UserHeartbeatCardと同じサイズ
     private let cardSize = CGSize(width: 370, height: 120)
-    
     let userId: String
-    
     init(userId: String) {
         self.userId = userId
         _backgroundImageManager = StateObject(wrappedValue: BackgroundImageManager(userId: userId))
@@ -56,7 +54,7 @@ struct CardBackgroundEditView: View {
                         dismiss()
                     }
                     .foregroundColor(.white)
-                    .disabled(backgroundImageManager.isSaving)
+                    .disabled(backgroundImageManager.isSaving || selectedImage == nil)
                 }
             }
         }
@@ -64,13 +62,15 @@ struct CardBackgroundEditView: View {
             PhotoPicker(selectedImage: $selectedImage)
         }
         .onAppear {
-            if let existingImage = backgroundImageManager.currentOriginalImage {
-                selectedImage = existingImage
-                // 既存の変換情報を復元
+            // 画像は表示せず、編集画面から写真選択を行う方針に変更
+            // 既存の変換情報のみ復元
+            if backgroundImageManager.currentOriginalImage != nil {
                 let screenSize = UIScreen.main.bounds.size
                 imageOffset = CGSize(
-                    width: backgroundImageManager.currentTransform.normalizedOffset.x * screenSize.width,
-                    height: backgroundImageManager.currentTransform.normalizedOffset.y * screenSize.height
+                    width: backgroundImageManager.currentTransform.normalizedOffset.x
+                        * screenSize.width,
+                    height: backgroundImageManager.currentTransform.normalizedOffset.y
+                        * screenSize.height
                 )
                 lastOffset = imageOffset
                 imageScale = backgroundImageManager.currentTransform.scale
@@ -208,20 +208,16 @@ struct CardBackgroundEditView: View {
             print("保存する画像がありません")
             return
         }
-        
         // 正規化座標系でのTransformを作成
         let screenSize = UIScreen.main.bounds.size
         let normalizedOffsetX = imageOffset.width / screenSize.width
         let normalizedOffsetY = imageOffset.height / screenSize.height
-        
         let transform = ImageTransform(
             scale: imageScale,
             normalizedOffset: CGPoint(x: normalizedOffsetX, y: normalizedOffsetY)
         )
-        
         // BackgroundImageManagerを使用して保存
         backgroundImageManager.saveEditedResult(transform)
-        
         print("画像設定を保存: transform=\(transform)")
     }
 }
