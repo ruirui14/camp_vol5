@@ -32,13 +32,13 @@ struct CardBackgroundEditView: View {
                 // 編集エリア
                 editingArea
 
-                // コントロールボタン（別のZStack層）
+                // コントロールボタン（固定位置）
                 VStack {
                     Spacer()
                     controlButtons
                 }
-                .padding()
             }
+            .padding()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -60,74 +60,76 @@ struct CardBackgroundEditView: View {
         .sheet(isPresented: $showingPhotoPicker) {
             PhotoPicker(selectedImage: $selectedImage)
         }
-        .interactiveDismissDisabled()
     }
 
     private var editingArea: some View {
-        ZStack {
-            // 編集中の画像（全体表示）
-            if let image = selectedImage {
-                ZStack {
-                    // 透過された背景画像（全体）
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(
-                            width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height
-                        )
-                        .clipped()
-                        .opacity(0.5)
-                        .offset(imageOffset)
-                        .scaleEffect(imageScale)
+        GeometryReader { geometry in
+            ZStack {
+                // 画像があるときだけ背景画像を表示
+                if let image = selectedImage {
+                    ZStack {
+                        // 背景画像（透過）
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .opacity(0.5)
+                            .offset(imageOffset)
+                            .scaleEffect(imageScale)
 
-                    // カード範囲内のみ透過を解除した画像
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(
-                            width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height
+                        // 背景画像（カード範囲のみ不透明）
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .opacity(1.0)
+                            .offset(imageOffset)
+                            .scaleEffect(imageScale)
+                            .mask(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color.black)
+                                    .frame(width: cardSize.width, height: cardSize.height)
+                            )
+                    }
+                    .gesture(
+                        SimultaneousGesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    imageOffset = CGSize(
+                                        width: lastOffset.width + value.translation.width,
+                                        height: lastOffset.height + value.translation.height
+                                    )
+                                }
+                                .onEnded { _ in
+                                    lastOffset = imageOffset
+                                },
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    imageScale = lastScale * value
+                                }
+                                .onEnded { _ in
+                                    lastScale = imageScale
+                                }
                         )
-                        .clipped()
-                        .opacity(1.0)
-                        .offset(imageOffset)
-                        .scaleEffect(imageScale)
-                        .mask(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color.black)
-                                .frame(width: cardSize.width, height: cardSize.height)
-                        )
-                }
-                .gesture(
-                    SimultaneousGesture(
-                        DragGesture()
-                            .onChanged { value in
-                                imageOffset = CGSize(
-                                    width: lastOffset.width + value.translation.width,
-                                    height: lastOffset.height + value.translation.height
-                                )
-                            }
-                            .onEnded { value in
-                                lastOffset = imageOffset
-                            },
-                        MagnificationGesture()
-                            .onChanged { value in
-                                imageScale = lastScale * value
-                            }
-                            .onEnded { value in
-                                lastScale = imageScale
-                            }
                     )
-                )
-            }
+                }
 
-            // 中央にUserHeartbeatCardのプレビュー
-            UserHeartbeatCard(
-                customBackgroundImage: nil,
-                displayName: "プレビュー",
-                displayBPM: "72"
-            )
+                // 画像の有無に関わらずカードを中央に表示
+                VStack {
+                    Spacer()
+                    UserHeartbeatCard(
+                        customBackgroundImage: nil,
+                        displayName: "プレビュー",
+                        displayBPM: "72"
+                    )
+                    .frame(width: cardSize.width, height: cardSize.height)
+                    Spacer()
+                }
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var controlButtons: some View {
@@ -160,7 +162,6 @@ struct CardBackgroundEditView: View {
             }
             .disabled(selectedImage == nil)
         }
-        .padding(.horizontal)
     }
 
     private var isImageInCardBounds: Bool {
