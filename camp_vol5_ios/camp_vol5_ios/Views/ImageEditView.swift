@@ -1,5 +1,5 @@
-import SwiftUI
 import PhotosUI
+import SwiftUI
 
 struct ImageEditView: View {
     @Binding var image: UIImage?
@@ -21,8 +21,7 @@ struct ImageEditView: View {
         NavigationView {
             ZStack {
                 // 白い背景（表示画面と同じ）
-                Color.white
-                    .ignoresSafeArea()
+                MainAccentGradient()
 
                 // 画像表示とジェスチャー
                 if let image = image {
@@ -69,7 +68,7 @@ struct ImageEditView: View {
                         Image(systemName: "photo.badge.plus")
                             .font(.system(size: 60))
                             .foregroundColor(.white.opacity(0.6))
-                        
+
                         Text("写真を選択してください")
                             .font(.title3)
                             .foregroundColor(.white.opacity(0.8))
@@ -175,9 +174,9 @@ struct ImageEditView: View {
             }
         }
     }
-    
+
     // MARK: - Control Buttons
-    
+
     private var controlButtons: some View {
         HStack(alignment: .top, spacing: 40) {
             Button(action: {
@@ -209,9 +208,9 @@ struct ImageEditView: View {
             .disabled(image == nil)
         }
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private func resetImagePosition() {
         withAnimation(.spring()) {
             tempOffset = .zero
