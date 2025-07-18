@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct ImageEditView: View {
     @Binding var image: UIImage?
@@ -11,6 +12,7 @@ struct ImageEditView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var heartOffset = CGSize.zero
     @State private var lastHeartOffset = CGSize.zero
+    @State private var showingPhotoPicker = false
     @Environment(\.presentationMode) var presentationMode
 
     private let persistenceManager = PersistenceManager.shared
@@ -63,13 +65,10 @@ struct ImageEditView: View {
                         )
                 }
 
-                // 説明テキスト
+                // コントロールボタン（固定位置）
                 VStack {
                     Spacer()
-                    Text("ハートとイメージを自由に配置してください")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                    controlButtons
                         .padding(.bottom, 40)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
@@ -137,6 +136,9 @@ struct ImageEditView: View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
+        .sheet(isPresented: $showingPhotoPicker) {
+            PhotoPicker(selectedImage: $image)
+        }
         .onAppear {
             // 永続化されたデータを再読み込み
             let transform = persistenceManager.loadImageTransform()
@@ -153,6 +155,53 @@ struct ImageEditView: View {
             let heartPosition = persistenceManager.loadHeartPosition()
             heartOffset = heartPosition
             lastHeartOffset = heartPosition
+        }
+    }
+    
+    // MARK: - Control Buttons
+    
+    private var controlButtons: some View {
+        HStack(alignment: .top, spacing: 40) {
+            Button(action: {
+                showingPhotoPicker = true
+            }) {
+                VStack(spacing: 8) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .foregroundColor(.white)
+                        .font(.title3)
+                    Text("写真を選択")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
+                }
+                .frame(minWidth: 80)
+            }
+
+            Button(action: resetImagePosition) {
+                VStack(spacing: 8) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .foregroundColor(.white)
+                        .font(.title3)
+                    Text("リセット")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
+                }
+                .frame(minWidth: 80)
+                .opacity(image != nil ? 1.0 : 0.5)
+            }
+            .disabled(image == nil)
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func resetImagePosition() {
+        withAnimation(.spring()) {
+            tempOffset = .zero
+            lastOffset = .zero
+            tempScale = 1.0
+            lastScale = 1.0
+            heartOffset = .zero
+            lastHeartOffset = .zero
         }
     }
 }
