@@ -38,7 +38,6 @@ struct CardBackgroundEditView: View {
                     controlButtons
                 }
             }
-            .padding()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
