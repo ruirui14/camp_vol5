@@ -146,19 +146,19 @@ struct CardBackgroundEditView: View {
                 .frame(minWidth: 80)
             }
 
-            if selectedImage != nil {
-                Button(action: resetImagePosition) {
-                    VStack(spacing: 8) {
-                        Image(systemName: "arrow.counterclockwise")
-                            .foregroundColor(.white)
-                            .font(.title3)
-                        Text("リセット")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(.white)
-                    }
-                    .frame(minWidth: 80)
+            Button(action: resetImagePosition) {
+                VStack(spacing: 8) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .foregroundColor(.white)
+                        .font(.title3)
+                    Text("リセット")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
                 }
+                .frame(minWidth: 80)
+                .opacity(selectedImage != nil ? 1.0 : 0.5)
             }
+            .disabled(selectedImage == nil)
         }
         .padding(.horizontal)
     }
