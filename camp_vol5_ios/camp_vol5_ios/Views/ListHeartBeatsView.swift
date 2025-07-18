@@ -65,7 +65,10 @@ struct ListHeartBeatsView: View {
                 // フォローしているユーザーの背景画像を読み込み
                 loadBackgroundImages()
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: UIApplication.willEnterForegroundNotification)
+            ) { _ in
                 // アプリがフォアグラウンドに戻った時に背景画像を更新
                 loadBackgroundImages()
             }
@@ -167,7 +170,8 @@ struct ListHeartBeatsView: View {
                     ) {
                         UserHeartbeatCard(
                             userWithHeartbeat: userWithHeartbeat,
-                            customBackgroundImage: backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage
+                            customBackgroundImage: backgroundImageManagers[
+                                userWithHeartbeat.user.id]?.currentEditedImage
                         )
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -180,9 +184,9 @@ struct ListHeartBeatsView: View {
             loadBackgroundImages()
         }
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private func loadBackgroundImages() {
         for userWithHeartbeat in viewModel.followingUsersWithHeartbeats {
             let userId = userWithHeartbeat.user.id
