@@ -93,9 +93,8 @@ struct CardBackgroundEditView: View {
                         // 背景画像（透過）
                         Image(uiImage: image)
                             .resizable()
-                            .scaledToFill()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
+                            .aspectRatio(image.size, contentMode: .fit)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .opacity(0.5)
                             .offset(imageOffset)
                             .scaleEffect(imageScale)
@@ -103,9 +102,8 @@ struct CardBackgroundEditView: View {
                         // 背景画像（カード範囲のみ不透明）
                         Image(uiImage: image)
                             .resizable()
-                            .scaledToFill()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
+                            .aspectRatio(image.size, contentMode: .fit)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .opacity(1.0)
                             .offset(imageOffset)
                             .scaleEffect(imageScale)
