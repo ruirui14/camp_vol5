@@ -7,6 +7,7 @@ import SwiftUI
 
 struct CardBackgroundEditView: View {
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var backgroundImageManager: BackgroundImageManager
     @State private var selectedImage: UIImage?
     @State private var showingPhotoPicker = false
     @State private var imageOffset: CGSize = .zero
@@ -17,6 +18,13 @@ struct CardBackgroundEditView: View {
 
     // UserHeartbeatCardと同じサイズ
     private let cardSize = CGSize(width: 370, height: 120)
+    
+    let userId: String
+    
+    init(userId: String) {
+        self.userId = userId
+        _backgroundImageManager = StateObject(wrappedValue: BackgroundImageManager(userId: userId))
+    }
 
     var body: some View {
         NavigationView {
@@ -48,11 +56,31 @@ struct CardBackgroundEditView: View {
                         dismiss()
                     }
                     .foregroundColor(.white)
+                    .disabled(backgroundImageManager.isSaving)
                 }
             }
         }
         .sheet(isPresented: $showingPhotoPicker) {
             PhotoPicker(selectedImage: $selectedImage)
+        }
+        .onAppear {
+            if let existingImage = backgroundImageManager.currentOriginalImage {
+                selectedImage = existingImage
+                // 既存の変換情報を復元
+                let screenSize = UIScreen.main.bounds.size
+                imageOffset = CGSize(
+                    width: backgroundImageManager.currentTransform.normalizedOffset.x * screenSize.width,
+                    height: backgroundImageManager.currentTransform.normalizedOffset.y * screenSize.height
+                )
+                lastOffset = imageOffset
+                imageScale = backgroundImageManager.currentTransform.scale
+                lastScale = imageScale
+            }
+        }
+        .onChange(of: selectedImage) { newImage in
+            if let image = newImage {
+                backgroundImageManager.setOriginalImage(image)
+            }
         }
     }
 
@@ -178,9 +206,25 @@ struct CardBackgroundEditView: View {
     }
 
     private func saveImageConfiguration() {
-        // TODO: 画像の設定を保存
-        // BackgroundImageManagerを使用して保存処理を実装
-        print("画像設定を保存: offset=\(imageOffset), scale=\(imageScale)")
+        guard selectedImage != nil else {
+            print("保存する画像がありません")
+            return
+        }
+        
+        // 正規化座標系でのTransformを作成
+        let screenSize = UIScreen.main.bounds.size
+        let normalizedOffsetX = imageOffset.width / screenSize.width
+        let normalizedOffsetY = imageOffset.height / screenSize.height
+        
+        let transform = ImageTransform(
+            scale: imageScale,
+            normalizedOffset: CGPoint(x: normalizedOffsetX, y: normalizedOffsetY)
+        )
+        
+        // BackgroundImageManagerを使用して保存
+        backgroundImageManager.saveEditedResult(transform)
+        
+        print("画像設定を保存: transform=\(transform)")
     }
 }
 
@@ -228,5 +272,5 @@ struct PhotoPicker: UIViewControllerRepresentable {
 }
 
 #Preview {
-    CardBackgroundEditView()
+    CardBackgroundEditView(userId: "preview-user")
 }

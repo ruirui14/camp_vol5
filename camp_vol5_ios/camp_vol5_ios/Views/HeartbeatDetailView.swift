@@ -96,8 +96,8 @@ struct HeartbeatDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         // 透明なナビゲーションバーの設定
         .navigationBarBackgroundTransparent()
-        .navigationBarItems(
-            trailing:
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button("カード背景を編集") {
                         showingCardBackgroundEditSheet = true
@@ -127,7 +127,8 @@ struct HeartbeatDetailView: View {
                         .foregroundColor(.white)
                         .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                 }
-        )
+            }
+        }
         .onAppear {
             viewModel.startContinuousMonitoring()
             loadPersistedData()
@@ -170,7 +171,9 @@ struct HeartbeatDetailView: View {
             )
         }
         .fullScreenCover(isPresented: $showingCardBackgroundEditSheet) {
-            CardBackgroundEditView()
+            if let user = viewModel.user {
+                CardBackgroundEditView(userId: user.id)
+            }
         }
     }
 

@@ -144,4 +144,8 @@ class BackgroundImageManager: ObservableObject {
     func getThumbnailImage() -> UIImage? {
         return currentThumbnail
     }
+    
+    func refreshFromStorage() {
+        loadPersistedImages()
+    }
 }

@@ -6,6 +6,7 @@ struct ListHeartBeatsView: View {
     @State private var showingQRShareSheet = false
     @State private var showingQRScannerSheet = false
     @State private var showingSettingsSheet = false
+    @State private var backgroundImageManagers: [String: BackgroundImageManager] = [:]
 
     init() {
         // 初期化時はダミーの AuthenticationManager を使用
@@ -14,6 +15,8 @@ struct ListHeartBeatsView: View {
             wrappedValue: ListHeartBeatsViewModel(
                 authenticationManager: AuthenticationManager()
             ))
+        // BackgroundImageManagersは認証後に初期化
+        _backgroundImageManagers = State(initialValue: [:])
     }
 
     var body: some View {
@@ -59,6 +62,16 @@ struct ListHeartBeatsView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
+                // フォローしているユーザーの背景画像を読み込み
+                loadBackgroundImages()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                // アプリがフォアグラウンドに戻った時に背景画像を更新
+                loadBackgroundImages()
+            }
+            .onChange(of: viewModel.followingUsersWithHeartbeats.count) { _ in
+                // フォローユーザーが変更された時に背景画像を更新
+                loadBackgroundImages()
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -152,7 +165,10 @@ struct ListHeartBeatsView: View {
                     NavigationLink(
                         destination: HeartbeatDetailView(userWithHeartbeat: userWithHeartbeat)
                     ) {
-                        UserHeartbeatCard(userWithHeartbeat: userWithHeartbeat)
+                        UserHeartbeatCard(
+                            userWithHeartbeat: userWithHeartbeat,
+                            customBackgroundImage: backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage
+                        )
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -161,6 +177,22 @@ struct ListHeartBeatsView: View {
         }
         .refreshable {
             viewModel.loadFollowingUsersWithHeartbeats()
+            loadBackgroundImages()
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func loadBackgroundImages() {
+        for userWithHeartbeat in viewModel.followingUsersWithHeartbeats {
+            let userId = userWithHeartbeat.user.id
+            if let existingManager = backgroundImageManagers[userId] {
+                // 既存のManagerがある場合は、ストレージから最新データを再読み込み
+                existingManager.refreshFromStorage()
+            } else {
+                // 新しいManagerを作成
+                backgroundImageManagers[userId] = BackgroundImageManager(userId: userId)
+            }
         }
     }
 
