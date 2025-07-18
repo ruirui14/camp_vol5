@@ -103,14 +103,8 @@ struct HeartbeatDetailView: View {
                         showingCardBackgroundEditSheet = true
                     }
 
-                    Button("新しい画像を選択") {
-                        showingImagePicker = true
-                    }
-
-                    if selectedImage != nil {
-                        Button("現在の画像を再編集") {
-                            showingImageEditor = true
-                        }
+                    Button("背景画像を編集") {
+                        showingImageEditor = true
                     }
 
                     if selectedImage != nil {
@@ -135,15 +129,6 @@ struct HeartbeatDetailView: View {
         }
         .onDisappear {
             viewModel.stopMonitoring()
-        }
-        .sheet(isPresented: $showingImagePicker) {
-            SimplePhotoPickerView(
-                selectedImage: $selectedImage,
-                onImageSelected: {
-                    if selectedImage != nil {
-                        showingImageEditor = true
-                    }
-                })
         }
         .fullScreenCover(
             isPresented: $showingImageEditor,

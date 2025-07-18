@@ -63,6 +63,17 @@ struct ImageEditView: View {
                                     }
                             )
                         )
+                } else {
+                    // 画像が選択されていない場合のプレースホルダー
+                    VStack(spacing: 20) {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white.opacity(0.6))
+                        
+                        Text("写真を選択してください")
+                            .font(.title3)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
                 }
 
                 // コントロールボタン（固定位置）
@@ -74,32 +85,36 @@ struct ImageEditView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             }
             .overlay(
-                // ドラッグ可能なハートビュー（HeartbeatDetailViewと同じ位置）
-                ZStack {
-                    Image("heart_beat")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 105, height: 92)
-                        .clipShape(Circle())
-                    Text("--")
-                        .font(.system(size: 32, weight: .semibold))
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.8), radius: 2, x: 0, y: 1)
-                }
-                .offset(heartOffset)
-                .ignoresSafeArea()
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            heartOffset = CGSize(
-                                width: lastHeartOffset.width + value.translation.width,
-                                height: lastHeartOffset.height + value.translation.height
-                            )
+                // ドラッグ可能なハートビュー（画像が選択されている場合のみ表示）
+                Group {
+                    if image != nil {
+                        ZStack {
+                            Image("heart_beat")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 105, height: 92)
+                                .clipShape(Circle())
+                            Text("--")
+                                .font(.system(size: 32, weight: .semibold))
+                                .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.8), radius: 2, x: 0, y: 1)
                         }
-                        .onEnded { value in
-                            lastHeartOffset = heartOffset
-                        }
-                ),
+                        .offset(heartOffset)
+                        .ignoresSafeArea()
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    heartOffset = CGSize(
+                                        width: lastHeartOffset.width + value.translation.width,
+                                        height: lastHeartOffset.height + value.translation.height
+                                    )
+                                }
+                                .onEnded { value in
+                                    lastHeartOffset = heartOffset
+                                }
+                        )
+                    }
+                },
                 alignment: .center
             )
             .whiteCapsuleTitle("画像を編集中")
@@ -132,6 +147,7 @@ struct ImageEditView: View {
                     .foregroundColor(.white)
                     .fontWeight(.semibold)
                     .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                    .disabled(image == nil)
                 }
             }
         }
@@ -140,21 +156,23 @@ struct ImageEditView: View {
             PhotoPicker(selectedImage: $image)
         }
         .onAppear {
-            // 永続化されたデータを再読み込み
-            let transform = persistenceManager.loadImageTransform()
-            imageOffset = transform.offset
-            imageScale = transform.scale
+            // 永続化されたデータを再読み込み（画像がある場合のみ）
+            if image != nil {
+                let transform = persistenceManager.loadImageTransform()
+                imageOffset = transform.offset
+                imageScale = transform.scale
 
-            // 現在の状態を編集画面に反映
-            tempOffset = transform.offset
-            lastOffset = transform.offset
-            tempScale = transform.scale
-            lastScale = transform.scale
+                // 現在の状態を編集画面に反映
+                tempOffset = transform.offset
+                lastOffset = transform.offset
+                tempScale = transform.scale
+                lastScale = transform.scale
 
-            // ハートの位置を読み込み
-            let heartPosition = persistenceManager.loadHeartPosition()
-            heartOffset = heartPosition
-            lastHeartOffset = heartPosition
+                // ハートの位置を読み込み
+                let heartPosition = persistenceManager.loadHeartPosition()
+                heartOffset = heartPosition
+                lastHeartOffset = heartPosition
+            }
         }
     }
     
