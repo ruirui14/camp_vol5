@@ -20,12 +20,7 @@ struct ListHeartBeatsView: View {
         NavigationView {
             ZStack {
                 // 背景グラデーション
-                LinearGradient(
-                    gradient: Gradient(colors: [.main, .accent]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                MainAccentGradient()
 
                 VStack {
                     if viewModel.isLoading {

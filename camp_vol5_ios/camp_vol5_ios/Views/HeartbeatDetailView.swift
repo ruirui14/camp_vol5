@@ -49,12 +49,7 @@ struct HeartbeatDetailView: View {
                         .ignoresSafeArea()
                 } else {
                     // デフォルトのグラデーション背景
-                    LinearGradient(
-                        gradient: Gradient(colors: [.main, .accent]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .ignoresSafeArea()
+                    MainAccentGradient()
                 }
 
                 VStack(spacing: 20) {

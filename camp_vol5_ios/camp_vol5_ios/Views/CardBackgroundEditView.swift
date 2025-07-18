@@ -22,12 +22,7 @@ struct CardBackgroundEditView: View {
         NavigationView {
             ZStack {
                 // 背景
-                LinearGradient(
-                    gradient: Gradient(colors: [.main, .accent]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                MainAccentGradient()
 
                 // 編集エリア
                 editingArea
