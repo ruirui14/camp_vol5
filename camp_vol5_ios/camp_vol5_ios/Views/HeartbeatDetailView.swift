@@ -19,6 +19,7 @@ struct HeartbeatDetailView: View {
     @State private var imageOffset = CGSize.zero
     @State private var imageScale: CGFloat = 1.0
     @State private var heartOffset = CGSize.zero
+    @State private var showingCardBackgroundEditSheet = false
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -103,6 +104,10 @@ struct HeartbeatDetailView: View {
         .navigationBarItems(
             trailing:
                 Menu {
+                    Button("カード背景を編集") {
+                        showingCardBackgroundEditSheet = true
+                    }
+
                     Button("新しい画像を選択") {
                         showingImagePicker = true
                     }
@@ -168,6 +173,9 @@ struct HeartbeatDetailView: View {
                     showingImageEditor = false
                 }
             )
+        }
+        .fullScreenCover(isPresented: $showingCardBackgroundEditSheet) {
+            CardBackgroundEditView()
         }
     }
 
