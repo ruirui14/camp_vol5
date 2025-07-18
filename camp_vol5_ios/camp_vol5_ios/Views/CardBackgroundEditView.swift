@@ -124,14 +124,18 @@ struct CardBackgroundEditView: View {
                     }
                     
                     // 中央にUserHeartbeatCardのプレビュー
-                    cardPreview
-                        .background(
-                            GeometryReader { cardGeometry in
-                                Color.clear.onAppear {
-                                    cardFrame = cardGeometry.frame(in: .named("editingArea"))
-                                }
+                    UserHeartbeatCard(
+                        customBackgroundImage: nil,
+                        displayName: "プレビュー",
+                        displayBPM: "72"
+                    )
+                    .background(
+                        GeometryReader { cardGeometry in
+                            Color.clear.onAppear {
+                                cardFrame = cardGeometry.frame(in: .named("editingArea"))
                             }
-                        )
+                        }
+                    )
                 }
                 .frame(width: cardSize.width, height: cardSize.height)
                 
@@ -144,43 +148,6 @@ struct CardBackgroundEditView: View {
         .coordinateSpace(name: "editingArea")
     }
     
-    private var cardPreview: some View {
-        ZStack(alignment: .bottomLeading) {
-            // カード背景
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: cardSize.width, height: cardSize.height)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white, lineWidth: 2)
-                )
-            
-            // カード内容のプレビュー
-            HStack(spacing: 8) {
-                ZStack {
-                    Image("heart_beat")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 60, height: 60)
-                        .clipShape(Circle())
-                    
-                    Text("72")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                }
-                .offset(x: 290, y: -36)
-                
-                Text("プレビュー")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundColor(.base)
-                    .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-                    .offset(x: -50, y: -48)
-            }
-            .padding()
-        }
-        .frame(width: cardSize.width, height: cardSize.height)
-    }
     
     private var controlButtons: some View {
         VStack(spacing: 12) {
