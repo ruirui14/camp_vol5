@@ -29,11 +29,12 @@ struct CardBackgroundEditView: View {
                 )
                 .ignoresSafeArea()
 
-                VStack(spacing: 20) {
-                    // 編集エリア
-                    editingArea
+                // 編集エリア
+                editingArea
 
-                    // コントロールボタン
+                // コントロールボタン（別のZStack層）
+                VStack {
+                    Spacer()
                     controlButtons
                 }
                 .padding()
@@ -130,34 +131,32 @@ struct CardBackgroundEditView: View {
     }
 
     private var controlButtons: some View {
-        VStack(spacing: 12) {
+        HStack(alignment: .top, spacing: 40) {
             Button(action: {
                 showingPhotoPicker = true
             }) {
-                HStack {
+                VStack(spacing: 8) {
                     Image(systemName: "photo.on.rectangle.angled")
+                        .foregroundColor(.white)
+                        .font(.title3)
                     Text("写真を選択")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
                 }
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.blue)
-                .cornerRadius(10)
+                .frame(minWidth: 80)
             }
 
             if selectedImage != nil {
                 Button(action: resetImagePosition) {
-                    HStack {
+                    VStack(spacing: 8) {
                         Image(systemName: "arrow.counterclockwise")
-                        Text("位置をリセット")
+                            .foregroundColor(.white)
+                            .font(.title3)
+                        Text("リセット")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.white)
                     }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.orange)
-                    .cornerRadius(10)
+                    .frame(minWidth: 80)
                 }
             }
         }
