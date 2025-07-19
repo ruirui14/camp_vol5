@@ -7,6 +7,7 @@ struct ListHeartBeatsView: View {
     @State private var showingQRScannerSheet = false
     @State private var showingSettingsSheet = false
     @State private var backgroundImageManagers: [String: BackgroundImageManager] = [:]
+    @State private var backgroundImageRefreshTrigger = 0
 
     init() {
         // 初期化時はダミーの AuthenticationManager を使用
@@ -72,9 +73,21 @@ struct ListHeartBeatsView: View {
                 // アプリがフォアグラウンドに戻った時に背景画像を更新
                 loadBackgroundImages()
             }
-            .onChange(of: viewModel.followingUsersWithHeartbeats.count) { _ in
-                // フォローユーザーが変更された時に背景画像を更新
-                loadBackgroundImages()
+            .onReceive(viewModel.$followingUsersWithHeartbeats) { usersWithHeartbeats in
+                // フォローユーザーのデータが更新された時に背景画像を更新
+                if !usersWithHeartbeats.isEmpty {
+                    loadBackgroundImages()
+                    // BackgroundImageManagerの初期化完了を待ってから再度UI更新
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        checkAndTriggerUIUpdate()
+                    }
+                }
+            }
+            .onChange(of: viewModel.isLoading) { isLoading in
+                // データ読み込み完了時に背景画像を更新
+                if !isLoading && !viewModel.followingUsersWithHeartbeats.isEmpty {
+                    loadBackgroundImages()
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -155,7 +168,6 @@ struct ListHeartBeatsView: View {
                 .contentShape(Rectangle())
             }
             .refreshable {
-                print("refresh")
                 viewModel.loadFollowingUsersWithHeartbeats()
             }
         }
@@ -173,10 +185,14 @@ struct ListHeartBeatsView: View {
                             customBackgroundImage: backgroundImageManagers[
                                 userWithHeartbeat.user.id]?.currentEditedImage
                         )
+                        .id(
+                            "\(userWithHeartbeat.user.id)-\(backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage != nil ? "with-image" : "no-image")-\(backgroundImageRefreshTrigger)"
+                        )
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
             }
+            .id("following-users-\(backgroundImageRefreshTrigger)")
             .padding(.top, 20)
         }
         .refreshable {
@@ -196,6 +212,35 @@ struct ListHeartBeatsView: View {
             } else {
                 // 新しいManagerを作成
                 backgroundImageManagers[userId] = BackgroundImageManager(userId: userId)
+            }
+        }
+
+        // UI更新をトリガー
+        DispatchQueue.main.async {
+            self.backgroundImageRefreshTrigger += 1
+        }
+    }
+    
+    private func checkAndTriggerUIUpdate() {
+        // BackgroundImageManagerの読み込み状況をチェック
+        var allLoadingComplete = true
+        var hasImages = false
+        
+        for (_, manager) in backgroundImageManagers {
+            if manager.isLoading {
+                allLoadingComplete = false
+            }
+            if manager.currentEditedImage != nil {
+                hasImages = true
+            }
+        }
+        
+        if allLoadingComplete || hasImages {
+            backgroundImageRefreshTrigger += 1
+        } else if !allLoadingComplete {
+            // まだ読み込み中の場合は少し待ってから再チェック
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                checkAndTriggerUIUpdate()
             }
         }
     }
