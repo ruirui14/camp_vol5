@@ -68,17 +68,21 @@ class HeartbeatService {
 
             if let data = snapshot.value as? [String: Any] {
                 if let heartbeat = Heartbeat(from: data, userId: userId) {
-                    // 5分以内のデータかどうか確認
-                    let timeDifference = Date().timeIntervalSince(heartbeat.timestamp)
-                    if timeDifference <= self.heartbeatValidityDuration {
-                        subject.send(heartbeat)
-                    } else {
-                        subject.send(nil)
-                    }
+                    // テスト用に5分チェック無効化
+                    subject.send(heartbeat)
+                    // let timeDifference = Date().timeIntervalSince(heartbeat.timestamp)
+                    // if timeDifference <= self.heartbeatValidityDuration {
+                    //     subject.send(heartbeat)
+                    // } else {
+                    //     print("⏰ データが古すぎます: \(timeDifference)秒前")
+                    //     subject.send(nil)
+                    // }
                 } else {
+                    print("❌ 心拍データのパースに失敗")
                     subject.send(nil)
                 }
             } else {
+                print("❌ データが見つからないか形式が不正")
                 subject.send(nil)
             }
         }
