@@ -12,7 +12,9 @@ struct ImageEditView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var heartOffset = CGSize.zero
     @State private var lastHeartOffset = CGSize.zero
+    @State private var heartSize: CGFloat = 105.0
     @State private var showingPhotoPicker = false
+    @State private var showingHeartSizeSlider = false
     @Environment(\.presentationMode) var presentationMode
 
     private let persistenceManager = PersistenceManager.shared
@@ -91,10 +93,10 @@ struct ImageEditView: View {
                             Image("heart_beat")
                                 .resizable()
                                 .scaledToFill()
-                                .frame(width: 105, height: 92)
+                                .frame(width: heartSize, height: heartSize * 0.876) // 元のアスペクト比維持 (92/105)
                                 .clipShape(Circle())
                             Text("--")
-                                .font(.system(size: 32, weight: .semibold))
+                                .font(.system(size: heartSize * 0.305, weight: .semibold)) // サイズに応じてフォントも調整
                                 .foregroundColor(.white)
                                 .shadow(color: Color.black.opacity(0.8), radius: 2, x: 0, y: 1)
                         }
@@ -115,6 +117,64 @@ struct ImageEditView: View {
                     }
                 },
                 alignment: .center
+            )
+            .overlay(
+                // ハートサイズ調整スライダー
+                Group {
+                    if showingHeartSizeSlider {
+                        VStack {
+                            Spacer()
+                            
+                            VStack(spacing: 16) {
+                                Text("ハートサイズ調整")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                                
+                                HStack {
+                                    Text("小")
+                                        .foregroundColor(.white)
+                                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                                    
+                                    Slider(value: $heartSize, in: 60...200, step: 5)
+                                        .accentColor(.white)
+                                        .onChange(of: heartSize) { newSize in
+                                            persistenceManager.saveHeartSize(newSize)
+                                        }
+                                    
+                                    Text("大")
+                                        .foregroundColor(.white)
+                                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                                }
+                                
+                                Text("サイズ: \(Int(heartSize))")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                                
+                                Button("完了") {
+                                    showingHeartSizeSlider = false
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 32)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.black.opacity(0.3))
+                                )
+                            }
+                            .padding(20)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.black.opacity(0.7))
+                            )
+                            .padding(.horizontal, 40)
+                            .padding(.bottom, 150) // ボタンとの重複を避ける
+                        }
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: 0.3), value: showingHeartSizeSlider)
+                    }
+                }
             )
             .whiteCapsuleTitle("画像を編集中")
             .navigationBarTitleDisplayMode(.inline)
@@ -155,6 +215,9 @@ struct ImageEditView: View {
             PhotoPicker(selectedImage: $image)
         }
         .onAppear {
+            // ハートのサイズを読み込み
+            heartSize = persistenceManager.loadHeartSize()
+            
             // 永続化されたデータを再読み込み（画像がある場合のみ）
             if image != nil {
                 let transform = persistenceManager.loadImageTransform()
@@ -178,7 +241,7 @@ struct ImageEditView: View {
     // MARK: - Control Buttons
 
     private var controlButtons: some View {
-        HStack(alignment: .top, spacing: 40) {
+        HStack(alignment: .top, spacing: 30) {
             Button(action: {
                 showingPhotoPicker = true
             }) {
@@ -192,6 +255,22 @@ struct ImageEditView: View {
                 }
                 .frame(minWidth: 80)
             }
+
+            Button(action: {
+                showingHeartSizeSlider = true
+            }) {
+                VStack(spacing: 8) {
+                    Image(systemName: "heart.text.square")
+                        .foregroundColor(.white)
+                        .font(.title3)
+                    Text("サイズ調整")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
+                }
+                .frame(minWidth: 80)
+                .opacity(image != nil ? 1.0 : 0.5)
+            }
+            .disabled(image == nil)
 
             Button(action: resetImagePosition) {
                 VStack(spacing: 8) {

@@ -18,6 +18,7 @@ class PersistenceManager {
     private let imageScaleKey = "imageScale"
     private let heartOffsetXKey = "heartOffsetX"
     private let heartOffsetYKey = "heartOffsetY"
+    private let heartSizeKey = "heartSize"
 
     private init() {}
 
@@ -85,6 +86,7 @@ class PersistenceManager {
         userDefaults.removeObject(forKey: imageScaleKey)
         userDefaults.removeObject(forKey: heartOffsetXKey)
         userDefaults.removeObject(forKey: heartOffsetYKey)
+        userDefaults.removeObject(forKey: heartSizeKey)
     }
     
     // ハートの位置を保存
@@ -98,5 +100,22 @@ class PersistenceManager {
         let x = userDefaults.double(forKey: heartOffsetXKey)
         let y = userDefaults.double(forKey: heartOffsetYKey)
         return CGSize(width: x, height: y)
+    }
+    
+    // MARK: - Heart Size Management
+    
+    /// ハートのサイズを保存
+    func saveHeartSize(_ size: CGFloat) {
+        userDefaults.set(Double(size), forKey: heartSizeKey)
+        print("💾 ハートサイズ保存: \(size)")
+    }
+    
+    /// ハートのサイズを読み込み
+    func loadHeartSize() -> CGFloat {
+        let size = userDefaults.double(forKey: heartSizeKey)
+        // デフォルトサイズは105（元のサイズ）
+        let heartSize = size == 0 ? 105.0 : size
+        print("📏 ハートサイズ読み込み: \(heartSize)")
+        return CGFloat(heartSize)
     }
 }

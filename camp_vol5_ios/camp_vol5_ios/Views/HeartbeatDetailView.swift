@@ -20,6 +20,7 @@ struct HeartbeatDetailView: View {
     @State private var imageOffset = CGSize.zero
     @State private var imageScale: CGFloat = 1.0
     @State private var heartOffset = CGSize.zero
+    @State private var heartSize: CGFloat = 105.0
     @State private var showingCardBackgroundEditSheet = false
     @State private var isVibrationEnabled = true
 
@@ -193,9 +194,13 @@ struct HeartbeatDetailView: View {
         .fullScreenCover(
             isPresented: $showingImageEditor,
             onDismiss: {
-                // ImageEditViewが閉じられたときにハートの位置を再読み込み
+                // ImageEditViewが閉じられたときにハートの位置とサイズを再読み込み
                 let heartPosition = persistenceManager.loadHeartPosition()
                 heartOffset = heartPosition
+                
+                // ハートサイズの更新
+                heartSize = persistenceManager.loadHeartSize()
+                print("🔄 ImageEditView閉じ後 - ハートサイズ更新: \(heartSize)")
             }
         ) {
             ImageEditView(
@@ -215,7 +220,14 @@ struct HeartbeatDetailView: View {
                 }
             )
         }
-        .fullScreenCover(isPresented: $showingCardBackgroundEditSheet) {
+        .fullScreenCover(
+            isPresented: $showingCardBackgroundEditSheet,
+            onDismiss: {
+                // CardBackgroundEditViewが閉じられたときもハートサイズを更新
+                heartSize = persistenceManager.loadHeartSize()
+                print("🔄 CardBackgroundEditView閉じ後 - ハートサイズ更新: \(heartSize)")
+            }
+        ) {
             if let user = viewModel.user {
                 CardBackgroundEditView(userId: user.id)
             }
@@ -236,6 +248,8 @@ struct HeartbeatDetailView: View {
         // ハートの位置を読み込み
         let heartPosition = persistenceManager.loadHeartPosition()
         heartOffset = heartPosition
+        // ハートのサイズを読み込み
+        heartSize = persistenceManager.loadHeartSize()
     }
 
     private var heartbeatDisplayView: some View {
@@ -243,11 +257,11 @@ struct HeartbeatDetailView: View {
             Image("heart_beat")
                 .resizable()
                 .scaledToFill()
-                .frame(width: 105, height: 92)
+                .frame(width: heartSize, height: heartSize * 0.876) // 元のアスペクト比維持 (92/105)
                 .clipShape(Circle())
 
             Text(viewModel.currentHeartbeat?.bpm.description ?? "--")
-                .font(.system(size: 32, weight: .semibold))
+                .font(.system(size: heartSize * 0.305, weight: .semibold)) // サイズに応じてフォントも調整
                 .foregroundColor(.white)
         }
     }
