@@ -18,10 +18,18 @@ class VibrationService: ObservableObject {
     /// BPMに基づいて心拍パターンの振動を開始
     /// - Parameter bpm: 1分間の心拍数
     func startHeartbeatVibration(bpm: Int) {
-        stopVibration()
-
         guard bpm > 0 && bpm <= 300 else {
             print("⚠️ 無効なBPM値: \(bpm)")
+            return
+        }
+
+        // 既に同じBPMで振動中の場合でも再設定する
+        let needsRestart = !isVibrating || currentBPM != bpm
+        
+        if needsRestart {
+            stopVibration()
+        } else {
+            print("🔄 既に同じBPMで振動中: \(bpm) BPM")
             return
         }
 
