@@ -6,7 +6,7 @@ import Firebase
 import FirebaseDatabase
 import Foundation
 
-struct Heartbeat: Codable, Identifiable {
+struct Heartbeat: Codable, Identifiable, Equatable {
     var id = UUID()
     let userId: String
     let bpm: Int

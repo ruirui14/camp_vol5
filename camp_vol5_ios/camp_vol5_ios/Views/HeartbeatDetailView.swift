@@ -12,6 +12,7 @@ struct ImageWrapper: Identifiable {
 
 struct HeartbeatDetailView: View {
     @StateObject private var viewModel: HeartbeatDetailViewModel
+    @ObservedObject private var vibrationService = VibrationService.shared
     @State private var selectedImage: UIImage?
     @State private var editedImage: UIImage?
     @State private var showingImagePicker = false
@@ -20,6 +21,7 @@ struct HeartbeatDetailView: View {
     @State private var imageScale: CGFloat = 1.0
     @State private var heartOffset = CGSize.zero
     @State private var showingCardBackgroundEditSheet = false
+    @State private var isVibrationEnabled = true
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -58,6 +60,23 @@ struct HeartbeatDetailView: View {
                     Spacer()
                     Spacer()
                     VStack(spacing: 8) {
+                        // 振動状態表示
+                        if isVibrationEnabled {
+                            HStack {
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 8, height: 8)
+                                    .scaleEffect(vibrationService.isVibrating ? 1.5 : 1.0)
+                                    .animation(
+                                        .easeInOut(duration: 0.5).repeatForever(),
+                                        value: vibrationService.isVibrating)
+
+                                Text("心拍振動: \(vibrationService.getVibrationStatus())")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                            }
+                        }
 
                         if let heartbeat = viewModel.currentHeartbeat {
                             Text(
@@ -98,28 +117,40 @@ struct HeartbeatDetailView: View {
         .navigationBarBackgroundTransparent()
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    Button("カード背景を編集") {
-                        showingCardBackgroundEditSheet = true
+                HStack(spacing: 15) {
+                    // 振動制御ボタン
+                    Button(action: {
+                        toggleVibration()
+                    }) {
+                        Image(systemName: isVibrationEnabled ? "heart.circle.fill" : "heart.circle")
+                            .foregroundColor(isVibrationEnabled ? .red : .white)
+                            .font(.title2)
+                            .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                     }
 
-                    Button("背景画像を編集") {
-                        showingImageEditor = true
-                    }
-
-                    if selectedImage != nil {
-                        Button("背景画像をリセット", role: .destructive) {
-                            selectedImage = nil
-                            editedImage = nil
-                            imageOffset = CGSize.zero
-                            imageScale = 1.0
-                            persistenceManager.clearAllData()
+                    Menu {
+                        Button("カード背景を編集") {
+                            showingCardBackgroundEditSheet = true
                         }
+
+                        Button("背景画像を編集") {
+                            showingImageEditor = true
+                        }
+
+                        if selectedImage != nil {
+                            Button("背景画像をリセット", role: .destructive) {
+                                selectedImage = nil
+                                editedImage = nil
+                                imageOffset = CGSize.zero
+                                imageScale = 1.0
+                                persistenceManager.clearAllData()
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "photo")
+                            .foregroundColor(.white)
+                            .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                     }
-                } label: {
-                    Image(systemName: "photo")
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                 }
             }
         }
@@ -129,6 +160,16 @@ struct HeartbeatDetailView: View {
         }
         .onDisappear {
             viewModel.stopMonitoring()
+            vibrationService.stopVibration()
+        }
+        .onChange(of: viewModel.currentHeartbeat) { heartbeat in
+            // 心拍データが更新された時の処理
+            if isVibrationEnabled, let heartbeat = heartbeat {
+                // 有効なBPMの場合のみ振動を開始
+                if vibrationService.isValidBPM(heartbeat.bpm) {
+                    vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
+                }
+            }
         }
         .fullScreenCover(
             isPresented: $showingImageEditor,
@@ -197,5 +238,29 @@ struct HeartbeatDetailView: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter
+    }
+
+    // MARK: - Vibration Control
+
+    private func toggleVibration() {
+        isVibrationEnabled.toggle()
+
+        if isVibrationEnabled {
+            // 振動有効化時の処理
+            if let heartbeat = viewModel.currentHeartbeat {
+                if vibrationService.isValidBPM(heartbeat.bpm) {
+                    vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
+                    print("🟢 心拍振動開始: \(heartbeat.bpm) BPM")
+                } else {
+                    print("⚠️ 無効なBPM値: \(heartbeat.bpm)")
+                }
+            } else {
+                print("ℹ️ 心拍データがありません")
+            }
+        } else {
+            // 振動無効化時の処理
+            vibrationService.stopVibration()
+            print("🔴 心拍振動停止")
+        }
     }
 }
