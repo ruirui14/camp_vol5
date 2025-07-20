@@ -6,6 +6,7 @@ struct QRCodeScannerView: View {
     @State private var showingQRScanner = false
     @State private var showingFollowConfirmation = false
     @State private var showingAuthRequired = false
+    @State private var showingQRCodeShare = false
     @Environment(\.presentationMode) var presentationMode
 
     init() {
@@ -54,12 +55,31 @@ struct QRCodeScannerView: View {
                     }
                     .foregroundColor(.white)
                 }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        if authenticationManager.isGoogleAuthenticated {
+                            showingQRCodeShare = true
+                        } else {
+                            showingAuthRequired = true
+                        }
+                    }) {
+                        Image(systemName: "qrcode")
+                            .foregroundColor(.white)
+                            .font(.title2)
+                    }
+                }
             }
             .sheet(isPresented: $showingQRScanner) {
                 QRScannerSheet { code in
                     viewModel.handleQRCodeScan(code)
                     showingQRScanner = false
                 }
+                .environmentObject(authenticationManager)
+            }
+            .sheet(isPresented: $showingQRCodeShare) {
+                QRCodeShareView()
+                    .environmentObject(authenticationManager)
             }
             .alert("フォロー確認", isPresented: $showingFollowConfirmation) {
                 Button("キャンセル", role: .cancel) {}
@@ -70,6 +90,14 @@ struct QRCodeScannerView: View {
                 if let user = viewModel.scannedUser {
                     Text("\(user.name)さんをフォローしますか？")
                 }
+            }
+            .alert("認証が必要です", isPresented: $showingAuthRequired) {
+                Button("キャンセル", role: .cancel) {}
+                Button("認証する") {
+                    authenticationManager.signInWithGoogle()
+                }
+            } message: {
+                Text("この機能を利用するにはGoogle認証が必要です")
             }
         }
     }
@@ -173,6 +201,7 @@ struct QRCodeScannerView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
 
+            // QRコード読み取りボタン
             Button(action: {
                 if authenticationManager.isGoogleAuthenticated {
                     showingQRScanner = true
@@ -196,6 +225,34 @@ struct QRCodeScannerView: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(.main, lineWidth: 1)
+                )
+            }
+            .disabled(viewModel.isLoading)
+            
+            // 自分のQRコード表示ボタン
+            Button(action: {
+                if authenticationManager.isGoogleAuthenticated {
+                    showingQRCodeShare = true
+                } else {
+                    showingAuthRequired = true
+                }
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "qrcode")
+                        .font(.title2)
+                    Text("自分のQRコードを表示")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.headline)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .foregroundColor(.accent)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(.accent, lineWidth: 1)
                 )
             }
             .disabled(viewModel.isLoading)
