@@ -253,17 +253,13 @@ struct HeartbeatDetailView: View {
     }
 
     private var heartbeatDisplayView: some View {
-        ZStack {
-            Image("heart_beat")
-                .resizable()
-                .scaledToFill()
-                .frame(width: heartSize, height: heartSize * 0.876) // 元のアスペクト比維持 (92/105)
-                .clipShape(Circle())
-
-            Text(viewModel.currentHeartbeat?.bpm.description ?? "--")
-                .font(.system(size: heartSize * 0.305, weight: .semibold)) // サイズに応じてフォントも調整
-                .foregroundColor(.white)
-        }
+        HeartAnimationView(
+            bpm: viewModel.currentHeartbeat?.bpm ?? 0,
+            heartSize: heartSize,
+            showBPM: true,
+            enableHaptic: false, // VibrationServiceと競合しないよう無効
+            heartColor: .red
+        )
     }
 
     private var dateFormatter: DateFormatter {

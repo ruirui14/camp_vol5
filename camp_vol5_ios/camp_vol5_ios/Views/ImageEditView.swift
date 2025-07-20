@@ -89,17 +89,13 @@ struct ImageEditView: View {
                 // ドラッグ可能なハートビュー（画像が選択されている場合のみ表示）
                 Group {
                     if image != nil {
-                        ZStack {
-                            Image("heart_beat")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: heartSize, height: heartSize * 0.876) // 元のアスペクト比維持 (92/105)
-                                .clipShape(Circle())
-                            Text("--")
-                                .font(.system(size: heartSize * 0.305, weight: .semibold)) // サイズに応じてフォントも調整
-                                .foregroundColor(.white)
-                                .shadow(color: Color.black.opacity(0.8), radius: 2, x: 0, y: 1)
-                        }
+                        HeartAnimationView(
+                            bpm: 0, // 編集画面では静止
+                            heartSize: heartSize,
+                            showBPM: true,
+                            enableHaptic: false,
+                            heartColor: .red
+                        )
                         .offset(heartOffset)
                         .ignoresSafeArea()
                         .gesture(

@@ -256,31 +256,34 @@ struct HeartbeatContent: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text("現在の心拍数")
-                    .font(.headline)
-
-                if let heartbeat = viewModel.currentHeartbeat {
-                    HStack {
-                        Text("\(heartbeat.bpm) BPM")
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        Image(systemName: "heart.fill")
-                            .foregroundColor(.red)
-                    }
-
-                    Text("更新: \(formattedTime(heartbeat.timestamp))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                } else {
-                    Text("データなし")
-                        .foregroundColor(.secondary)
-                }
+        VStack(spacing: 20) {
+            // ハートアニメーション表示
+            if let heartbeat = viewModel.currentHeartbeat {
+                HeartAnimationView(
+                    bpm: heartbeat.bpm,
+                    heartSize: 120,
+                    showBPM: true,
+                    enableHaptic: true,
+                    heartColor: .red
+                )
+                .frame(height: 140)
+                
+                Text("更新: \(formattedTime(heartbeat.timestamp))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                HeartAnimationView(
+                    bpm: 0,
+                    heartSize: 120,
+                    showBPM: true,
+                    enableHaptic: false,
+                    heartColor: .gray
+                )
+                .frame(height: 140)
+                
+                Text("データなし")
+                    .foregroundColor(.secondary)
             }
-
-            Spacer()
 
             Button("更新") {
                 viewModel.refreshHeartbeat()
