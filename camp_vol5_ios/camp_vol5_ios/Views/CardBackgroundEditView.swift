@@ -153,7 +153,7 @@ struct CardBackgroundEditView: View {
     }
 
     private var controlButtons: some View {
-        HStack(alignment: .top, spacing: 40) {
+        HStack(alignment: .top, spacing: 30) {
             Button(action: {
                 showingPhotoPicker = true
             }) {
@@ -165,7 +165,24 @@ struct CardBackgroundEditView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
                 }
-                .frame(minWidth: 80)
+                .frame(minWidth: 60)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.pink.opacity(0.8),
+                                    Color.purple.opacity(0.7)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
+                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                )
             }
 
             Button(action: resetImagePosition) {
@@ -177,7 +194,24 @@ struct CardBackgroundEditView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
                 }
-                .frame(minWidth: 80)
+                .frame(minWidth: 60)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.blue.opacity(0.8),
+                                    Color.cyan.opacity(0.7)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
+                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                )
                 .opacity(selectedImage != nil ? 1.0 : 0.5)
             }
             .disabled(selectedImage == nil)
