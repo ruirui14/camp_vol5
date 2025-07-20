@@ -47,14 +47,6 @@ struct QRCodeShareView: View {
             } message: {
                 Text("QRコードを保存するには、設定で写真へのアクセスを許可してください。")
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完了") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                    .foregroundColor(.white)
-                }
-            }
         }
     }
 
