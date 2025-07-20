@@ -55,20 +55,6 @@ struct QRCodeScannerView: View {
                     }
                     .foregroundColor(.white)
                 }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        if authenticationManager.isGoogleAuthenticated {
-                            showingQRCodeShare = true
-                        } else {
-                            showingAuthRequired = true
-                        }
-                    }) {
-                        Image(systemName: "qrcode")
-                            .foregroundColor(.white)
-                            .font(.title2)
-                    }
-                }
             }
             .sheet(isPresented: $showingQRScanner) {
                 QRScannerSheet { code in
@@ -228,7 +214,7 @@ struct QRCodeScannerView: View {
                 )
             }
             .disabled(viewModel.isLoading)
-            
+
             // 自分のQRコード表示ボタン
             Button(action: {
                 if authenticationManager.isGoogleAuthenticated {
