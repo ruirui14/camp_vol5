@@ -2,7 +2,79 @@
 import AVFoundation
 import SwiftUI
 
-struct QRScannerSheet: UIViewControllerRepresentable {
+struct QRScannerSheet: View {
+    let onQRCodeScanned: (String) -> Void
+    @State private var showingQRCodeShare = false
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                // QRコードスキャナー部分
+                QRScannerViewController_Wrapper(onQRCodeScanned: onQRCodeScanned)
+                    .ignoresSafeArea()
+                
+                // オーバーレイ UI
+                VStack {
+                    HStack {
+                        Button("閉じる") {
+                            presentationMode.wrappedValue.dismiss()
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(8)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    
+                    Spacer()
+                    
+                    // 下部の説明とボタン
+                    VStack(spacing: 16) {
+                        Text("QRコードをスキャンして\nユーザーを追加")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .shadow(color: .black, radius: 2)
+                        
+                        if authenticationManager.isGoogleAuthenticated {
+                            Button("自分のQRコードを表示") {
+                                showingQRCodeShare = true
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.blue.opacity(0.8))
+                            )
+                        } else {
+                            Text("Google認証後に自分のQRコードが利用可能")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 60)
+                }
+            }
+            .navigationBarHidden(true)
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .sheet(isPresented: $showingQRCodeShare) {
+            QRCodeShareView()
+                .environmentObject(authenticationManager)
+        }
+    }
+}
+
+struct QRScannerViewController_Wrapper: UIViewControllerRepresentable {
     let onQRCodeScanned: (String) -> Void
 
     func makeUIViewController(context: Context) -> QRScannerViewController {
@@ -135,39 +207,8 @@ class QRScannerViewController: UIViewController {
         guidelineView.layer.borderWidth = 2
         guidelineView.layer.cornerRadius = 8
         view.addSubview(guidelineView)
-
-        // 閉じるボタンを追加
-        let closeButton = UIButton(type: .system)
-        closeButton.setTitle("閉じる", for: .normal)
-        closeButton.setTitleColor(.white, for: .normal)
-        closeButton.backgroundColor = UIColor.black.withAlphaComponent(0.7)
-        closeButton.layer.cornerRadius = 8
-        closeButton.addTarget(
-            self,
-            action: #selector(closeButtonTapped),
-            for: .touchUpInside
-        )
-
-        closeButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(closeButton)
-
-        NSLayoutConstraint.activate([
-            closeButton.topAnchor.constraint(
-                equalTo: view.safeAreaLayoutGuide.topAnchor,
-                constant: 20
-            ),
-            closeButton.leadingAnchor.constraint(
-                equalTo: view.leadingAnchor,
-                constant: 20
-            ),
-            closeButton.widthAnchor.constraint(equalToConstant: 80),
-            closeButton.heightAnchor.constraint(equalToConstant: 40),
-        ])
     }
 
-    @objc private func closeButtonTapped() {
-        dismiss(animated: true)
-    }
 }
 
 extension QRScannerViewController: AVCaptureMetadataOutputObjectsDelegate {
