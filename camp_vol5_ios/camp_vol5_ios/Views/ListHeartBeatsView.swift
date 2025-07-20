@@ -106,13 +106,6 @@ struct ListHeartBeatsView: View {
                         Image(systemName: "person.badge.plus")
                     }
                     .foregroundColor(.main)
-
-                    Button(action: {
-                        showingQRShareSheet = true
-                    }) {
-                        Image(systemName: "qrcode")
-                    }
-                    .foregroundColor(.main)
                 }
             }
             .sheet(isPresented: $showingQRShareSheet) {
@@ -220,12 +213,12 @@ struct ListHeartBeatsView: View {
             self.backgroundImageRefreshTrigger += 1
         }
     }
-    
+
     private func checkAndTriggerUIUpdate() {
         // BackgroundImageManagerの読み込み状況をチェック
         var allLoadingComplete = true
         var hasImages = false
-        
+
         for (_, manager) in backgroundImageManagers {
             if manager.isLoading {
                 allLoadingComplete = false
@@ -234,7 +227,7 @@ struct ListHeartBeatsView: View {
                 hasImages = true
             }
         }
-        
+
         if allLoadingComplete || hasImages {
             backgroundImageRefreshTrigger += 1
         } else if !allLoadingComplete {
