@@ -22,7 +22,6 @@ struct ImageEditView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // 白い背景（表示画面と同じ）
                 MainAccentGradient()
 
                 // 画像表示とジェスチャー
@@ -90,7 +89,7 @@ struct ImageEditView: View {
                 Group {
                     if image != nil {
                         HeartAnimationView(
-                            bpm: 0, // 編集画面では静止
+                            bpm: 0,  // 編集画面では静止
                             heartSize: heartSize,
                             showBPM: true,
                             enableHaptic: false,
@@ -120,34 +119,36 @@ struct ImageEditView: View {
                     if showingHeartSizeSlider {
                         VStack {
                             Spacer()
-                            
+
                             VStack(spacing: 16) {
                                 Text("ハートサイズ調整")
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
-                                
+
                                 HStack {
                                     Text("小")
                                         .foregroundColor(.white)
-                                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
-                                    
+                                        .shadow(
+                                            color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+
                                     Slider(value: $heartSize, in: 60...200, step: 5)
                                         .accentColor(.white)
                                         .onChange(of: heartSize) { newSize in
                                             persistenceManager.saveHeartSize(newSize)
                                         }
-                                    
+
                                     Text("大")
                                         .foregroundColor(.white)
-                                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                                        .shadow(
+                                            color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                                 }
-                                
+
                                 Text("サイズ: \(Int(heartSize))")
                                     .font(.caption)
                                     .foregroundColor(.white)
                                     .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
-                                
+
                                 Button("完了") {
                                     showingHeartSizeSlider = false
                                 }
@@ -165,7 +166,7 @@ struct ImageEditView: View {
                                     .fill(Color.black.opacity(0.7))
                             )
                             .padding(.horizontal, 40)
-                            .padding(.bottom, 150) // ボタンとの重複を避ける
+                            .padding(.bottom, 150)  // ボタンとの重複を避ける
                         }
                         .transition(.opacity)
                         .animation(.easeInOut(duration: 0.3), value: showingHeartSizeSlider)
@@ -213,7 +214,7 @@ struct ImageEditView: View {
         .onAppear {
             // ハートのサイズを読み込み
             heartSize = persistenceManager.loadHeartSize()
-            
+
             // 永続化されたデータを再読み込み（画像がある場合のみ）
             if image != nil {
                 let transform = persistenceManager.loadImageTransform()
