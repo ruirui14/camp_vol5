@@ -17,7 +17,7 @@ struct QRCodeScannerView: View {
     }
 
     var body: some View {
-        NavigationView {
+        GeometryReader { geometry in
             VStack(spacing: 20) {
                 manualInputSection(viewModel: viewModel)
 
@@ -35,9 +35,28 @@ struct QRCodeScannerView: View {
                 Spacer()
             }
             .padding()
-            .navigationTitle("フォローユーザー追加")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
+            .navigationBarBackButtonHidden(true)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("戻る") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.white)
+                }
+
+                ToolbarItem(placement: .principal) {
+                    Text("フォローユーザー追加")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                }
+            }
+            .overlay(alignment: .top) {
+                NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
+            }
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
             }
@@ -46,14 +65,6 @@ struct QRCodeScannerView: View {
                 if shouldDismiss {
                     print("Dismissing QRCodeScannerView")
                     presentationMode.wrappedValue.dismiss()
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-                    .foregroundColor(.white)
                 }
             }
             .sheet(isPresented: $showingQRScanner) {

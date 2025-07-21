@@ -13,6 +13,7 @@ struct ImageWrapper: Identifiable {
 struct HeartbeatDetailView: View {
     @StateObject private var viewModel: HeartbeatDetailViewModel
     @ObservedObject private var vibrationService = VibrationService.shared
+    @Environment(\.presentationMode) var presentationMode
     @State private var selectedImage: UIImage?
     @State private var editedImage: UIImage?
     @State private var showingImagePicker = false
@@ -111,12 +112,23 @@ struct HeartbeatDetailView: View {
                     .ignoresSafeArea()
             }
         }
-        .whiteCapsuleTitle(viewModel.user?.name ?? "読み込み中...")
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
         // 透明なナビゲーションバーの設定
         .navigationBarBackgroundTransparent()
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("戻る") {
+                    presentationMode.wrappedValue.dismiss()
+                }
+                .foregroundColor(.white)
+            }
+
+            ToolbarItem(placement: .principal) {
+                WhiteCapsuleTitle(title: viewModel.user?.name ?? "読み込み中...")
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 15) {
                     // 振動制御ボタン
@@ -159,7 +171,7 @@ struct HeartbeatDetailView: View {
             print("📱 HeartbeatDetailView 表示開始")
             viewModel.startContinuousMonitoring()
             loadPersistedData()
-            
+
             // 初期状態で振動を有効にし、既にデータがある場合は振動開始
             if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
                 if vibrationService.isValidBPM(heartbeat.bpm) {
@@ -174,7 +186,7 @@ struct HeartbeatDetailView: View {
         .onChange(of: viewModel.currentHeartbeat) { heartbeat in
             // 心拍データが更新された時の処理
             print("🔄 心拍データ更新検知: \(heartbeat?.bpm ?? 0) BPM")
-            
+
             if isVibrationEnabled {
                 if let heartbeat = heartbeat {
                     // 有効なBPMの場合のみ振動を開始
@@ -197,7 +209,7 @@ struct HeartbeatDetailView: View {
                 // ImageEditViewが閉じられたときにハートの位置とサイズを再読み込み
                 let heartPosition = persistenceManager.loadHeartPosition()
                 heartOffset = heartPosition
-                
+
                 // ハートサイズの更新
                 heartSize = persistenceManager.loadHeartSize()
                 print("🔄 ImageEditView閉じ後 - ハートサイズ更新: \(heartSize)")
@@ -257,7 +269,7 @@ struct HeartbeatDetailView: View {
             bpm: viewModel.currentHeartbeat?.bpm ?? 0,
             heartSize: heartSize,
             showBPM: true,
-            enableHaptic: false, // VibrationServiceと競合しないよう無効
+            enableHaptic: false,  // VibrationServiceと競合しないよう無効
             heartColor: .red
         )
     }
