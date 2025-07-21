@@ -3,7 +3,6 @@ import SwiftUI
 struct ListHeartBeatsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel: ListHeartBeatsViewModel
-    @State private var showingQRShareSheet = false
     @State private var showingQRScannerSheet = false
     @State private var showingSettingsSheet = false
     @State private var backgroundImageManagers: [String: BackgroundImageManager] = [:]
@@ -107,10 +106,6 @@ struct ListHeartBeatsView: View {
                     }
                     .foregroundColor(.main)
                 }
-            }
-            .sheet(isPresented: $showingQRShareSheet) {
-                QRCodeShareView()
-                    .environmentObject(authenticationManager)
             }
             .sheet(isPresented: $showingQRScannerSheet) {
                 QRCodeScannerView()
