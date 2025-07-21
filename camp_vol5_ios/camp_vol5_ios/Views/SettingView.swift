@@ -27,9 +27,16 @@ struct SettingsView: View {
 
                 signOutSection
             }
-            .navigationTitle("設定")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("設定")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                }
+            }
             .overlay(alignment: .top) {
                 NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
             }
