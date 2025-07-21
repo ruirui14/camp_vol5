@@ -8,13 +8,14 @@ struct SettingsView: View {
     @Environment(\.presentationMode) var presentationMode
 
     init() {
-        _viewModel = StateObject(wrappedValue: SettingsViewModel(
-            authenticationManager: AuthenticationManager()
-        ))
+        _viewModel = StateObject(
+            wrappedValue: SettingsViewModel(
+                authenticationManager: AuthenticationManager()
+            ))
     }
 
     var body: some View {
-        NavigationView {
+        GeometryReader { geometry in
             Form {
                 authStatusSection
 
@@ -28,7 +29,10 @@ struct SettingsView: View {
             }
             .navigationTitle("設定")
             .navigationBarTitleDisplayMode(.inline)
-            .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .overlay(alignment: .top) {
+                NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
+            }
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
                 if authenticationManager.isGoogleAuthenticated {
@@ -267,7 +271,7 @@ struct HeartbeatContent: View {
                     heartColor: .red
                 )
                 .frame(height: 140)
-                
+
                 Text("更新: \(formattedTime(heartbeat.timestamp))")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -280,7 +284,7 @@ struct HeartbeatContent: View {
                     heartColor: .gray
                 )
                 .frame(height: 140)
-                
+
                 Text("データなし")
                     .foregroundColor(.secondary)
             }

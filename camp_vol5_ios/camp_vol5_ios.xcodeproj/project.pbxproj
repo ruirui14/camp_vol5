@@ -22,8 +22,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B3D475C82E0406710045AD7A /* camp_vol5_ios */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = camp_vol5_ios;
 			sourceTree = "<group>";
 		};
