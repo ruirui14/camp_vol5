@@ -3,8 +3,6 @@ import SwiftUI
 struct ListHeartBeatsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel: ListHeartBeatsViewModel
-    @State private var showingQRScannerSheet = false
-    @State private var showingSettingsSheet = false
     @State private var backgroundImageManagers: [String: BackgroundImageManager] = [:]
     @State private var backgroundImageRefreshTrigger = 0
 
@@ -90,30 +88,22 @@ struct ListHeartBeatsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        showingSettingsSheet = true
-                    }) {
+                    NavigationLink(
+                        destination: SettingsView().environmentObject(authenticationManager)
+                    ) {
                         Image(systemName: "gearshape")
+                            .foregroundColor(.main)
                     }
-                    .foregroundColor(.main)
                 }
 
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showingQRScannerSheet = true
-                    }) {
+                    NavigationLink(
+                        destination: QRCodeScannerView().environmentObject(authenticationManager)
+                    ) {
                         Image(systemName: "person.badge.plus")
+                            .foregroundColor(.main)
                     }
-                    .foregroundColor(.main)
                 }
-            }
-            .sheet(isPresented: $showingQRScannerSheet) {
-                QRCodeScannerView()
-                    .environmentObject(authenticationManager)
-            }
-            .sheet(isPresented: $showingSettingsSheet) {
-                SettingsView()
-                    .environmentObject(authenticationManager)
             }
         }
     }
@@ -140,8 +130,10 @@ struct ListHeartBeatsView: View {
                         .multilineTextAlignment(.center)
                         .padding(.bottom, 20)
 
-                    Button("ユーザーを追加") {
-                        showingQRScannerSheet = true
+                    NavigationLink(
+                        destination: QRCodeScannerView().environmentObject(authenticationManager)
+                    ) {
+                        Text("ユーザーを追加")
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
