@@ -147,10 +147,14 @@ struct HeartbeatDetailView: View {
 
                     Menu {
                         Button("カード背景を編集") {
+                            // 編集ページを開く際に振動を停止
+                            vibrationService.stopVibration()
                             showingCardBackgroundEditSheet = true
                         }
 
                         Button("背景画像を編集") {
+                            // 編集ページを開く際に振動を停止
+                            vibrationService.stopVibration()
                             showingImageEditor = true
                         }
 
@@ -224,6 +228,13 @@ struct HeartbeatDetailView: View {
 
                 // 背景色の更新
                 savedBackgroundColor = persistenceManager.loadBackgroundColor()
+                
+                // 振動を再開（振動が有効で心拍データがある場合）
+                if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
+                    if vibrationService.isValidBPM(heartbeat.bpm) {
+                        vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
+                    }
+                }
             }
         ) {
             ImageEditView(
@@ -252,6 +263,13 @@ struct HeartbeatDetailView: View {
 
                 // 背景色の更新
                 savedBackgroundColor = persistenceManager.loadBackgroundColor()
+                
+                // 振動を再開（振動が有効で心拍データがある場合）
+                if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
+                    if vibrationService.isValidBPM(heartbeat.bpm) {
+                        vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
+                    }
+                }
             }
         ) {
             if let user = viewModel.user {
