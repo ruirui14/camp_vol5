@@ -106,8 +106,16 @@ class ListHeartBeatsViewModel: ObservableObject {
 }
 
 // MARK: - Helper Models
-struct UserWithHeartbeat: Identifiable {
+struct UserWithHeartbeat: Identifiable, Hashable {
     let id = UUID()
     let user: User
     var heartbeat: Heartbeat?
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(user.id)
+    }
+
+    static func == (lhs: UserWithHeartbeat, rhs: UserWithHeartbeat) -> Bool {
+        return lhs.user.id == rhs.user.id
+    }
 }

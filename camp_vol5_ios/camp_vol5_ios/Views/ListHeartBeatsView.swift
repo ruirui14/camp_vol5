@@ -1,10 +1,18 @@
 import SwiftUI
 
+// MARK: - Navigation Destinations
+enum NavigationDestination: Hashable {
+    case settings
+    case qrScanner
+    case heartbeatDetail(UserWithHeartbeat)
+}
+
 struct ListHeartBeatsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel: ListHeartBeatsViewModel
     @State private var backgroundImageManagers: [String: BackgroundImageManager] = [:]
     @State private var backgroundImageRefreshTrigger = 0
+    @State private var navigationPath = NavigationPath()
 
     init() {
         // 初期化時はダミーの AuthenticationManager を使用
@@ -18,7 +26,7 @@ struct ListHeartBeatsView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 // 背景グラデーション
                 MainAccentGradient()
@@ -88,21 +96,31 @@ struct ListHeartBeatsView: View {
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(
-                        destination: SettingsView().environmentObject(authenticationManager)
-                    ) {
+                    Button {
+                        navigationPath.append(NavigationDestination.settings)
+                    } label: {
                         Image(systemName: "gearshape")
                             .foregroundColor(.main)
                     }
                 }
 
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    NavigationLink(
-                        destination: QRCodeScannerView().environmentObject(authenticationManager)
-                    ) {
+                    Button {
+                        navigationPath.append(NavigationDestination.qrScanner)
+                    } label: {
                         Image(systemName: "person.badge.plus")
                             .foregroundColor(.main)
                     }
+                }
+            }
+            .navigationDestination(for: NavigationDestination.self) { destination in
+                switch destination {
+                case .settings:
+                    SettingsView().environmentObject(authenticationManager)
+                case .qrScanner:
+                    QRCodeScannerView().environmentObject(authenticationManager)
+                case .heartbeatDetail(let userWithHeartbeat):
+                    HeartbeatDetailView(userWithHeartbeat: userWithHeartbeat)
                 }
             }
         }
@@ -130,10 +148,8 @@ struct ListHeartBeatsView: View {
                         .multilineTextAlignment(.center)
                         .padding(.bottom, 20)
 
-                    NavigationLink(
-                        destination: QRCodeScannerView().environmentObject(authenticationManager)
-                    ) {
-                        Text("ユーザーを追加")
+                    Button("ユーザーを追加") {
+                        navigationPath.append(NavigationDestination.qrScanner)
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
@@ -157,9 +173,9 @@ struct ListHeartBeatsView: View {
         ScrollView {
             VStack(spacing: 10) {
                 ForEach(viewModel.followingUsersWithHeartbeats) { userWithHeartbeat in
-                    NavigationLink(
-                        destination: HeartbeatDetailView(userWithHeartbeat: userWithHeartbeat)
-                    ) {
+                    Button {
+                        navigationPath.append(NavigationDestination.heartbeatDetail(userWithHeartbeat))
+                    } label: {
                         UserHeartbeatCard(
                             userWithHeartbeat: userWithHeartbeat,
                             customBackgroundImage: backgroundImageManagers[

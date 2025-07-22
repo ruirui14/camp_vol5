@@ -75,8 +75,10 @@ struct QRCodeScannerView: View {
                 .environmentObject(authenticationManager)
             }
             .sheet(isPresented: $showingQRCodeShare) {
-                QRCodeShareView()
-                    .environmentObject(authenticationManager)
+                NavigationStack {
+                    QRCodeShareView()
+                        .environmentObject(authenticationManager)
+                }
             }
             .alert("フォロー確認", isPresented: $showingFollowConfirmation) {
                 Button("キャンセル", role: .cancel) {}
