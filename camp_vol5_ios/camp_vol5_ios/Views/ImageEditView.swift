@@ -17,6 +17,7 @@ struct ImageEditView: View {
     @State private var showingHeartSizeSlider = false
     @State private var selectedBackgroundColor: Color = Color.clear
     @Environment(\.presentationMode) var presentationMode
+    @State private var tempColor: Color = Color.clear
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -208,6 +209,8 @@ struct ImageEditView: View {
                         persistenceManager.saveImageTransform(
                             offset: tempOffset, scale: tempScale)
 
+                        persistenceManager.saveBackgroundColor(tempColor)
+
                         onApply()
                     }
                     .foregroundColor(.white)
@@ -247,8 +250,8 @@ struct ImageEditView: View {
             }
         }
         .onChange(of: selectedBackgroundColor) { _, newColor in
-            // 背景色が変更されたときに保存
-            persistenceManager.saveBackgroundColor(newColor)
+            // 背景色が変更されたときに仮保存
+            tempColor = newColor
         }
     }
 
