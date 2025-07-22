@@ -13,7 +13,7 @@ struct QRCodeShareView: View {
     }
 
     var body: some View {
-        NavigationView {
+        GeometryReader { geometry in
             VStack(spacing: 20) {
                 if authenticationManager.isGoogleAuthenticated {
                     authenticatedContent
@@ -22,9 +22,28 @@ struct QRCodeShareView: View {
                 }
             }
             .padding()
-            .navigationTitle("QRコード共有")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .gradientNavigationBar(colors: [.main, .accent], titleColor: .white)
+            .navigationBarBackButtonHidden(true)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("戻る") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.white)
+                }
+
+                ToolbarItem(placement: .principal) {
+                    Text("QRコード共有")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                }
+            }
+            .overlay(alignment: .top) {
+                NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
+            }
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
                 // Google認証済みの場合、ユーザー情報を読み込み
