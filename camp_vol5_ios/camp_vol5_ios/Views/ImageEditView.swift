@@ -173,7 +173,6 @@ struct ImageEditView: View {
                     }
                 }
             )
-            .whiteCapsuleTitle("画像を編集中")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackgroundTransparent()
             .toolbar {
@@ -183,6 +182,10 @@ struct ImageEditView: View {
                     }
                     .foregroundColor(.white)
                     .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                }
+
+                ToolbarItem(placement: .principal) {
+                    WhiteCapsuleTitle(title: "画像を編集中" ?? "読み込み中...")
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -259,7 +262,7 @@ struct ImageEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.pink.opacity(0.8),
-                                    Color.purple.opacity(0.7)
+                                    Color.purple.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -290,7 +293,7 @@ struct ImageEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.red.opacity(0.8),
-                                    Color.orange.opacity(0.7)
+                                    Color.orange.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -321,7 +324,7 @@ struct ImageEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.blue.opacity(0.8),
-                                    Color.cyan.opacity(0.7)
+                                    Color.cyan.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
