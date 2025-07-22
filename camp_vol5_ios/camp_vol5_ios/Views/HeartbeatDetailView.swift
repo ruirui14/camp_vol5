@@ -24,6 +24,7 @@ struct HeartbeatDetailView: View {
     @State private var heartSize: CGFloat = 105.0
     @State private var showingCardBackgroundEditSheet = false
     @State private var isVibrationEnabled = true
+    @State private var savedBackgroundColor: Color = Color.clear
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -39,11 +40,17 @@ struct HeartbeatDetailView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // 白い背景
-                Color.white
-                    .ignoresSafeArea()
+                // 常に背景色またはデフォルト背景を表示
+                if savedBackgroundColor != Color.clear {
+                    // 保存された背景色
+                    savedBackgroundColor
+                        .ignoresSafeArea()
+                } else {
+                    // デフォルトのグラデーション背景
+                    MainAccentGradient()
+                }
 
-                // 背景画像（編集された状態を反映）
+                // 背景画像（ある場合のみ上にオーバーレイ）
                 if let image = editedImage ?? selectedImage {
                     Image(uiImage: image)
                         .resizable()
@@ -51,9 +58,6 @@ struct HeartbeatDetailView: View {
                         .scaleEffect(imageScale)
                         .offset(imageOffset)
                         .ignoresSafeArea()
-                } else {
-                    // デフォルトのグラデーション背景
-                    MainAccentGradient()
                 }
 
                 VStack(spacing: 20) {
@@ -172,6 +176,9 @@ struct HeartbeatDetailView: View {
             viewModel.startContinuousMonitoring()
             loadPersistedData()
 
+            // 保存された背景色を読み込み
+            savedBackgroundColor = persistenceManager.loadBackgroundColor()
+
             // 初期状態で振動を有効にし、既にデータがある場合は振動開始
             if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
                 if vibrationService.isValidBPM(heartbeat.bpm) {
@@ -183,6 +190,7 @@ struct HeartbeatDetailView: View {
             viewModel.stopMonitoring()
             vibrationService.stopVibration()
         }
+
         .onChange(of: viewModel.currentHeartbeat) { heartbeat in
             // 心拍データが更新された時の処理
             print("🔄 心拍データ更新検知: \(heartbeat?.bpm ?? 0) BPM")
@@ -213,6 +221,9 @@ struct HeartbeatDetailView: View {
                 // ハートサイズの更新
                 heartSize = persistenceManager.loadHeartSize()
                 print("🔄 ImageEditView閉じ後 - ハートサイズ更新: \(heartSize)")
+
+                // 背景色の更新
+                savedBackgroundColor = persistenceManager.loadBackgroundColor()
             }
         ) {
             ImageEditView(
@@ -238,6 +249,9 @@ struct HeartbeatDetailView: View {
                 // CardBackgroundEditViewが閉じられたときもハートサイズを更新
                 heartSize = persistenceManager.loadHeartSize()
                 print("🔄 CardBackgroundEditView閉じ後 - ハートサイズ更新: \(heartSize)")
+
+                // 背景色の更新
+                savedBackgroundColor = persistenceManager.loadBackgroundColor()
             }
         ) {
             if let user = viewModel.user {

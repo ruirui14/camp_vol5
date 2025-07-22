@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 import UIKit
 
 class PersistenceManager {
@@ -19,6 +20,10 @@ class PersistenceManager {
     private let heartOffsetXKey = "heartOffsetX"
     private let heartOffsetYKey = "heartOffsetY"
     private let heartSizeKey = "heartSize"
+    private let backgroundColorRedKey = "backgroundColorRed"
+    private let backgroundColorGreenKey = "backgroundColorGreen"
+    private let backgroundColorBlueKey = "backgroundColorBlue"
+    private let backgroundColorAlphaKey = "backgroundColorAlpha"
 
     private init() {}
 
@@ -88,28 +93,28 @@ class PersistenceManager {
         userDefaults.removeObject(forKey: heartOffsetYKey)
         userDefaults.removeObject(forKey: heartSizeKey)
     }
-    
+
     // ハートの位置を保存
     func saveHeartPosition(_ offset: CGSize) {
         userDefaults.set(Double(offset.width), forKey: heartOffsetXKey)
         userDefaults.set(Double(offset.height), forKey: heartOffsetYKey)
     }
-    
+
     // ハートの位置を読み込み
     func loadHeartPosition() -> CGSize {
         let x = userDefaults.double(forKey: heartOffsetXKey)
         let y = userDefaults.double(forKey: heartOffsetYKey)
         return CGSize(width: x, height: y)
     }
-    
+
     // MARK: - Heart Size Management
-    
+
     /// ハートのサイズを保存
     func saveHeartSize(_ size: CGFloat) {
         userDefaults.set(Double(size), forKey: heartSizeKey)
         print("💾 ハートサイズ保存: \(size)")
     }
-    
+
     /// ハートのサイズを読み込み
     func loadHeartSize() -> CGFloat {
         let size = userDefaults.double(forKey: heartSizeKey)
@@ -117,5 +122,55 @@ class PersistenceManager {
         let heartSize = size == 0 ? 105.0 : size
         print("📏 ハートサイズ読み込み: \(heartSize)")
         return CGFloat(heartSize)
+    }
+
+    // MARK: - Background Color Persistence
+
+    // 背景色を保存
+    func saveBackgroundColor(_ color: Color) {
+        if color == Color.clear {
+            // クリア（デフォルト）の場合は保存されたデータを削除
+            userDefaults.removeObject(forKey: backgroundColorRedKey)
+            userDefaults.removeObject(forKey: backgroundColorGreenKey)
+            userDefaults.removeObject(forKey: backgroundColorBlueKey)
+            userDefaults.removeObject(forKey: backgroundColorAlphaKey)
+        } else {
+            // UIColorに変換してRGBA値を取得
+            let uiColor = UIColor(color)
+            var red: CGFloat = 0
+            var green: CGFloat = 0
+            var blue: CGFloat = 0
+            var alpha: CGFloat = 0
+
+            uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+
+            userDefaults.set(Double(red), forKey: backgroundColorRedKey)
+            userDefaults.set(Double(green), forKey: backgroundColorGreenKey)
+            userDefaults.set(Double(blue), forKey: backgroundColorBlueKey)
+            userDefaults.set(Double(alpha), forKey: backgroundColorAlphaKey)
+        }
+
+    }
+
+    // 背景色を読み込み
+    func loadBackgroundColor() -> Color {
+        // デフォルト値がある場合は保存された色を復元
+        if userDefaults.object(forKey: backgroundColorRedKey) != nil {
+            let red = userDefaults.double(forKey: backgroundColorRedKey)
+            let green = userDefaults.double(forKey: backgroundColorGreenKey)
+            let blue = userDefaults.double(forKey: backgroundColorBlueKey)
+            let alpha = userDefaults.double(forKey: backgroundColorAlphaKey)
+
+            let color = Color(
+                red: red,
+                green: green,
+                blue: blue,
+                opacity: alpha
+            )
+            return color
+        }
+
+        // デフォルトはクリア（グラデーション背景使用）
+        return Color.clear
     }
 }

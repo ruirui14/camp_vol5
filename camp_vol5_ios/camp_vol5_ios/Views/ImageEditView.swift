@@ -15,6 +15,7 @@ struct ImageEditView: View {
     @State private var heartSize: CGFloat = 105.0
     @State private var showingPhotoPicker = false
     @State private var showingHeartSizeSlider = false
+    @State private var selectedBackgroundColor: Color = Color.clear
     @Environment(\.presentationMode) var presentationMode
 
     private let persistenceManager = PersistenceManager.shared
@@ -22,7 +23,13 @@ struct ImageEditView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                MainAccentGradient()
+                // 背景色選択またはデフォルトグラデーション
+                if selectedBackgroundColor != Color.clear {
+                    selectedBackgroundColor
+                        .ignoresSafeArea()
+                } else {
+                    MainAccentGradient()
+                }
 
                 // 画像表示とジェスチャー
                 if let image = image {
@@ -218,6 +225,9 @@ struct ImageEditView: View {
             // ハートのサイズを読み込み
             heartSize = persistenceManager.loadHeartSize()
 
+            // 背景色を読み込み
+            selectedBackgroundColor = persistenceManager.loadBackgroundColor()
+
             // 永続化されたデータを再読み込み（画像がある場合のみ）
             if image != nil {
                 let transform = persistenceManager.loadImageTransform()
@@ -236,12 +246,16 @@ struct ImageEditView: View {
                 lastHeartOffset = heartPosition
             }
         }
+        .onChange(of: selectedBackgroundColor) { _, newColor in
+            // 背景色が変更されたときに保存
+            persistenceManager.saveBackgroundColor(newColor)
+        }
     }
 
     // MARK: - Control Buttons
 
     private var controlButtons: some View {
-        HStack(alignment: .top, spacing: 30) {
+        HStack(alignment: .top, spacing: 20) {
             Button(action: {
                 showingPhotoPicker = true
             }) {
@@ -253,7 +267,7 @@ struct ImageEditView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
                 }
-                .frame(minWidth: 60)
+                .frame(minWidth: 50)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
                 .background(
@@ -284,7 +298,7 @@ struct ImageEditView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
                 }
-                .frame(minWidth: 60)
+                .frame(minWidth: 50)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
                 .background(
@@ -315,7 +329,7 @@ struct ImageEditView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
                 }
-                .frame(minWidth: 60)
+                .frame(minWidth: 50)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
                 .background(
@@ -336,6 +350,46 @@ struct ImageEditView: View {
                 .opacity(image != nil ? 1.0 : 0.5)
             }
             .disabled(image == nil)
+
+            ZStack {
+
+                Button(action: {}) {
+                    VStack(spacing: 8) {
+                        Image(systemName: "paintpalette")
+                            .foregroundColor(.white)
+                            .font(.title3)
+                        Text("背景色")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(minWidth: 50)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 25)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.yellow.opacity(0.8),
+                                        Color.orange.opacity(0.7),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
+                            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                    )
+                }
+                .disabled(true)
+
+                ColorPicker("", selection: $selectedBackgroundColor)
+                    .labelsHidden()
+                    .scaleEffect(CGSize(width: 2, height: 2))
+                    .opacity(0.011)
+                    .allowsHitTesting(true)
+
+            }
         }
     }
 
@@ -349,6 +403,74 @@ struct ImageEditView: View {
             lastScale = 1.0
             heartOffset = .zero
             lastHeartOffset = .zero
+        }
+    }
+}
+
+// MARK: - Color Palette View
+struct ColorPaletteView: View {
+    @Binding var selectedColor: Color
+    @Environment(\.presentationMode) var presentationMode
+
+    private let colors: [Color] = [
+        .clear, .red, .orange, .yellow, .green, .mint, .teal, .cyan,
+        .blue, .indigo, .purple, .pink, .brown, .gray, .black, .white,
+    ]
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("背景色を選択")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .padding(.top)
+
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
+                    ForEach(colors, id: \.self) { color in
+                        Button(action: {
+                            print("🎨 色選択: \(color)")
+                            selectedColor = color
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            RoundedRectangle(cornerRadius: 15)
+                                .fill(
+                                    color == .clear
+                                        ? LinearGradient(
+                                            colors: [.main, .accent], startPoint: .topLeading,
+                                            endPoint: .bottomTrailing)
+                                        : LinearGradient(
+                                            colors: [color], startPoint: .center, endPoint: .center)
+                                )
+                                .frame(width: 60, height: 60)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 15)
+                                        .stroke(
+                                            selectedColor == color
+                                                ? Color.blue : Color.gray.opacity(0.3),
+                                            lineWidth: selectedColor == color ? 3 : 1)
+                                )
+                                .overlay(
+                                    color == .clear
+                                        ? Text("デフォルト")
+                                            .font(.caption)
+                                            .foregroundColor(.white)
+                                            .shadow(color: .black, radius: 1) : nil
+                                )
+                        }
+                    }
+                }
+                .padding(.horizontal)
+
+                Spacer()
+            }
+            .navigationTitle("カラーパレット")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                trailing:
+                    Button("キャンセル") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+            )
         }
     }
 }
