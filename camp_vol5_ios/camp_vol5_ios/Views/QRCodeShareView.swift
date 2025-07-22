@@ -14,15 +14,15 @@ struct QRCodeShareView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 20) {
+            VStack {
                 if authenticationManager.isGoogleAuthenticated {
                     authenticatedContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     guestUserContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .padding()
-            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
             .toolbarBackground(.hidden, for: .navigationBar)
