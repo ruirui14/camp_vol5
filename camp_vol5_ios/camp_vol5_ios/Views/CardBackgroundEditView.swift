@@ -15,6 +15,7 @@ struct CardBackgroundEditView: View {
     @State private var imageScale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @State private var cardFrame: CGRect = .zero
+    @State private var selectedBackgroundColor: Color = Color.clear
 
     // UserHeartbeatCardと同じサイズ
     private let cardSize = CGSize(width: 370, height: 120)
@@ -62,8 +63,7 @@ struct CardBackgroundEditView: View {
             PhotoPicker(selectedImage: $selectedImage)
         }
         .onAppear {
-            // 画像は表示せず、編集画面から写真選択を行う方針に変更
-            // 既存の変換情報のみ復元
+            // 既存の変換情報を復元
             if backgroundImageManager.currentOriginalImage != nil {
                 let screenSize = UIScreen.main.bounds.size
                 imageOffset = CGSize(
@@ -75,6 +75,11 @@ struct CardBackgroundEditView: View {
                 lastOffset = imageOffset
                 imageScale = backgroundImageManager.currentTransform.scale
                 lastScale = imageScale
+
+                // 背景色も復元
+                if let bgColor = backgroundImageManager.currentTransform.backgroundColor {
+                    selectedBackgroundColor = Color(bgColor)
+                }
             }
         }
         .onChange(of: selectedImage) { newImage in
@@ -90,6 +95,16 @@ struct CardBackgroundEditView: View {
                 // 画像があるときだけ背景画像を表示
                 if let image = selectedImage {
                     ZStack {
+                        // 背景色（カード範囲のみ）
+                        if selectedBackgroundColor != Color.clear {
+                            selectedBackgroundColor
+                                .mask(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.black)
+                                        .frame(width: cardSize.width, height: cardSize.height)
+                                )
+                        }
+
                         // 背景画像（透過）
                         Image(uiImage: image)
                             .resizable()
@@ -136,6 +151,16 @@ struct CardBackgroundEditView: View {
                     )
                 }
 
+                // 背景色のみの場合のプレビュー
+                if selectedImage == nil && selectedBackgroundColor != Color.clear {
+                    selectedBackgroundColor
+                        .mask(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.black)
+                                .frame(width: cardSize.width, height: cardSize.height)
+                        )
+                }
+
                 // 画像の有無に関わらずカードを中央に表示
                 VStack {
                     Spacer()
@@ -153,7 +178,7 @@ struct CardBackgroundEditView: View {
     }
 
     private var controlButtons: some View {
-        HStack(alignment: .top, spacing: 30) {
+        HStack(alignment: .top, spacing: 20) {
             Button(action: {
                 showingPhotoPicker = true
             }) {
@@ -165,7 +190,7 @@ struct CardBackgroundEditView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
                 }
-                .frame(minWidth: 60)
+                .frame(minWidth: 50)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
                 .background(
@@ -174,7 +199,7 @@ struct CardBackgroundEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.pink.opacity(0.8),
-                                    Color.purple.opacity(0.7)
+                                    Color.purple.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -183,6 +208,41 @@ struct CardBackgroundEditView: View {
                         .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
                         .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                 )
+            }
+
+            ZStack {
+                VStack(spacing: 8) {
+                    Image(systemName: "paintpalette")
+                        .foregroundColor(.white)
+                        .font(.title3)
+                    Text("背景色")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(.white)
+                }
+                .frame(minWidth: 50)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.yellow.opacity(0.8),
+                                    Color.orange.opacity(0.7),
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
+                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                )
+
+                ColorPicker("", selection: $selectedBackgroundColor)
+                    .labelsHidden()
+                    .scaleEffect(CGSize(width: 2, height: 2))
+                    .opacity(0.011)
+                    .allowsHitTesting(true)
             }
 
             Button(action: resetImagePosition) {
@@ -194,7 +254,7 @@ struct CardBackgroundEditView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
                 }
-                .frame(minWidth: 60)
+                .frame(minWidth: 50)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
                 .background(
@@ -203,7 +263,7 @@ struct CardBackgroundEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.blue.opacity(0.8),
-                                    Color.cyan.opacity(0.7)
+                                    Color.cyan.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -238,21 +298,27 @@ struct CardBackgroundEditView: View {
     }
 
     private func saveImageConfiguration() {
-        guard selectedImage != nil else {
-            print("保存する画像がありません")
-            return
-        }
-        // 正規化座標系でのTransformを作成
+        // 正規化座標系でのTransformを作成（背景色も含む）
         let screenSize = UIScreen.main.bounds.size
         let normalizedOffsetX = imageOffset.width / screenSize.width
         let normalizedOffsetY = imageOffset.height / screenSize.height
+
+        // 背景色をUIColorに変換（Color.clearの場合はnilに）
+        let bgColor: UIColor? =
+            selectedBackgroundColor == Color.clear ? nil : UIColor(selectedBackgroundColor)
+
+        print(
+            "保存時の画像オフセット: \(imageOffset), スケール: \(imageScale), 背景色: \(bgColor?.description ?? "nil")"
+        )
         let transform = ImageTransform(
             scale: imageScale,
-            normalizedOffset: CGPoint(x: normalizedOffsetX, y: normalizedOffsetY)
+            normalizedOffset: CGPoint(x: normalizedOffsetX, y: normalizedOffsetY),
+            backgroundColor: bgColor
         )
+
         // BackgroundImageManagerを使用して保存
         backgroundImageManager.saveEditedResult(transform)
-        print("画像設定を保存: transform=\(transform)")
+        print("画像設定を保存: transform=\(transform), backgroundColor=\(bgColor?.description ?? "nil")")
     }
 }
 

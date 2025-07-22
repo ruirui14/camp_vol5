@@ -8,6 +8,38 @@ import UIKit
 struct ImageTransform: Codable {
     var scale: CGFloat = 1.0
     var normalizedOffset: CGPoint = .zero
+    var backgroundColor: UIColor? = nil
+    
+    enum CodingKeys: String, CodingKey {
+        case scale, normalizedOffset, backgroundColor
+    }
+    
+    init(scale: CGFloat = 1.0, normalizedOffset: CGPoint = .zero, backgroundColor: UIColor? = nil) {
+        self.scale = scale
+        self.normalizedOffset = normalizedOffset
+        self.backgroundColor = backgroundColor
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        scale = try container.decode(CGFloat.self, forKey: .scale)
+        normalizedOffset = try container.decode(CGPoint.self, forKey: .normalizedOffset)
+        if let colorData = try container.decodeIfPresent(Data.self, forKey: .backgroundColor) {
+            backgroundColor = try NSKeyedUnarchiver.unarchivedObject(ofClass: UIColor.self, from: colorData)
+        } else {
+            backgroundColor = nil
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(scale, forKey: .scale)
+        try container.encode(normalizedOffset, forKey: .normalizedOffset)
+        if let backgroundColor = backgroundColor {
+            let colorData = try NSKeyedArchiver.archivedData(withRootObject: backgroundColor, requiringSecureCoding: false)
+            try container.encode(colorData, forKey: .backgroundColor)
+        }
+    }
 }
 
 // MARK: - 永続化用データ構造
@@ -33,7 +65,14 @@ class AdvancedImageProcessor {
         return renderer.image { context in
             let cgContext = context.cgContext
 
+            // 背景をクリア
             cgContext.clear(CGRect(origin: .zero, size: outputSize))
+            
+            // 背景色が指定されている場合は塗りつぶす
+            if let backgroundColor = transform.backgroundColor {
+                cgContext.setFillColor(backgroundColor.cgColor)
+                cgContext.fill(CGRect(origin: .zero, size: outputSize))
+            }
 
             // 画像のアスペクト比を維持してフィット
             let imageSize = aspectFitSize(originalImage.size, in: outputSize)
