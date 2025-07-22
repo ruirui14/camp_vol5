@@ -325,7 +325,7 @@ struct ImageEditView: View {
                     Image(systemName: "arrow.counterclockwise")
                         .foregroundColor(.white)
                         .font(.title3)
-                    Text("リセット")
+                    Text("位置リセット")
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.white)
                 }
