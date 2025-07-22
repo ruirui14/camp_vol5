@@ -7,14 +7,14 @@ struct QRScannerSheet: View {
     @State private var showingQRCodeShare = false
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @Environment(\.presentationMode) var presentationMode
-    
+
     var body: some View {
         NavigationView {
             ZStack {
                 // QRコードスキャナー部分
                 QRScannerViewController_Wrapper(onQRCodeScanned: onQRCodeScanned)
                     .ignoresSafeArea()
-                
+
                 // オーバーレイ UI
                 VStack {
                     HStack {
@@ -26,14 +26,14 @@ struct QRScannerSheet: View {
                         .padding(.vertical, 8)
                         .background(Color.black.opacity(0.7))
                         .cornerRadius(8)
-                        
+
                         Spacer()
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
-                    
+
                     Spacer()
-                    
+
                     // 下部の説明とボタン
                     VStack(spacing: 16) {
                         Text("QRコードをスキャンして\nユーザーを追加")
@@ -41,18 +41,38 @@ struct QRScannerSheet: View {
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .shadow(color: .black, radius: 2)
-                        
+
                         if authenticationManager.isGoogleAuthenticated {
-                            Button("自分のQRコードを表示") {
+                            Button(action: {
                                 showingQRCodeShare = true
+                            }) {
+                                VStack(spacing: 8) {
+                                    Image(systemName: "qrcode")
+                                        .foregroundColor(.white)
+                                        .font(.title3)
+                                    Text("QRコードを表示")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundColor(.white)
+                                }
+                                .frame(minWidth: 60)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.green.opacity(0.8),
+                                                    Color.blue.opacity(0.7),
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
+                                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                                )
                             }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
-                            .background(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.blue.opacity(0.8))
-                            )
                         } else {
                             Text("Google認証後に自分のQRコードが利用可能")
                                 .font(.caption)
