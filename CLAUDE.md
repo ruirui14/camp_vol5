@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
-# Navigate to the iOS project directory
+# Navigate to the iOS project directory (REQUIRED - all commands must be run from this directory)
 cd camp_vol5_ios
 
 # Build the project
@@ -20,8 +20,11 @@ xcodebuild -project camp_vol5_ios.xcodeproj -scheme camp_vol5_ios -destination '
 # Clean build folder
 xcodebuild clean -project camp_vol5_ios.xcodeproj
 
-# Run tests (if available)
+# Run tests (if available - currently no tests implemented)
 xcodebuild test -project camp_vol5_ios.xcodeproj -scheme camp_vol5_ios -destination 'platform=iOS Simulator,name=iPhone 16'
+
+# Package dependency resolution (if needed)
+xcodebuild -resolvePackageDependencies -project camp_vol5_ios.xcodeproj
 ```
 
 ## Architecture Overview
@@ -61,23 +64,33 @@ Views (SwiftUI) → ViewModels → Services → Firebase
 ### Project Structure
 
 This repository contains two main projects:
-- `camp_vol5_ios/`: Main iOS application with SwiftUI
-- `camp_vol5_watch/`: Apple Watch companion app
+- `camp_vol5_ios/`: Main iOS application with SwiftUI (fully implemented)
+- `camp_vol5_watch/`: Apple Watch companion app (basic skeleton)
 
 #### iOS App Structure (`camp_vol5_ios/`)
 
-- **Models/**: Data structures (`Heartbeat`, `User`)
+- **Models/**: Data structures (`Heartbeat.swift`, `User.swift`)
 - **Services/**: Firebase integration and business logic
-- **ViewModels/**: UI state management with Combine
+  - `AuthenticationManager.swift` - Authentication state (EnvironmentObject)
+  - `UserService.swift`, `HeartbeatService.swift` - Firebase operations
+  - `BackgroundImageManager.swift`, `ImagePersistenceManager.swift` - Image management
+- **ViewModels/**: UI state management with Combine (all use @StateObject pattern)
+  - `ListHeartBeatsViewModel.swift`, `HeartbeatDetailViewModel.swift`
+  - `QRCodeScannerViewModel.swift`, `SettingsViewModel.swift`
 - **Views/**: SwiftUI components with reactive binding
-  - **Components/**: Reusable UI components
-  - **Modifiers/**: Custom view modifiers for navigation
+  - **Components/**: Reusable UI components (`UserHeartbeatCard.swift`, `HeartAnimationView.swift`)
+  - **Modifiers/**: Custom view modifiers for navigation styling
+- **Extensions/**: Swift extensions (`Color+Hex.swift`)
+- **Assets.xcassets/**: App icons, images, and color sets
 
 ### Key Dependencies
 
-- **Firebase iOS SDK v11.14.0**: Authentication, Firestore, Realtime Database
-- **GoogleSignIn-iOS v8.0.0**: OAuth integration
+**Package Manager**: Swift Package Manager (SPM) - dependencies managed through Xcode
+- **Firebase iOS SDK v11.14.0**: Authentication, Firestore, Realtime Database, Analytics
+- **GoogleSignIn-iOS v8.0.0**: OAuth integration for social login
 - **iOS 18.0+**: Minimum deployment target
+- **Swift 5.0**: Language version
+- **Bundle ID**: `com.rui.camp-vol5-ios-1950`
 
 ### Service Layer Architecture
 
@@ -128,10 +141,13 @@ This repository contains two main projects:
 
 ### Configuration Requirements
 
-- Firebase configuration requires `GoogleService-Info.plist`
-- Google Sign-In requires URL scheme configuration in `Info.plist`
-- Google Sign-In URL Scheme: `com.googleusercontent.apps.57453481062-r0n92cckbieo2s9kl334241bnntuehsv`
-- Bundle ID: `com.rui.camp-vol5-ios-1950`
+- **Firebase**: Requires `GoogleService-Info.plist` in project root
+- **Google Sign-In**: Requires URL scheme in `Info.plist`
+  - URL Scheme: `com.googleusercontent.apps.57453481062-r0n92cckbieo2s9kl334241bnntuehsv`
+- **Permissions**: Camera (QR scanning), Photo Library (background images)
+- **Info.plist Keys**:
+  - `NSCameraUsageDescription`: QR code scanning
+  - `NSPhotoLibraryUsageDescription`: Background image selection
 
 ### Common Issues
 
@@ -144,7 +160,14 @@ This repository contains two main projects:
 
 ### Development Notes
 
-- Code formatting handled by Xcode's built-in formatter
-- SweetPad integration for external formatting support
-- 各ファイルの冒頭には必ず日本語のコメントで仕様を記述すること
-- 生成されたコードは、必ずコマンドを実行してビルドとテストを行うこと
+- **Code Formatting**: Handled by Xcode's built-in formatter with SweetPad integration
+- **Testing**: Currently no unit tests implemented - manual testing required
+- **Watch App**: `camp_vol5_watch/` is a basic skeleton with minimal functionality
+- **Legacy Files**: `old_*.swift` files present but not actively used
+
+### Code Standards
+
+- **Japanese Comments**: 各ファイルの冒頭には必ず日本語のコメントで仕様を記述すること
+- **Build Verification**: 生成されたコードは、必ずコマンドを実行してビルドとテストを行うこと
+- **Architecture**: Follow MVVM pattern with @StateObject for ViewModels
+- **Dependencies**: Use @EnvironmentObject for AuthenticationManager injection
