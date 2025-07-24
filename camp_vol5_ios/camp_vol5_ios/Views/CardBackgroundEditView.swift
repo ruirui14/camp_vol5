@@ -63,23 +63,18 @@ struct CardBackgroundEditView: View {
             PhotoPicker(selectedImage: $selectedImage)
         }
         .onAppear {
-            // 既存の変換情報を復元
-            if backgroundImageManager.currentOriginalImage != nil {
-                let screenSize = UIScreen.main.bounds.size
-                imageOffset = CGSize(
-                    width: backgroundImageManager.currentTransform.normalizedOffset.x
-                        * screenSize.width,
-                    height: backgroundImageManager.currentTransform.normalizedOffset.y
-                        * screenSize.height
-                )
-                lastOffset = imageOffset
-                imageScale = backgroundImageManager.currentTransform.scale
-                lastScale = imageScale
-
-                // 背景色も復元
-                if let bgColor = backgroundImageManager.currentTransform.backgroundColor {
-                    selectedBackgroundColor = Color(bgColor)
-                }
+            print("📱 CardBackgroundEditView.onAppear - isLoading: \(backgroundImageManager.isLoading)")
+            // 読み込み中の場合は待機、完了済みの場合は即座に復元
+            if !backgroundImageManager.isLoading {
+                restoreEditingState()
+            }
+        }
+        .onChange(of: backgroundImageManager.isLoading) { isLoading in
+            print("🔄 BackgroundImageManager.isLoading changed: \(isLoading)")
+            // 読み込み完了時に復元処理を実行
+            if !isLoading {
+                print("✅ 読み込み完了 - 編集状態復元を実行")
+                restoreEditingState()
             }
         }
         .onChange(of: selectedImage) { newImage in
@@ -297,6 +292,55 @@ struct CardBackgroundEditView: View {
         }
     }
 
+    private func restoreEditingState() {
+        print("🔄 restoreEditingState開始 - userId: \(userId)")
+        print("📋 BackgroundImageManager状態確認:")
+        print("   - currentOriginalImage: \(backgroundImageManager.currentOriginalImage != nil ? "あり(\(backgroundImageManager.currentOriginalImage!.size))" : "なし")")
+        print("   - currentTransform.scale: \(backgroundImageManager.currentTransform.scale)")
+        print("   - currentTransform.offset: \(backgroundImageManager.currentTransform.normalizedOffset)")
+        print("   - currentTransform.backgroundColor: \(backgroundImageManager.currentTransform.backgroundColor?.description ?? "なし")")
+        
+        // 既存の元画像を復元
+        if let originalImage = backgroundImageManager.currentOriginalImage {
+            selectedImage = originalImage
+            print("🖼️ 元画像復元: \(originalImage.size)")
+            
+            // 位置とスケールを復元
+            let screenSize = UIScreen.main.bounds.size
+            print("📱 画面サイズ: \(screenSize)")
+            
+            let restoredOffsetX = backgroundImageManager.currentTransform.normalizedOffset.x * screenSize.width
+            let restoredOffsetY = backgroundImageManager.currentTransform.normalizedOffset.y * screenSize.height
+            
+            imageOffset = CGSize(width: restoredOffsetX, height: restoredOffsetY)
+            lastOffset = imageOffset
+            imageScale = backgroundImageManager.currentTransform.scale
+            lastScale = imageScale
+            
+            print("📐 位置・スケール復元:")
+            print("   - 正規化オフセット: \(backgroundImageManager.currentTransform.normalizedOffset)")
+            print("   - 復元オフセット: \(imageOffset)")
+            print("   - 復元スケール: \(imageScale)")
+        } else {
+            print("❌ 元画像なし - 新規編集モード")
+        }
+        
+        // 背景色を復元
+        if let backgroundColor = backgroundImageManager.currentTransform.backgroundColor {
+            selectedBackgroundColor = Color(backgroundColor)
+            print("🎨 背景色復元: \(backgroundColor)")
+        } else {
+            selectedBackgroundColor = Color.clear
+            print("🎨 背景色: クリア(デフォルト)")
+        }
+        
+        print("✅ 編集状態復元完了:")
+        print("   - 画像: \(selectedImage != nil ? "復元済み" : "なし")")
+        print("   - 位置: \(imageOffset)")
+        print("   - スケール: \(imageScale)")
+        print("   - 背景色: \(selectedBackgroundColor)")
+    }
+
     private func saveImageConfiguration() {
         // 正規化座標系でのTransformを作成（背景色も含む）
         let screenSize = UIScreen.main.bounds.size
@@ -316,9 +360,9 @@ struct CardBackgroundEditView: View {
             backgroundColor: bgColor
         )
 
-        // BackgroundImageManagerを使用して保存
-        backgroundImageManager.saveEditedResult(transform)
-        print("画像設定を保存: transform=\(transform), backgroundColor=\(bgColor?.description ?? "nil")")
+        // BackgroundImageManagerの新しいメソッドを使用して選択画像と編集状態を保存
+        backgroundImageManager.saveEditingState(selectedImage: selectedImage, transform: transform)
+        print("画像設定を保存: 選択画像=\(selectedImage != nil), transform=\(transform), backgroundColor=\(bgColor?.description ?? "nil")")
     }
 }
 
