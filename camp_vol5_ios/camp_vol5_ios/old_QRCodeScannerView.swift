@@ -120,12 +120,10 @@ struct old_QRCodeScannerView: View {
         _ output: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject],
         from connection: AVCaptureConnection
       ) {
-        print("デリゲート呼ばれたよ！（metadata count: \(metadataObjects.count)）")
         guard let object = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
           object.type == .qr,
           let stringValue = object.stringValue
         else { return }
-        print("QRコードじゃなかった、または読めなかった")
 
         DispatchQueue.main.async {
           self.scannedText = stringValue

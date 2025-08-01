@@ -431,7 +431,6 @@ struct ColorPaletteView: View {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
                     ForEach(colors, id: \.self) { color in
                         Button(action: {
-                            print("🎨 色選択: \(color)")
                             selectedColor = color
                             presentationMode.wrappedValue.dismiss()
                         }) {

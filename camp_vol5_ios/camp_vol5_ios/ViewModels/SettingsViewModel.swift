@@ -27,7 +27,6 @@ class SettingsViewModel: ObservableObject {
 
     private func setupBindings() {
         // 認証状態の監視
-        print("SettingsViewModel: 認証状態の監視を開始")
         authenticationManager.$currentUser
             .receive(on: DispatchQueue.main)
             .sink { [weak self] user in
@@ -40,7 +39,6 @@ class SettingsViewModel: ObservableObject {
             .store(in: &cancellables)
 
         // 認証状態とローディング状態の監視
-        print("SettingsViewModel: 認証状態とローディング状態の監視を開始")
         Publishers.CombineLatest(
             authenticationManager.$isAuthenticated,
             authenticationManager.$isLoading
@@ -57,8 +55,6 @@ class SettingsViewModel: ObservableObject {
 
     private func loadCurrentUserIfNeeded() {
         // 既にユーザー情報がある場合は読み込みをスキップ
-        print("SettingsViewModel: ユーザー情報の読み込みをチェック中...")
-        print(currentUser as Any)
         // AuthenticationManagerから基本情報は取得済みだが、詳細情報が必要な場合は再取得する
         // guard currentUser == nil else { return }
 
@@ -67,16 +63,12 @@ class SettingsViewModel: ObservableObject {
             return
         }
 
-        print("SettingsViewModel: ユーザー情報を読み込み中...")
-
         UserService.shared.getUser(uid: userId)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: {
                     [weak self] (completion: Subscribers.Completion<Error>) in
-                    print("SettingsViewModel: ユーザー情報読み込み完了")
                     if case .failure(let error) = completion {
-                        print("SettingsViewModel: エラー - \(error.localizedDescription)")
                         self?.errorMessage = error.localizedDescription
                         // エラーの場合も空のユーザーオブジェクトを設定してUIの読み込み状態を終了
                         self?.currentUser = User(
@@ -84,7 +76,6 @@ class SettingsViewModel: ObservableObject {
                     }
                 },
                 receiveValue: { [weak self] (user: User?) in
-                    print("SettingsViewModel: ユーザー情報取得成功 - \(user?.name ?? "nil")")
                     self?.currentUser = user
                     if let user = user {
                         self?.inviteCode = user.inviteCode
@@ -97,7 +88,6 @@ class SettingsViewModel: ObservableObject {
     }
 
     func loadCurrentUser() {
-        print("SettingsViewModel: ユーザー情報を読み込み中...")
         guard let userId = authenticationManager.currentUserId else {
             errorMessage = "認証が必要です"
             return

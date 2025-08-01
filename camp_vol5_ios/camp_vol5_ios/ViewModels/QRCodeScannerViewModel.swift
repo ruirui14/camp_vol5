@@ -24,7 +24,6 @@ class QRCodeScannerViewModel: ObservableObject {
 
     // 招待コードまたはQRコードからユーザー情報を取得
     func searchUserByInviteCode(_ code: String) {
-        print("QRコードスキャン: \(code)")
         guard !code.isEmpty else {
             errorMessage = "招待コードを入力してください"
             return
@@ -42,19 +41,16 @@ class QRCodeScannerViewModel: ObservableObject {
                     self?.isLoading = false
                     if case .failure(let error) = completion {
                         self?.errorMessage = error.localizedDescription
-                        print("ユーザー検索エラー: \(error.localizedDescription)")
                     }
                 },
                 receiveValue: { [weak self] user in
                     if let user = user {
-                        print("ユーザーが見つかりました: \(user.name)")
                         // 少し遅延を入れてからユーザー情報を設定
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             self?.scannedUser = user
                             self?.checkIfAlreadyFollowing(user)
                         }
                     } else {
-                        print("ユーザーが見つかりません")
                         self?.errorMessage = "ユーザーが見つかりません"
                     }
                 }
@@ -64,9 +60,7 @@ class QRCodeScannerViewModel: ObservableObject {
 
     // 既にフォロー済みかチェック
     private func checkIfAlreadyFollowing(_ user: User) {
-        print("フォロー済みチェック: \(user.name) (\(user.id))")
         guard let currentUserId = authenticationManager.currentUserId else {
-            print("現在のユーザーIDが取得できません")
             isFollowingUser = false
             return
         }
@@ -76,7 +70,6 @@ class QRCodeScannerViewModel: ObservableObject {
             .sink(
                 receiveCompletion: { [weak self] completion in
                     if case .failure(let error) = completion {
-                        print("フォロー済みチェックエラー: \(error.localizedDescription)")
                         // エラーが発生してもフォロー状態はfalseとして継続
                         self?.isFollowingUser = false
                     }
@@ -85,9 +78,7 @@ class QRCodeScannerViewModel: ObservableObject {
                     if let currentUser = currentUser {
                         self?.isFollowingUser = currentUser.followingUserIds
                             .contains(user.id)
-                        print("フォロー済み状態: \(self?.isFollowingUser ?? false)")
                     } else {
-                        print("現在のユーザー情報が取得できません")
                         self?.isFollowingUser = false
                     }
                 }
@@ -191,7 +182,6 @@ class QRCodeScannerViewModel: ObservableObject {
 
     // QRコードスキャン結果を処理
     func handleQRCodeScan(_ code: String) {
-        print("QRコードスキャン処理開始: \(code)")
         // エラーをクリアしてからユーザー検索を開始
         errorMessage = nil
         searchUserByInviteCode(code)

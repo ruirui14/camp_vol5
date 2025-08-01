@@ -112,7 +112,6 @@ class PersistenceManager {
     /// ハートのサイズを保存
     func saveHeartSize(_ size: CGFloat) {
         userDefaults.set(Double(size), forKey: heartSizeKey)
-        print("💾 ハートサイズ保存: \(size)")
     }
 
     /// ハートのサイズを読み込み
@@ -120,7 +119,6 @@ class PersistenceManager {
         let size = userDefaults.double(forKey: heartSizeKey)
         // デフォルトサイズは105（元のサイズ）
         let heartSize = size == 0 ? 105.0 : size
-        print("📏 ハートサイズ読み込み: \(heartSize)")
         return CGFloat(heartSize)
     }
 

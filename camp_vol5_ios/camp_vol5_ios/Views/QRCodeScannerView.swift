@@ -61,9 +61,7 @@ struct QRCodeScannerView: View {
                 viewModel.updateAuthenticationManager(authenticationManager)
             }
             .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
-                print("shouldDismiss changed to: \(shouldDismiss)")
                 if shouldDismiss {
-                    print("Dismissing QRCodeScannerView")
                     presentationMode.wrappedValue.dismiss()
                 }
             }
@@ -170,13 +168,6 @@ struct QRCodeScannerView: View {
                 .disableAutocorrection(true)
 
                 Button("検索") {
-                    print("検索ボタンが押されました")
-                    print(
-                        "authenticationManager.isGoogleAuthenticated: \(authenticationManager.isGoogleAuthenticated)"
-                    )
-                    print("viewModel.inviteCode: \(viewModel.inviteCode)")
-                    print("viewModel.isLoading: \(viewModel.isLoading)")
-
                     if authenticationManager.isGoogleAuthenticated {
                         viewModel.searchUserByInviteCode(viewModel.inviteCode)
                     } else {

@@ -148,7 +148,6 @@ class EnhancedImagePersistenceManager {
         let thumbnailFileName = "\(userId)_thumb_\(timestamp).jpg"
 
         guard saveImage(originalImage, fileName: originalFileName) else {
-            print("❌ 元画像の保存に失敗")
             return nil
         }
 
@@ -159,7 +158,6 @@ class EnhancedImagePersistenceManager {
                 targetScreenSize: targetScreenSize
             ), saveImage(editedImage, fileName: editedFileName)
         else {
-            print("❌ 編集済み画像の保存に失敗")
             deleteImage(fileName: originalFileName)
             return nil
         }
@@ -170,7 +168,6 @@ class EnhancedImagePersistenceManager {
                 transform: transform
             ), saveImage(thumbnail, fileName: thumbnailFileName)
         else {
-            print("❌ サムネイルの保存に失敗")
             deleteImage(fileName: originalFileName)
             deleteImage(fileName: editedFileName)
             return nil
@@ -186,7 +183,6 @@ class EnhancedImagePersistenceManager {
             imageSize: editedImage.size
         )
 
-        print("✅ 編集画像セット保存完了")
         return persistentData
     }
 
@@ -201,7 +197,6 @@ class EnhancedImagePersistenceManager {
             try imageData.write(to: fileURL)
             return true
         } catch {
-            print("❌ 画像保存エラー: \(error)")
             return false
         }
     }
@@ -231,7 +226,6 @@ class EnhancedImagePersistenceManager {
         deleteImage(fileName: data.originalImageFileName)
         deleteImage(fileName: data.editedImageFileName)
         deleteImage(fileName: data.thumbnailFileName)
-        print("✅ 画像セット削除完了: \(data.userId)")
     }
 }
 
@@ -255,7 +249,6 @@ class EnhancedUserDefaultsManager {
 
         if let encoded = try? JSONEncoder().encode(savedData) {
             UserDefaults.standard.set(encoded, forKey: userBackgroundKey)
-            print("✅ 拡張背景画像データ保存成功: \(data.userId)")
         }
     }
 

@@ -19,7 +19,6 @@ class VibrationService: ObservableObject {
     /// - Parameter bpm: 1分間の心拍数
     func startHeartbeatVibration(bpm: Int) {
         guard bpm > 0 && bpm <= 300 else {
-            print("⚠️ 無効なBPM値: \(bpm)")
             return
         }
 
@@ -29,7 +28,6 @@ class VibrationService: ObservableObject {
         if needsRestart {
             stopVibration()
         } else {
-            print("🔄 既に同じBPMで振動中: \(bpm) BPM")
             return
         }
 
@@ -37,7 +35,6 @@ class VibrationService: ObservableObject {
         let interval = 60.0 / Double(bpm)  // BPMから間隔を計算
 
         currentBPM = bpm
-        print("🫀 心拍振動開始: \(bpm) BPM (間隔: \(String(format: "%.2f", interval))秒)")
 
         vibrationTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) {
             [weak self] _ in
@@ -54,7 +51,6 @@ class VibrationService: ObservableObject {
         vibrationTimer?.invalidate()
         vibrationTimer = nil
         currentBPM = 0
-        print("⏹️ 心拍振動停止")
     }
 
     // MARK: - Private Methods

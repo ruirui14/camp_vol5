@@ -137,9 +137,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
                 if let error = error {
                     self?.errorMessage = "匿名ログインに失敗しました: \(error.localizedDescription)"
-                    print("匿名ログインエラー: \(error)")
-                } else if authResult?.user != nil {
-                    print("匿名ログインが完了しました")
                 }
             }
         }
@@ -153,15 +150,11 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
                     if case .failure(let error) = completion {
-                        print("Firestoreからのユーザー情報取得エラー: \(error.localizedDescription)")
                         // エラーメッセージは設定しない（新規ユーザーの場合は正常）
                     }
                 },
                 receiveValue: { [weak self] (user: User?) in
                     self?.currentUser = user
-                    if user != nil {
-                        print("Firestoreからユーザー情報を正常に取得しました")
-                    }
                 }
             )
             .store(in: &cancellables)
@@ -183,9 +176,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
                 if let error = error {
                     self?.errorMessage = "匿名ログインに失敗しました: \(error.localizedDescription)"
-                    print("匿名ログインエラー: \(error)")
-                } else if authResult?.user != nil {
-                    print("匿名ログインが完了しました")
                 }
             }
         }
@@ -319,7 +309,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                         error: error, credential: credential, googleUser: googleUser)
                 } else if let firebaseUser = authResult?.user {
                     let displayName = googleUser.profile?.name ?? "Google User"
-                    print("匿名ユーザーとGoogleアカウントをリンクしました: \(displayName)")
                     self?.saveUserToFirestore(uid: firebaseUser.uid, name: displayName)
                 }
             }
@@ -339,7 +328,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         if nsError.code == AuthErrorCode.accountExistsWithDifferentCredential.rawValue
             || nsError.code == AuthErrorCode.credentialAlreadyInUse.rawValue
         {
-            print("Googleアカウントが既に他のユーザーに紐づいています。既存ユーザーでログインします。")
             signInWithExistingGoogleAccount(credential: credential, googleUser: googleUser)
         } else {
             errorMessage = "アカウントのリンクに失敗しました: \(error.localizedDescription)"
@@ -359,7 +347,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     self?.errorMessage = "既存アカウントでのログインに失敗しました: \(error.localizedDescription)"
                 } else if let firebaseUser = authResult?.user {
                     let displayName = googleUser.profile?.name ?? "Google User"
-                    print("既存のGoogleアカウントでログインしました: \(displayName)")
 
                     if authResult?.additionalUserInfo?.isNewUser == false {
                         self?.loadCurrentUser(uid: firebaseUser.uid)
@@ -383,10 +370,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 } else if let firebaseUser = authResult?.user {
                     if authResult?.additionalUserInfo?.isNewUser == true {
                         let displayName = googleUser.profile?.name ?? "Google User"
-                        print("新規ユーザーを検出: \(displayName)")
                         self?.saveUserToFirestore(uid: firebaseUser.uid, name: displayName)
                     } else {
-                        print("既存ユーザーのサインイン")
                         self?.loadCurrentUser(uid: firebaseUser.uid)
                     }
                 }
@@ -399,7 +384,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     ///   - uid: ユーザーID
     ///   - name: ユーザー名
     private func saveUserToFirestore(uid: String, name: String) {
-        print("Firestoreにユーザー情報を保存開始: \(name)")
 
         UserService.shared.createUser(uid: uid, name: name)
             .receive(on: DispatchQueue.main)
@@ -407,9 +391,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
                     if case .failure(let error) = completion {
                         self?.errorMessage = "ユーザー情報の保存に失敗しました: \(error.localizedDescription)"
-                        print("Firestore保存エラー: \(error)")
                     } else {
-                        print("Firestoreへのユーザー情報保存が完了しました")
                         // 保存成功後、最新のユーザー情報を再取得
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                             self?.refreshCurrentUser()
@@ -417,7 +399,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     }
                 },
                 receiveValue: { [weak self] (user: User) in
-                    print("作成されたユーザー: \(user.name), ID: \(user.id), 招待コード: \(user.inviteCode)")
                     self?.currentUser = user
                 }
             )

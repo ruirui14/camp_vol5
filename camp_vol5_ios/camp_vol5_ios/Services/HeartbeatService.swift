@@ -17,8 +17,6 @@ class HeartbeatService {
 
     /// 心拍データを一度だけ取得する（リスト画面用）
     func getHeartbeatOnce(userId: String) -> AnyPublisher<Heartbeat?, Error> {
-        print("getHeartbeatOnce")
-        print(userId)
         return Future { [weak self] promise in
             guard let self = self else {
                 promise(
@@ -30,13 +28,10 @@ class HeartbeatService {
             }
 
             let ref = self.database.reference().child("live_heartbeats").child(userId)
-            print(ref)
 
             ref.observeSingleEvent(of: .value) { snapshot in
                 if let data = snapshot.value as? [String: Any] {
                     if let heartbeat = Heartbeat(from: data, userId: userId) {
-                        print("heartbeat")
-                        print(heartbeat)
                         // 5分以内のデータかどうか確認
                         // let timeDifference = Date().timeIntervalSince(heartbeat.timestamp)
                         // if timeDifference <= self.heartbeatValidityDuration {
@@ -78,11 +73,9 @@ class HeartbeatService {
                     //     subject.send(nil)
                     // }
                 } else {
-                    print("❌ 心拍データのパースに失敗")
                     subject.send(nil)
                 }
             } else {
-                print("❌ データが見つからないか形式が不正")
                 subject.send(nil)
             }
         }

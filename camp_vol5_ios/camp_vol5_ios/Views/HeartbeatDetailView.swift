@@ -176,7 +176,6 @@ struct HeartbeatDetailView: View {
             }
         }
         .onAppear {
-            print("📱 HeartbeatDetailView 表示開始")
             viewModel.startContinuousMonitoring()
             loadPersistedData()
 
@@ -197,20 +196,16 @@ struct HeartbeatDetailView: View {
 
         .onChange(of: viewModel.currentHeartbeat) { heartbeat in
             // 心拍データが更新された時の処理
-            print("🔄 心拍データ更新検知: \(heartbeat?.bpm ?? 0) BPM")
 
             if isVibrationEnabled {
                 if let heartbeat = heartbeat {
                     // 有効なBPMの場合のみ振動を開始
                     if vibrationService.isValidBPM(heartbeat.bpm) {
-                        print("🟢 心拍振動更新: \(heartbeat.bpm) BPM")
                         vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
                     } else {
-                        print("⚠️ 無効なBPM値: \(heartbeat.bpm)")
                         vibrationService.stopVibration()
                     }
                 } else {
-                    print("ℹ️ 心拍データがないため振動停止")
                     vibrationService.stopVibration()
                 }
             }
@@ -224,7 +219,6 @@ struct HeartbeatDetailView: View {
 
                 // ハートサイズの更新
                 heartSize = persistenceManager.loadHeartSize()
-                print("🔄 ImageEditView閉じ後 - ハートサイズ更新: \(heartSize)")
 
                 // 背景色の更新
                 savedBackgroundColor = persistenceManager.loadBackgroundColor()
@@ -259,7 +253,6 @@ struct HeartbeatDetailView: View {
             onDismiss: {
                 // CardBackgroundEditViewが閉じられたときもハートサイズを更新
                 heartSize = persistenceManager.loadHeartSize()
-                print("🔄 CardBackgroundEditView閉じ後 - ハートサイズ更新: \(heartSize)")
 
                 // 背景色の更新
                 savedBackgroundColor = persistenceManager.loadBackgroundColor()
@@ -317,26 +310,20 @@ struct HeartbeatDetailView: View {
 
     private func toggleVibration() {
         isVibrationEnabled.toggle()
-        print("💱 振動スイッチ: \(isVibrationEnabled ? "ON" : "OFF")")
 
         if isVibrationEnabled {
             // 振動有効化時の処理
             if let heartbeat = viewModel.currentHeartbeat {
                 if vibrationService.isValidBPM(heartbeat.bpm) {
                     vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
-                    print("🟢 心拍振動開始: \(heartbeat.bpm) BPM")
-                } else {
-                    print("⚠️ 無効なBPM値: \(heartbeat.bpm)")
                 }
             } else {
-                print("ℹ️ 心拍データがありません - 獲得中...")
                 // データがない場合は手動で更新を試みる
                 viewModel.refreshHeartbeat()
             }
         } else {
             // 振動無効化時の処理
             vibrationService.stopVibration()
-            print("🔴 心拍振動停止")
         }
     }
 }
