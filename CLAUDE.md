@@ -25,6 +25,9 @@ xcodebuild test -project camp_vol5_ios.xcodeproj -scheme camp_vol5_ios -destinat
 
 # Package dependency resolution (if needed)
 xcodebuild -resolvePackageDependencies -project camp_vol5_ios.xcodeproj
+
+# Format
+find . -name '*.swift' -print0 | xargs -0 swift-format format -i
 ```
 
 ## Architecture Overview
