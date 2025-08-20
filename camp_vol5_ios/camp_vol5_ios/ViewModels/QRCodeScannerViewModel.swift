@@ -39,7 +39,7 @@ class QRCodeScannerViewModel: ObservableObject {
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
@@ -69,7 +69,7 @@ class QRCodeScannerViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         // エラーが発生してもフォロー状態はfalseとして継続
                         self?.isFollowingUser = false
                     }
@@ -120,7 +120,7 @@ class QRCodeScannerViewModel: ObservableObject {
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     } else {
                         self?.isFollowingUser = true
@@ -129,7 +129,8 @@ class QRCodeScannerViewModel: ObservableObject {
                         // フォロー成功後、現在のユーザー情報を更新
                         if let currentUserId = self?.authenticationManager.currentUserId {
                             self?.authenticationManager.loadCurrentUser(
-                                uid: currentUserId)
+                                uid: currentUserId
+                            )
                         }
 
                         // フォロー成功後、2秒後にページを閉じる
@@ -162,7 +163,7 @@ class QRCodeScannerViewModel: ObservableObject {
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     } else {
                         self?.isFollowingUser = false
@@ -171,7 +172,8 @@ class QRCodeScannerViewModel: ObservableObject {
                         // フォロー成功後、現在のユーザー情報を更新
                         if let currentUserId = self?.authenticationManager.currentUserId {
                             self?.authenticationManager.loadCurrentUser(
-                                uid: currentUserId)
+                                uid: currentUserId
+                            )
                         }
                     }
                 },
@@ -204,5 +206,4 @@ class QRCodeScannerViewModel: ObservableObject {
     func clearSuccessMessage() {
         successMessage = nil
     }
-
 }

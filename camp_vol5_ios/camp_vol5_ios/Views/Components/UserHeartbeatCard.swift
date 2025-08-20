@@ -10,20 +10,22 @@ struct UserHeartbeatCard: View {
     let customBackgroundImage: UIImage?
     let displayName: String?
     let displayBPM: String?
-    
+
     // 既存のイニシャライザー（後方互換性のため）
     init(userWithHeartbeat: UserWithHeartbeat) {
         self.userWithHeartbeat = userWithHeartbeat
-        self.customBackgroundImage = nil
-        self.displayName = nil
-        self.displayBPM = nil
+        customBackgroundImage = nil
+        displayName = nil
+        displayBPM = nil
     }
-    
+
     // 新しいイニシャライザー（カスタマイズ用）
-    init(userWithHeartbeat: UserWithHeartbeat? = nil,
-         customBackgroundImage: UIImage? = nil,
-         displayName: String? = nil,
-         displayBPM: String? = nil) {
+    init(
+        userWithHeartbeat: UserWithHeartbeat? = nil,
+        customBackgroundImage: UIImage? = nil,
+        displayName: String? = nil,
+        displayBPM: String? = nil
+    ) {
         self.userWithHeartbeat = userWithHeartbeat
         self.customBackgroundImage = customBackgroundImage
         self.displayName = displayName
@@ -58,7 +60,7 @@ struct UserHeartbeatCard: View {
                         .scaledToFill()
                         .frame(width: 60, height: 60)
                         .clipShape(Circle())
-                    
+
                     if let bpm = displayBPM {
                         Text(bpm)
                             .font(.system(size: 14, weight: .bold))
@@ -99,7 +101,8 @@ struct UserHeartbeatCard: View {
                     userId: "user1",
                     bpm: 72
                 )
-            ))
+            )
+        )
 
         // 異なる画像のカード
         UserHeartbeatCard(
@@ -113,7 +116,8 @@ struct UserHeartbeatCard: View {
                     userId: "user2",
                     bpm: 85
                 )
-            ))
+            )
+        )
 
         // データなしのカード
         UserHeartbeatCard(
@@ -124,7 +128,8 @@ struct UserHeartbeatCard: View {
                     imageName: "taro"
                 ),
                 heartbeat: nil
-            ))
+            )
+        )
     }
     .padding()
 }

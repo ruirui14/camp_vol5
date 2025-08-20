@@ -22,6 +22,6 @@ struct NavigationBarTitleColorModifier: ViewModifier {
 
 extension View {
     func navigationBarTitleTextColor(_ color: Color) -> some View {
-        self.modifier(NavigationBarTitleColorModifier(color: color))
+        modifier(NavigationBarTitleColorModifier(color: color))
     }
 }

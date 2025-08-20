@@ -24,7 +24,7 @@ struct HeartbeatDetailView: View {
     @State private var heartSize: CGFloat = 105.0
     @State private var showingCardBackgroundEditSheet = false
     @State private var isVibrationEnabled = true
-    @State private var savedBackgroundColor: Color = Color.clear
+    @State private var savedBackgroundColor: Color = .clear
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -34,11 +34,12 @@ struct HeartbeatDetailView: View {
 
     init(userWithHeartbeat: UserWithHeartbeat) {
         _viewModel = StateObject(
-            wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat))
+            wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat)
+        )
     }
 
     var body: some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             ZStack {
                 // 常に背景色またはデフォルト背景を表示
                 if savedBackgroundColor != Color.clear {
@@ -75,7 +76,8 @@ struct HeartbeatDetailView: View {
                                     .scaleEffect(vibrationService.isVibrating ? 1.5 : 1.0)
                                     .animation(
                                         .easeInOut(duration: 0.5).repeatForever(),
-                                        value: vibrationService.isVibrating)
+                                        value: vibrationService.isVibrating
+                                    )
 
                                 Text("心拍振動: \(vibrationService.getVibrationStatus())")
                                     .font(.caption)
@@ -222,7 +224,7 @@ struct HeartbeatDetailView: View {
 
                 // 背景色の更新
                 savedBackgroundColor = persistenceManager.loadBackgroundColor()
-                
+
                 // 振動を再開（振動が有効で心拍データがある場合）
                 if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
                     if vibrationService.isValidBPM(heartbeat.bpm) {
@@ -256,7 +258,7 @@ struct HeartbeatDetailView: View {
 
                 // 背景色の更新
                 savedBackgroundColor = persistenceManager.loadBackgroundColor()
-                
+
                 // 振動を再開（振動が有効で心拍データがある場合）
                 if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
                     if vibrationService.isValidBPM(heartbeat.bpm) {

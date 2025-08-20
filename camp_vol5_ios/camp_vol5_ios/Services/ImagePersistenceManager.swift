@@ -5,44 +5,50 @@ import SwiftUI
 import UIKit
 
 // MARK: - 画像変換情報
+
 struct ImageTransform: Codable {
     var scale: CGFloat = 1.0
     var normalizedOffset: CGPoint = .zero
     var backgroundColor: UIColor? = nil
-    
+
     enum CodingKeys: String, CodingKey {
-        case scale, normalizedOffset, backgroundColor
+        case scale
+        case normalizedOffset
+        case backgroundColor
     }
-    
+
     init(scale: CGFloat = 1.0, normalizedOffset: CGPoint = .zero, backgroundColor: UIColor? = nil) {
         self.scale = scale
         self.normalizedOffset = normalizedOffset
         self.backgroundColor = backgroundColor
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         scale = try container.decode(CGFloat.self, forKey: .scale)
         normalizedOffset = try container.decode(CGPoint.self, forKey: .normalizedOffset)
         if let colorData = try container.decodeIfPresent(Data.self, forKey: .backgroundColor) {
-            backgroundColor = try NSKeyedUnarchiver.unarchivedObject(ofClass: UIColor.self, from: colorData)
+            backgroundColor = try NSKeyedUnarchiver.unarchivedObject(
+                ofClass: UIColor.self, from: colorData)
         } else {
             backgroundColor = nil
         }
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(scale, forKey: .scale)
         try container.encode(normalizedOffset, forKey: .normalizedOffset)
         if let backgroundColor = backgroundColor {
-            let colorData = try NSKeyedArchiver.archivedData(withRootObject: backgroundColor, requiringSecureCoding: false)
+            let colorData = try NSKeyedArchiver.archivedData(
+                withRootObject: backgroundColor, requiringSecureCoding: false)
             try container.encode(colorData, forKey: .backgroundColor)
         }
     }
 }
 
 // MARK: - 永続化用データ構造
+
 struct EnhancedPersistentImageData: Codable {
     let originalImageFileName: String
     let editedImageFileName: String
@@ -54,6 +60,7 @@ struct EnhancedPersistentImageData: Codable {
 }
 
 // MARK: - 画像処理エンジン
+
 class AdvancedImageProcessor {
     static func createEditedImage(
         from originalImage: UIImage,
@@ -67,7 +74,7 @@ class AdvancedImageProcessor {
 
             // 背景をクリア
             cgContext.clear(CGRect(origin: .zero, size: outputSize))
-            
+
             // 背景色が指定されている場合は塗りつぶす
             if let backgroundColor = transform.backgroundColor {
                 cgContext.setFillColor(backgroundColor.cgColor)
@@ -103,7 +110,8 @@ class AdvancedImageProcessor {
         thumbnailSize: CGSize = CGSize(width: 300, height: 300)
     ) -> UIImage? {
         return createEditedImage(
-            from: originalImage, transform: transform, outputSize: thumbnailSize)
+            from: originalImage, transform: transform, outputSize: thumbnailSize
+        )
     }
 
     static func createFullSizeEditedImage(
@@ -121,14 +129,17 @@ class AdvancedImageProcessor {
     private static func aspectFitSize(_ imageSize: CGSize, in containerSize: CGSize) -> CGSize {
         let scale = min(
             containerSize.width / imageSize.width,
-            containerSize.height / imageSize.height)
+            containerSize.height / imageSize.height
+        )
         return CGSize(
             width: imageSize.width * scale,
-            height: imageSize.height * scale)
+            height: imageSize.height * scale
+        )
     }
 }
 
 // MARK: - 画像永続化マネージャー
+
 class EnhancedImagePersistenceManager {
     static let shared = EnhancedImagePersistenceManager()
     private init() {}
@@ -139,7 +150,6 @@ class EnhancedImagePersistenceManager {
         userId: String,
         targetScreenSize: CGSize
     ) -> EnhancedPersistentImageData? {
-
         FileManager.ensureBackgroundImagesDirectory()
 
         let timestamp = UUID().uuidString
@@ -230,6 +240,7 @@ class EnhancedImagePersistenceManager {
 }
 
 // MARK: - UserDefaults管理
+
 class EnhancedUserDefaultsManager {
     static let shared = EnhancedUserDefaultsManager()
     private init() {}
@@ -282,6 +293,7 @@ class EnhancedUserDefaultsManager {
 }
 
 // MARK: - 必要なExtension
+
 extension CGPoint: Codable {}
 extension CGSize: Codable {}
 
@@ -304,7 +316,7 @@ extension FileManager {
 
 extension UIImage {
     func downsample(to pointSize: CGSize, scale: CGFloat = UIScreen.main.scale) -> UIImage? {
-        guard let data = self.jpegData(compressionQuality: 0.9) else { return nil }
+        guard let data = jpegData(compressionQuality: 0.9) else { return nil }
 
         let imageSourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let imageSource = CGImageSourceCreateWithData(data as CFData, imageSourceOptions)
@@ -323,7 +335,8 @@ extension UIImage {
 
         guard
             let downsampledImage = CGImageSourceCreateThumbnailAtIndex(
-                imageSource, 0, downsampleOptions)
+                imageSource, 0, downsampleOptions
+            )
         else {
             return nil
         }

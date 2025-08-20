@@ -9,7 +9,8 @@ struct QRCodeShareView: View {
         _viewModel = StateObject(
             wrappedValue: QRCodeShareViewModel(
                 authenticationManager: AuthenticationManager()
-            ))
+            )
+        )
     }
 
     var body: some View {
@@ -77,7 +78,7 @@ struct QRCodeShareView: View {
 
             if let inviteCode = viewModel.inviteCode {
                 VStack(spacing: 40) {
-                    //QRコード
+                    // QRコード
                     Image(uiImage: viewModel.generateQRCode(from: inviteCode))
                         .resizable()
                         .interpolation(.none)
@@ -235,7 +236,6 @@ struct QRCodeShareView: View {
         }
         .padding(.horizontal)
     }
-
 }
 
 struct QRCodeShareView_Previews: PreviewProvider {

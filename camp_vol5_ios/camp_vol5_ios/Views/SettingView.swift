@@ -11,7 +11,8 @@ struct SettingsView: View {
         _viewModel = StateObject(
             wrappedValue: SettingsViewModel(
                 authenticationManager: AuthenticationManager()
-            ))
+            )
+        )
     }
 
     var body: some View {
@@ -213,7 +214,7 @@ struct QRCodeContent: View {
 
                 Toggle("QR登録を許可する", isOn: allowQRRegistrationBinding)
                     .onChange(of: viewModel.allowQRRegistration) {
-                        newValue in
+                        _ in
                         viewModel.toggleQRRegistration()
                     }
 
@@ -260,7 +261,6 @@ struct QRCodeContent: View {
 
         return nil
     }
-
 }
 
 struct HeartbeatContent: View {

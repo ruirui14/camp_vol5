@@ -38,13 +38,13 @@ struct HeartbeatData: Codable {
     let timestamp: TimeInterval
 
     init(from heartbeat: Heartbeat) {
-        self.bpm = heartbeat.bpm
-        self.timestamp = heartbeat.timestamp.timeIntervalSince1970 * 1000
+        bpm = heartbeat.bpm
+        timestamp = heartbeat.timestamp.timeIntervalSince1970 * 1000
     }
 
     init(bpm: Int) {
         self.bpm = bpm
-        self.timestamp = Date().timeIntervalSince1970 * 1000
+        timestamp = Date().timeIntervalSince1970 * 1000
     }
 
     func toDictionary() -> [String: Any] {
@@ -54,4 +54,3 @@ struct HeartbeatData: Codable {
         ]
     }
 }
-

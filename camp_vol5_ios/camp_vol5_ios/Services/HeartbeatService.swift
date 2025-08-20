@@ -23,7 +23,10 @@ class HeartbeatService {
                     .failure(
                         NSError(
                             domain: "HeartbeatService", code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"])))
+                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
+                        )
+                    )
+                )
                 return
             }
 

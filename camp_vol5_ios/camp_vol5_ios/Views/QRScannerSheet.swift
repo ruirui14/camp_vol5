@@ -104,8 +104,8 @@ struct QRScannerViewController_Wrapper: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(
-        _ uiViewController: QRScannerViewController,
-        context: Context
+        _: QRScannerViewController,
+        context _: Context
     ) {}
 
     func makeCoordinator() -> Coordinator {
@@ -228,16 +228,14 @@ class QRScannerViewController: UIViewController {
         guidelineView.layer.cornerRadius = 8
         view.addSubview(guidelineView)
     }
-
 }
 
 extension QRScannerViewController: AVCaptureMetadataOutputObjectsDelegate {
     func metadataOutput(
-        _ output: AVCaptureMetadataOutput,
+        _: AVCaptureMetadataOutput,
         didOutput metadataObjects: [AVMetadataObject],
-        from connection: AVCaptureConnection
+        from _: AVCaptureConnection
     ) {
-
         if let metadataObject = metadataObjects.first {
             guard
                 let readableObject = metadataObject

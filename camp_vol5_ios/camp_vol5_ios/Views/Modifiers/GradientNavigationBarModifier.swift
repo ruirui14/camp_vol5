@@ -2,7 +2,6 @@ import SwiftUI
 
 // UIKitの外観を制御するためのViewModifier
 struct GradientNavigationBarModifier: ViewModifier {
-
     init(colors: [UIColor], titleColor: UIColor) {
         let appearance = UINavigationBarAppearance()
 
@@ -62,7 +61,8 @@ extension View {
     func gradientNavigationBar(colors: [Color], titleColor: Color = .white) -> some View {
         let uiColors = colors.map { UIColor($0) }
         let uiTitleColor = UIColor(titleColor)
-        return self.modifier(
-            GradientNavigationBarModifier(colors: uiColors, titleColor: uiTitleColor))
+        return modifier(
+            GradientNavigationBarModifier(colors: uiColors, titleColor: uiTitleColor)
+        )
     }
 }

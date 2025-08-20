@@ -27,6 +27,6 @@ struct WhiteCapsuleTitle: View {
 
 extension View {
     func whiteCapsuleTitle(_ title: String) -> some View {
-        self.overlay(WhiteCapsuleTitle(title: title))
+        overlay(WhiteCapsuleTitle(title: title))
     }
 }

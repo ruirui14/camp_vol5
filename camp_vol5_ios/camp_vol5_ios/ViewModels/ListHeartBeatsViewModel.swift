@@ -36,7 +36,7 @@ class ListHeartBeatsViewModel: ObservableObject {
         .sink { [weak self] isAuthenticated, isLoading, currentUser in
             guard !isLoading else { return }  // ローディング中は何もしない
 
-            if isAuthenticated && currentUser != nil {
+            if isAuthenticated, currentUser != nil {
                 // 認証済みでユーザー情報がある場合のみデータを読み込む
                 self?.loadFollowingUsersWithHeartbeatsIfNeeded()
             } else {
@@ -59,7 +59,7 @@ class ListHeartBeatsViewModel: ObservableObject {
     // フォロー中のユーザー情報と心拍データを取得
     func loadFollowingUsersWithHeartbeats() {
         guard let currentUser = authenticationManager.currentUser else {
-            self.isLoading = false
+            isLoading = false
             return
         }
 
@@ -89,7 +89,7 @@ class ListHeartBeatsViewModel: ObservableObject {
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
@@ -106,6 +106,7 @@ class ListHeartBeatsViewModel: ObservableObject {
 }
 
 // MARK: - Helper Models
+
 struct UserWithHeartbeat: Identifiable, Hashable {
     let id = UUID()
     let user: User

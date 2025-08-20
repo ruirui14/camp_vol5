@@ -1,6 +1,7 @@
 import SwiftUI
 
 // MARK: - Navigation Destinations
+
 enum NavigationDestination: Hashable {
     case settings
     case qrScanner
@@ -20,7 +21,8 @@ struct ListHeartBeatsView: View {
         _viewModel = StateObject(
             wrappedValue: ListHeartBeatsViewModel(
                 authenticationManager: AuthenticationManager()
-            ))
+            )
+        )
         // BackgroundImageManagersは認証後に初期化
         _backgroundImageManagers = State(initialValue: [:])
     }
@@ -73,7 +75,8 @@ struct ListHeartBeatsView: View {
             }
             .onReceive(
                 NotificationCenter.default.publisher(
-                    for: UIApplication.willEnterForegroundNotification)
+                    for: UIApplication.willEnterForegroundNotification
+                )
             ) { _ in
                 // アプリがフォアグラウンドに戻った時に背景画像を更新
                 loadBackgroundImages()
@@ -119,7 +122,7 @@ struct ListHeartBeatsView: View {
                     SettingsView().environmentObject(authenticationManager)
                 case .qrScanner:
                     QRCodeScannerView().environmentObject(authenticationManager)
-                case .heartbeatDetail(let userWithHeartbeat):
+                case let .heartbeatDetail(userWithHeartbeat):
                     HeartbeatDetailView(userWithHeartbeat: userWithHeartbeat)
                 }
             }
@@ -174,12 +177,14 @@ struct ListHeartBeatsView: View {
             VStack(spacing: 10) {
                 ForEach(viewModel.followingUsersWithHeartbeats) { userWithHeartbeat in
                     Button {
-                        navigationPath.append(NavigationDestination.heartbeatDetail(userWithHeartbeat))
+                        navigationPath.append(
+                            NavigationDestination.heartbeatDetail(userWithHeartbeat))
                     } label: {
                         UserHeartbeatCard(
                             userWithHeartbeat: userWithHeartbeat,
                             customBackgroundImage: backgroundImageManagers[
-                                userWithHeartbeat.user.id]?.currentEditedImage
+                                userWithHeartbeat.user.id
+                            ]?.currentEditedImage
                         )
                         .id(
                             "\(userWithHeartbeat.user.id)-\(backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage != nil ? "with-image" : "no-image")-\(backgroundImageRefreshTrigger)"
@@ -240,7 +245,6 @@ struct ListHeartBeatsView: View {
             }
         }
     }
-
 }
 
 struct FeatureRow: View {

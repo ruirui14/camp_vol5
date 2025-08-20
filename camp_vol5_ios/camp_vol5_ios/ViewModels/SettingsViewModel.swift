@@ -46,7 +46,7 @@ class SettingsViewModel: ObservableObject {
         .receive(on: DispatchQueue.main)
         .sink { [weak self] isAuthenticated, isLoading in
             // 認証が完了し、ローディングが終了したらユーザー情報を読み込む
-            if isAuthenticated && !isLoading {
+            if isAuthenticated, !isLoading {
                 self?.loadCurrentUserIfNeeded()
             }
         }
@@ -68,11 +68,12 @@ class SettingsViewModel: ObservableObject {
             .sink(
                 receiveCompletion: {
                     [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                         // エラーの場合も空のユーザーオブジェクトを設定してUIの読み込み状態を終了
                         self?.currentUser = User(
-                            id: userId, name: "Unknown", inviteCode: "", allowQRRegistration: false)
+                            id: userId, name: "Unknown", inviteCode: "", allowQRRegistration: false
+                        )
                     }
                 },
                 receiveValue: { [weak self] (user: User?) in
@@ -98,7 +99,7 @@ class SettingsViewModel: ObservableObject {
             .sink(
                 receiveCompletion: {
                     [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
@@ -122,7 +123,7 @@ class SettingsViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
@@ -153,7 +154,7 @@ class SettingsViewModel: ObservableObject {
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
@@ -188,7 +189,7 @@ class SettingsViewModel: ObservableObject {
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         // エラーの場合、トグルを元に戻す
                         self?.allowQRRegistration = !newValue
                         self?.errorMessage = error.localizedDescription

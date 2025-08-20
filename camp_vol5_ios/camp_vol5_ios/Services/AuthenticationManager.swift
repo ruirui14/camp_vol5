@@ -34,7 +34,6 @@ protocol AuthenticationProtocol: ObservableObject {
 /// Firebase認証とユーザー状態を管理するメインクラス
 /// EnvironmentObjectとして使用される
 final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
-
     // MARK: - Published Properties
 
     /// Firebase認証ユーザー
@@ -131,7 +130,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         isLoading = true
         errorMessage = nil
 
-        Auth.auth().signInAnonymously { [weak self] authResult, error in
+        Auth.auth().signInAnonymously { [weak self] _, error in
             DispatchQueue.main.async {
                 self?.isLoading = false
 
@@ -149,7 +148,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         // エラーメッセージは設定しない（新規ユーザーの場合は正常）
                     }
                 },
@@ -170,7 +169,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         isLoading = true
         errorMessage = nil
 
-        Auth.auth().signInAnonymously { [weak self] authResult, error in
+        Auth.auth().signInAnonymously { [weak self] _, error in
             DispatchQueue.main.async {
                 self?.isLoading = false
 
@@ -265,7 +264,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
@@ -306,7 +305,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             DispatchQueue.main.async {
                 if let error = error {
                     self?.handleGoogleLinkError(
-                        error: error, credential: credential, googleUser: googleUser)
+                        error: error, credential: credential, googleUser: googleUser
+                    )
                 } else if let firebaseUser = authResult?.user {
                     let displayName = googleUser.profile?.name ?? "Google User"
                     self?.saveUserToFirestore(uid: firebaseUser.uid, name: displayName)
@@ -384,12 +384,11 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     ///   - uid: ユーザーID
     ///   - name: ユーザー名
     private func saveUserToFirestore(uid: String, name: String) {
-
         UserService.shared.createUser(uid: uid, name: name)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = "ユーザー情報の保存に失敗しました: \(error.localizedDescription)"
                     } else {
                         // 保存成功後、最新のユーザー情報を再取得

@@ -15,7 +15,7 @@ struct CardBackgroundEditView: View {
     @State private var imageScale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
     @State private var cardFrame: CGRect = .zero
-    @State private var selectedBackgroundColor: Color = Color.clear
+    @State private var selectedBackgroundColor: Color = .clear
 
     // UserHeartbeatCardと同じサイズ
     private let cardSize = CGSize(width: 370, height: 120)
@@ -290,23 +290,24 @@ struct CardBackgroundEditView: View {
     }
 
     private func restoreEditingState() {
-        
         // 既存の元画像を復元
         if let originalImage = backgroundImageManager.currentOriginalImage {
             selectedImage = originalImage
-            
+
             // 位置とスケールを復元
             let screenSize = UIScreen.main.bounds.size
-            
-            let restoredOffsetX = backgroundImageManager.currentTransform.normalizedOffset.x * screenSize.width
-            let restoredOffsetY = backgroundImageManager.currentTransform.normalizedOffset.y * screenSize.height
-            
+
+            let restoredOffsetX =
+                backgroundImageManager.currentTransform.normalizedOffset.x * screenSize.width
+            let restoredOffsetY =
+                backgroundImageManager.currentTransform.normalizedOffset.y * screenSize.height
+
             imageOffset = CGSize(width: restoredOffsetX, height: restoredOffsetY)
             lastOffset = imageOffset
             imageScale = backgroundImageManager.currentTransform.scale
             lastScale = imageScale
         }
-        
+
         // 背景色を復元
         if let backgroundColor = backgroundImageManager.currentTransform.backgroundColor {
             selectedBackgroundColor = Color(backgroundColor)
@@ -350,7 +351,7 @@ struct PhotoPicker: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+    func updateUIViewController(_: PHPickerViewController, context _: Context) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -363,7 +364,7 @@ struct PhotoPicker: UIViewControllerRepresentable {
             self.parent = parent
         }
 
-        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        func picker(_: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             parent.dismiss()
 
             guard let provider = results.first?.itemProvider else { return }

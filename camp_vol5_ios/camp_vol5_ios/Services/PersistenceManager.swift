@@ -147,7 +147,6 @@ class PersistenceManager {
             userDefaults.set(Double(blue), forKey: backgroundColorBlueKey)
             userDefaults.set(Double(alpha), forKey: backgroundColorAlphaKey)
         }
-
     }
 
     // 背景色を読み込み

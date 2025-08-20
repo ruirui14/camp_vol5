@@ -24,7 +24,7 @@ class VibrationService: ObservableObject {
 
         // 既に同じBPMで振動中の場合でも再設定する
         let needsRestart = !isVibrating || currentBPM != bpm
-        
+
         if needsRestart {
             stopVibration()
         } else {

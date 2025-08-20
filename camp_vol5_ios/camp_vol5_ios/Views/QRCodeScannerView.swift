@@ -13,7 +13,8 @@ struct QRCodeScannerView: View {
         _viewModel = StateObject(
             wrappedValue: QRCodeScannerViewModel(
                 authenticationManager: AuthenticationManager()
-            ))
+            )
+        )
     }
 
     var body: some View {
@@ -359,6 +360,7 @@ struct QRCodeScannerView: View {
 }
 
 // MARK: - Preview
+
 struct QRCodeScannerView_Previews: PreviewProvider {
     static var previews: some View {
         QRCodeScannerView()

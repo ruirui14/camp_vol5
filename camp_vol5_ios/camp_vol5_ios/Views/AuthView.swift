@@ -5,9 +5,10 @@ struct AuthView: View {
     @StateObject private var viewModel: AuthViewModel
 
     init() {
-        _viewModel = StateObject(wrappedValue: AuthViewModel(
-            authenticationManager: AuthenticationManager()
-        ))
+        _viewModel = StateObject(
+            wrappedValue: AuthViewModel(
+                authenticationManager: AuthenticationManager()
+            ))
     }
 
     var body: some View {

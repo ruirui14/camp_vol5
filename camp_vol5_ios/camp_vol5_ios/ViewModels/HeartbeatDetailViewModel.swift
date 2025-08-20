@@ -16,11 +16,11 @@ class HeartbeatDetailViewModel: ObservableObject {
         self.userId = userId
         loadUserInfo()
     }
-    
+
     init(userWithHeartbeat: UserWithHeartbeat) {
-        self.userId = userWithHeartbeat.user.id
-        self.user = userWithHeartbeat.user
-        self.currentHeartbeat = userWithHeartbeat.heartbeat
+        userId = userWithHeartbeat.user.id
+        user = userWithHeartbeat.user
+        currentHeartbeat = userWithHeartbeat.heartbeat
     }
 
     // ユーザー情報を取得
@@ -30,7 +30,7 @@ class HeartbeatDetailViewModel: ObservableObject {
             .sink(
                 receiveCompletion: {
                     [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
@@ -68,7 +68,7 @@ class HeartbeatDetailViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },

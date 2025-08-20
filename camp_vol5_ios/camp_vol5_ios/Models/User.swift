@@ -30,8 +30,8 @@ struct User: Codable, Identifiable {
         self.inviteCode = inviteCode
         self.allowQRRegistration = allowQRRegistration
         self.followingUserIds = followingUserIds
-        self.createdAt = Date()
-        self.updatedAt = Date()
+        createdAt = Date()
+        updatedAt = Date()
         self.imageName = imageName
     }
 
@@ -50,18 +50,18 @@ struct User: Codable, Identifiable {
         self.inviteCode = inviteCode
         self.allowQRRegistration = allowQRRegistration
         self.followingUserIds = followingUserIds
-        self.imageName = data["imageName"] as? String
+        imageName = data["imageName"] as? String
 
         if let createdAtTimestamp = data["createdAt"] as? Timestamp {
-            self.createdAt = createdAtTimestamp.dateValue()
+            createdAt = createdAtTimestamp.dateValue()
         } else {
-            self.createdAt = nil
+            createdAt = nil
         }
 
         if let updatedAtTimestamp = data["updatedAt"] as? Timestamp {
-            self.updatedAt = updatedAtTimestamp.dateValue()
+            updatedAt = updatedAtTimestamp.dateValue()
         } else {
-            self.updatedAt = nil
+            updatedAt = nil
         }
     }
 

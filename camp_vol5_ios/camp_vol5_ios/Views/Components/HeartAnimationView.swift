@@ -5,19 +5,22 @@ import SwiftUI
 
 struct HeartAnimationView: View {
     @StateObject private var viewModel = HeartAnimationViewModel()
-    
+
     // MARK: - カスタマイズ可能なプロパティ
+
     let heartSize: CGFloat
     let showBPM: Bool
     let enableHaptic: Bool
     let heartColor: Color
-    
+
     // MARK: - アニメーション状態
+
     @State private var isBeating = false
-    
+
     // MARK: - 外部から制御可能なBPM
+
     let bpm: Int
-    
+
     init(
         bpm: Int,
         heartSize: CGFloat = 120,
@@ -31,28 +34,29 @@ struct HeartAnimationView: View {
         self.enableHaptic = enableHaptic
         self.heartColor = heartColor
     }
-    
+
     var body: some View {
         ZStack {
             // 通常時のハート
             heartImage
                 .scaleEffect(isBeating ? 1.25 : 1.0)
                 .opacity(isBeating ? 0.0 : 1.0)
-            
+
             // 鼓動時のハート（発光効果付き）
             heartImage
                 .scaleEffect(isBeating ? 1.25 : 1.0)
                 .opacity(isBeating ? 1.0 : 0.0)
                 .shadow(color: heartColor, radius: 10, x: 0, y: 0)
-            
+
             // 中央のBPM表示
             if showBPM {
                 bpmText
             }
         }
         .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isBeating)
-        .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: isBeating) { _, isBeatingNow in
-            return enableHaptic ? isBeatingNow : false
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: isBeating) {
+            _, isBeatingNow in
+            enableHaptic ? isBeatingNow : false
         }
         .onChange(of: bpm) { _, newBPM in
             if newBPM > 0 {
@@ -65,7 +69,7 @@ struct HeartAnimationView: View {
             withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
                 isBeating = true
             }
-            
+
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                 withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
                     isBeating = false
@@ -81,9 +85,9 @@ struct HeartAnimationView: View {
             viewModel.stopSimulation()
         }
     }
-    
+
     // MARK: - Subviews
-    
+
     @ViewBuilder
     private var heartImage: some View {
         if let heartUIImage = UIImage(named: "heart_beat") {
@@ -91,7 +95,7 @@ struct HeartAnimationView: View {
                 .renderingMode(.original)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: heartSize, height: heartSize * 0.876) // 元のアスペクト比維持
+                .frame(width: heartSize, height: heartSize * 0.876)  // 元のアスペクト比維持
                 .clipShape(Circle())
         } else {
             // フォールバック: システムアイコン
@@ -100,12 +104,12 @@ struct HeartAnimationView: View {
                 .foregroundColor(heartColor)
         }
     }
-    
+
     @ViewBuilder
     private var bpmText: some View {
         if bpm > 0 {
             Text("\(bpm)")
-                .font(.system(size: heartSize * 0.305, weight: .semibold)) // サイズに応じてフォントも調整
+                .font(.system(size: heartSize * 0.305, weight: .semibold))  // サイズに応じてフォントも調整
                 .foregroundColor(.white)
                 .shadow(color: Color.black.opacity(0.8), radius: 2, x: 0, y: 1)
         } else {
@@ -118,22 +122,23 @@ struct HeartAnimationView: View {
 }
 
 // MARK: - 便利なイニシャライザー
+
 extension HeartAnimationView {
     /// 大きなハート用
     static func large(bpm: Int, showBPM: Bool = true) -> HeartAnimationView {
         HeartAnimationView(bpm: bpm, heartSize: 200, showBPM: showBPM)
     }
-    
+
     /// 中サイズハート用
     static func medium(bpm: Int, showBPM: Bool = true) -> HeartAnimationView {
         HeartAnimationView(bpm: bpm, heartSize: 120, showBPM: showBPM)
     }
-    
+
     /// 小さなハート用
     static func small(bpm: Int, showBPM: Bool = false) -> HeartAnimationView {
         HeartAnimationView(bpm: bpm, heartSize: 60, showBPM: showBPM)
     }
-    
+
     /// カスタムカラー用
     static func custom(bpm: Int, size: CGFloat, color: Color) -> HeartAnimationView {
         HeartAnimationView(bpm: bpm, heartSize: size, heartColor: color)
@@ -141,6 +146,7 @@ extension HeartAnimationView {
 }
 
 // MARK: - Preview
+
 #Preview("大きなハート") {
     VStack(spacing: 30) {
         HeartAnimationView.large(bpm: 75)

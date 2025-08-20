@@ -8,12 +8,12 @@ class QRCodeShareViewModel: ObservableObject {
     @Published var inviteCode: String?
     @Published var isLoading = false
     @Published var errorMessage: String?
-    
+
     @Published var showingSaveAlert = false
     @Published var saveAlertTitle = ""
     @Published var saveAlertMessage = ""
     @Published var showingPermissionAlert = false
-    
+
     private let context = CIContext()
     private let filter = CIFilter.qrCodeGenerator()
 
@@ -53,13 +53,13 @@ class QRCodeShareViewModel: ObservableObject {
             isLoading = false
             return
         }
-        
+
         UserService.shared.generateNewInviteCode(for: currentUser)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
-                    if case .failure(let error) = completion {
+                    if case let .failure(error) = completion {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
@@ -69,7 +69,7 @@ class QRCodeShareViewModel: ObservableObject {
             )
             .store(in: &cancellables)
     }
-    
+
     func generateQRCode(from string: String) -> UIImage {
         filter.message = Data(string.utf8)
 
@@ -87,7 +87,7 @@ class QRCodeShareViewModel: ObservableObject {
 
         return UIImage(systemName: "xmark.circle") ?? UIImage()
     }
-    
+
     func saveQRCodeToPhotos() {
         guard let inviteCode = inviteCode else { return }
 
@@ -103,7 +103,7 @@ class QRCodeShareViewModel: ObservableObject {
             }
         }
     }
-    
+
     private func saveImageToPhotoLibrary(_ image: UIImage) {
         PHPhotoLibrary.shared().performChanges {
             PHAssetChangeRequest.creationRequestForAsset(from: image)
@@ -123,7 +123,7 @@ class QRCodeShareViewModel: ObservableObject {
             }
         }
     }
-    
+
     private func generateHighResolutionQRCode(from string: String) -> UIImage {
         filter.message = Data(string.utf8)
 
@@ -148,7 +148,8 @@ class QRCodeShareViewModel: ObservableObject {
                     UIColor(Color.accent).cgColor,
                 ]
                 let gradient = CGGradient(
-                    colorsSpace: colorSpace, colors: colors as CFArray, locations: [0.0, 1.0])!
+                    colorsSpace: colorSpace, colors: colors as CFArray, locations: [0.0, 1.0]
+                )!
 
                 let context = UIGraphicsGetCurrentContext()!
                 context.drawLinearGradient(
@@ -175,14 +176,16 @@ class QRCodeShareViewModel: ObservableObject {
 
         return UIImage(systemName: "xmark.circle") ?? UIImage()
     }
-    
+
     private func checkPhotoLibraryPermission(completion: @escaping (Bool) -> Void) {
         let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
 
         switch status {
-        case .authorized, .limited:
+        case .authorized,
+            .limited:
             completion(true)
-        case .denied, .restricted:
+        case .denied,
+            .restricted:
             completion(false)
         case .notDetermined:
             PHPhotoLibrary.requestAuthorization(for: .addOnly) { newStatus in

@@ -1,4 +1,4 @@
-// MainAccentGradient.swift
+// BackgroundGradient.swift
 // アプリ全体で使用する背景グラデーションコンポーネント
 // 一元管理により、デザインの変更が簡単になる
 

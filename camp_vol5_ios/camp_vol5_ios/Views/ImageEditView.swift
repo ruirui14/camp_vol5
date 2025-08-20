@@ -15,9 +15,9 @@ struct ImageEditView: View {
     @State private var heartSize: CGFloat = 105.0
     @State private var showingPhotoPicker = false
     @State private var showingHeartSizeSlider = false
-    @State private var selectedBackgroundColor: Color = Color.clear
+    @State private var selectedBackgroundColor: Color = .clear
     @Environment(\.presentationMode) var presentationMode
-    @State private var tempColor: Color = Color.clear
+    @State private var tempColor: Color = .clear
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -50,7 +50,7 @@ struct ImageEditView: View {
                                             height: lastOffset.height + value.translation.height
                                         )
                                     }
-                                    .onEnded { value in
+                                    .onEnded { _ in
                                         lastOffset = tempOffset
                                     },
                                 // ズームジェスチャー
@@ -58,7 +58,7 @@ struct ImageEditView: View {
                                     .onChanged { value in
                                         tempScale = lastScale * value
                                     }
-                                    .onEnded { value in
+                                    .onEnded { _ in
                                         lastScale = tempScale
                                         // 最小・最大スケールの制限
                                         if tempScale < 0.5 {
@@ -113,7 +113,7 @@ struct ImageEditView: View {
                                         height: lastHeartOffset.height + value.translation.height
                                     )
                                 }
-                                .onEnded { value in
+                                .onEnded { _ in
                                     lastHeartOffset = heartOffset
                                 }
                         )
@@ -138,7 +138,8 @@ struct ImageEditView: View {
                                     Text("小")
                                         .foregroundColor(.white)
                                         .shadow(
-                                            color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                                            color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1
+                                        )
 
                                     Slider(value: $heartSize, in: 60...200, step: 5)
                                         .accentColor(.white)
@@ -149,7 +150,8 @@ struct ImageEditView: View {
                                     Text("大")
                                         .foregroundColor(.white)
                                         .shadow(
-                                            color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                                            color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1
+                                        )
                                 }
 
                                 Text("サイズ: \(Int(heartSize))")
@@ -207,7 +209,8 @@ struct ImageEditView: View {
 
                         // 画像の変形情報を直接保存
                         persistenceManager.saveImageTransform(
-                            offset: tempOffset, scale: tempScale)
+                            offset: tempOffset, scale: tempScale
+                        )
 
                         persistenceManager.saveBackgroundColor(tempColor)
 
@@ -355,7 +358,6 @@ struct ImageEditView: View {
             .disabled(image == nil)
 
             ZStack {
-
                 Button(action: {}) {
                     VStack(spacing: 8) {
                         Image(systemName: "paintpalette")
@@ -391,7 +393,6 @@ struct ImageEditView: View {
                     .scaleEffect(CGSize(width: 2, height: 2))
                     .opacity(0.011)
                     .allowsHitTesting(true)
-
             }
         }
     }
@@ -411,6 +412,7 @@ struct ImageEditView: View {
 }
 
 // MARK: - Color Palette View
+
 struct ColorPaletteView: View {
     @Binding var selectedColor: Color
     @Environment(\.presentationMode) var presentationMode
@@ -439,9 +441,11 @@ struct ColorPaletteView: View {
                                     color == .clear
                                         ? LinearGradient(
                                             colors: [.main, .accent], startPoint: .topLeading,
-                                            endPoint: .bottomTrailing)
+                                            endPoint: .bottomTrailing
+                                        )
                                         : LinearGradient(
-                                            colors: [color], startPoint: .center, endPoint: .center)
+                                            colors: [color], startPoint: .center, endPoint: .center
+                                        )
                                 )
                                 .frame(width: 60, height: 60)
                                 .overlay(
@@ -449,7 +453,8 @@ struct ColorPaletteView: View {
                                         .stroke(
                                             selectedColor == color
                                                 ? Color.blue : Color.gray.opacity(0.3),
-                                            lineWidth: selectedColor == color ? 3 : 1)
+                                            lineWidth: selectedColor == color ? 3 : 1
+                                        )
                                 )
                                 .overlay(
                                     color == .clear

@@ -18,6 +18,6 @@ struct NavigationBarTransparentModifier: ViewModifier {
 
 extension View {
     func navigationBarBackgroundTransparent() -> some View {
-        self.modifier(NavigationBarTransparentModifier())
+        modifier(NavigationBarTransparentModifier())
     }
 }
