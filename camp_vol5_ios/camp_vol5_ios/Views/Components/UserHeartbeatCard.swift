@@ -6,18 +6,8 @@
 import SwiftUI
 
 struct UserHeartbeatCard: View {
-    let userWithHeartbeat: UserWithHeartbeat?
-    let customBackgroundImage: UIImage?
-    let displayName: String?
-    let displayBPM: String?
+    @StateObject private var viewModel: UserHeartbeatCardViewModel
 
-    // 既存のイニシャライザー（後方互換性のため）
-    init(userWithHeartbeat: UserWithHeartbeat) {
-        self.userWithHeartbeat = userWithHeartbeat
-        customBackgroundImage = nil
-        displayName = nil
-        displayBPM = nil
-    }
 
     // 新しいイニシャライザー（カスタマイズ用）
     init(
@@ -26,16 +16,23 @@ struct UserHeartbeatCard: View {
         displayName: String? = nil,
         displayBPM: String? = nil
     ) {
-        self.userWithHeartbeat = userWithHeartbeat
-        self.customBackgroundImage = customBackgroundImage
-        self.displayName = displayName
-        self.displayBPM = displayBPM
+        if let userWithHeartbeat = userWithHeartbeat {
+            self._viewModel = StateObject(
+                wrappedValue: UserHeartbeatCardViewModel(
+                    userWithHeartbeat: userWithHeartbeat,
+                    customBackgroundImage: customBackgroundImage))
+        } else {
+            self._viewModel = StateObject(
+                wrappedValue: UserHeartbeatCardViewModel(
+                    customBackgroundImage: customBackgroundImage, displayName: displayName,
+                    displayBPM: displayBPM))
+        }
     }
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             // 背景画像の表示
-            if let customImage = customBackgroundImage {
+            if let customImage = viewModel.customBackgroundImage {
                 Image(uiImage: customImage)
                     .resizable()
                     .scaledToFill()
@@ -61,13 +58,8 @@ struct UserHeartbeatCard: View {
                         .frame(width: 60, height: 60)
                         .clipShape(Circle())
 
-                    if let bpm = displayBPM {
-                        Text(bpm)
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
-                            .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                    } else if let heartbeat = userWithHeartbeat?.heartbeat {
-                        Text("\(heartbeat.bpm)")
+                    if !viewModel.displayBPM.isEmpty {
+                        Text(viewModel.displayBPM)
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(.white)
                             .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
@@ -75,7 +67,7 @@ struct UserHeartbeatCard: View {
                 }
                 .offset(x: 290, y: -36)
 
-                Text(displayName ?? userWithHeartbeat?.user.name ?? "プレビュー")
+                Text(viewModel.displayName)
                     .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.base)
                     .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)

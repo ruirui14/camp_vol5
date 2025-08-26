@@ -15,8 +15,8 @@ class BackgroundImageManager: ObservableObject {
     @Published var isSaving = false
 
     private let userId: String
-    private let persistenceManager = EnhancedImagePersistenceManager.shared
-    private let userDefaultsManager = EnhancedUserDefaultsManager.shared
+    private let persistenceService = ImagePersistenceService.shared
+    private let userDefaultsService = UserDefaultsImageService.shared
 
     init(userId: String) {
         self.userId = userId
@@ -29,14 +29,14 @@ class BackgroundImageManager: ObservableObject {
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self = self else { return }
 
-            if let savedData = self.userDefaultsManager.loadBackgroundImageData(for: self.userId) {
-                let editedImage = self.persistenceManager.loadImage(
+            if let savedData = self.userDefaultsService.loadBackgroundImageData(for: self.userId) {
+                let editedImage = self.persistenceService.loadImage(
                     fileName: savedData.editedImageFileName
                 )
-                let thumbnail = self.persistenceManager.loadImage(
+                let thumbnail = self.persistenceService.loadImage(
                     fileName: savedData.thumbnailFileName
                 )
-                let originalImage = self.persistenceManager.loadImage(
+                let originalImage = self.persistenceService.loadImage(
                     fileName: savedData.originalImageFileName
                 )
 
@@ -81,7 +81,7 @@ class BackgroundImageManager: ObservableObject {
             let screenSize = UIScreen.main.bounds.size
 
             guard
-                let persistentData = self.persistenceManager.saveEditedImageSet(
+                let persistentData = self.persistenceService.saveEditedImageSet(
                     originalImage: originalImage,
                     transform: transform,
                     userId: self.userId,
@@ -94,12 +94,12 @@ class BackgroundImageManager: ObservableObject {
                 return
             }
 
-            self.userDefaultsManager.saveBackgroundImageData(persistentData)
+            self.userDefaultsService.saveBackgroundImageData(persistentData)
 
-            let editedImage = self.persistenceManager.loadImage(
+            let editedImage = self.persistenceService.loadImage(
                 fileName: persistentData.editedImageFileName
             )
-            let thumbnail = self.persistenceManager.loadImage(
+            let thumbnail = self.persistenceService.loadImage(
                 fileName: persistentData.thumbnailFileName
             )
 
@@ -127,10 +127,10 @@ class BackgroundImageManager: ObservableObject {
     }
 
     func resetBackgroundImage() {
-        if let savedData = userDefaultsManager.loadBackgroundImageData(for: userId) {
-            persistenceManager.deleteImageSet(savedData)
+        if let savedData = userDefaultsService.loadBackgroundImageData(for: userId) {
+            persistenceService.deleteImageSet(savedData)
         }
-        userDefaultsManager.deleteBackgroundImageData(for: userId)
+        userDefaultsService.deleteBackgroundImageData(for: userId)
 
         currentEditedImage = nil
         currentThumbnail = nil

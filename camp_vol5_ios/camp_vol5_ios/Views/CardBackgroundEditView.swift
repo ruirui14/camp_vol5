@@ -7,22 +7,19 @@ import SwiftUI
 
 struct CardBackgroundEditView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var backgroundImageManager: BackgroundImageManager
-    @State private var selectedImage: UIImage?
-    @State private var showingPhotoPicker = false
-    @State private var imageOffset: CGSize = .zero
-    @State private var lastOffset: CGSize = .zero
-    @State private var imageScale: CGFloat = 1.0
-    @State private var lastScale: CGFloat = 1.0
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @StateObject private var viewModel: CardBackgroundEditViewModel
     @State private var cardFrame: CGRect = .zero
-    @State private var selectedBackgroundColor: Color = .clear
 
     // UserHeartbeatCardと同じサイズ
     private let cardSize = CGSize(width: 370, height: 120)
     let userId: String
+
     init(userId: String) {
         self.userId = userId
-        _backgroundImageManager = StateObject(wrappedValue: BackgroundImageManager(userId: userId))
+        self._viewModel = StateObject(
+            wrappedValue: CardBackgroundEditViewModel(
+                userId: userId, authenticationManager: AuthenticationManager()))
     }
 
     var body: some View {
@@ -51,33 +48,25 @@ struct CardBackgroundEditView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("完了") {
-                        saveImageConfiguration()
+                        viewModel.saveImageConfiguration()
                         dismiss()
                     }
                     .foregroundColor(.white)
-                    .disabled(backgroundImageManager.isSaving || selectedImage == nil)
+                    .disabled(viewModel.isSaving || viewModel.selectedImage == nil)
                 }
             }
         }
-        .sheet(isPresented: $showingPhotoPicker) {
-            PhotoPicker(selectedImage: $selectedImage)
+        .sheet(isPresented: $viewModel.showingPhotoPicker) {
+            PhotoPicker(selectedImage: $viewModel.selectedImage)
         }
         .onAppear {
-            // 読み込み中の場合は待機、完了済みの場合は即座に復元
-            if !backgroundImageManager.isLoading {
-                restoreEditingState()
-            }
+            viewModel.onAppear()
         }
-        .onChange(of: backgroundImageManager.isLoading) { isLoading in
-            // 読み込み完了時に復元処理を実行
-            if !isLoading {
-                restoreEditingState()
-            }
+        .onChange(of: viewModel.isLoading) { isLoading in
+            viewModel.onLoadingChanged(isLoading: isLoading)
         }
-        .onChange(of: selectedImage) { newImage in
-            if let image = newImage {
-                backgroundImageManager.setOriginalImage(image)
-            }
+        .onChange(of: viewModel.selectedImage) { newImage in
+            viewModel.onSelectedImageChanged(newImage: newImage)
         }
     }
 
@@ -85,11 +74,11 @@ struct CardBackgroundEditView: View {
         GeometryReader { geometry in
             ZStack {
                 // 画像があるときだけ背景画像を表示
-                if let image = selectedImage {
+                if let image = viewModel.selectedImage {
                     ZStack {
                         // 背景色（カード範囲のみ）
-                        if selectedBackgroundColor != Color.clear {
-                            selectedBackgroundColor
+                        if viewModel.selectedBackgroundColor != Color.clear {
+                            viewModel.selectedBackgroundColor
                                 .mask(
                                     RoundedRectangle(cornerRadius: 20)
                                         .fill(Color.black)
@@ -103,8 +92,8 @@ struct CardBackgroundEditView: View {
                             .aspectRatio(image.size, contentMode: .fit)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .opacity(0.5)
-                            .offset(imageOffset)
-                            .scaleEffect(imageScale)
+                            .offset(viewModel.imageOffset)
+                            .scaleEffect(viewModel.imageScale)
 
                         // 背景画像（カード範囲のみ不透明）
                         Image(uiImage: image)
@@ -112,8 +101,8 @@ struct CardBackgroundEditView: View {
                             .aspectRatio(image.size, contentMode: .fit)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .opacity(1.0)
-                            .offset(imageOffset)
-                            .scaleEffect(imageScale)
+                            .offset(viewModel.imageOffset)
+                            .scaleEffect(viewModel.imageScale)
                             .mask(
                                 RoundedRectangle(cornerRadius: 20)
                                     .fill(Color.black)
@@ -124,28 +113,27 @@ struct CardBackgroundEditView: View {
                         SimultaneousGesture(
                             DragGesture()
                                 .onChanged { value in
-                                    imageOffset = CGSize(
-                                        width: lastOffset.width + value.translation.width,
-                                        height: lastOffset.height + value.translation.height
-                                    )
+                                    viewModel.updateImageOffset(translation: value.translation)
                                 }
                                 .onEnded { _ in
-                                    lastOffset = imageOffset
+                                    viewModel.finalizeImageOffset()
                                 },
                             MagnificationGesture()
                                 .onChanged { value in
-                                    imageScale = lastScale * value
+                                    viewModel.updateImageScale(magnification: value)
                                 }
                                 .onEnded { _ in
-                                    lastScale = imageScale
+                                    viewModel.finalizeImageScale()
                                 }
                         )
                     )
                 }
 
                 // 背景色のみの場合のプレビュー
-                if selectedImage == nil && selectedBackgroundColor != Color.clear {
-                    selectedBackgroundColor
+                if viewModel.selectedImage == nil
+                    && viewModel.selectedBackgroundColor != Color.clear
+                {
+                    viewModel.selectedBackgroundColor
                         .mask(
                             RoundedRectangle(cornerRadius: 20)
                                 .fill(Color.black)
@@ -172,7 +160,7 @@ struct CardBackgroundEditView: View {
     private var controlButtons: some View {
         HStack(alignment: .top, spacing: 20) {
             Button(action: {
-                showingPhotoPicker = true
+                viewModel.showingPhotoPicker = true
             }) {
                 VStack(spacing: 8) {
                     Image(systemName: "photo.on.rectangle.angled")
@@ -230,14 +218,14 @@ struct CardBackgroundEditView: View {
                         .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                 )
 
-                ColorPicker("", selection: $selectedBackgroundColor)
+                ColorPicker("", selection: $viewModel.selectedBackgroundColor)
                     .labelsHidden()
                     .scaleEffect(CGSize(width: 2, height: 2))
                     .opacity(0.011)
                     .allowsHitTesting(true)
             }
 
-            Button(action: resetImagePosition) {
+            Button(action: viewModel.resetImagePosition) {
                 VStack(spacing: 8) {
                     Image(systemName: "arrow.counterclockwise")
                         .foregroundColor(.white)
@@ -264,76 +252,20 @@ struct CardBackgroundEditView: View {
                         .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
                         .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                 )
-                .opacity(selectedImage != nil ? 1.0 : 0.5)
+                .opacity(viewModel.selectedImage != nil ? 1.0 : 0.5)
             }
-            .disabled(selectedImage == nil)
+            .disabled(viewModel.selectedImage == nil)
         }
     }
 
     private var isImageInCardBounds: Bool {
         // 画像がカード範囲内にあるかを簡易判定
         let imageCenter = CGPoint(
-            x: cardFrame.midX + imageOffset.width,
-            y: cardFrame.midY + imageOffset.height
+            x: cardFrame.midX + viewModel.imageOffset.width,
+            y: cardFrame.midY + viewModel.imageOffset.height
         )
 
         return cardFrame.contains(imageCenter)
-    }
-
-    private func resetImagePosition() {
-        withAnimation(.spring()) {
-            imageOffset = .zero
-            lastOffset = .zero
-            imageScale = 1.0
-            lastScale = 1.0
-        }
-    }
-
-    private func restoreEditingState() {
-        // 既存の元画像を復元
-        if let originalImage = backgroundImageManager.currentOriginalImage {
-            selectedImage = originalImage
-
-            // 位置とスケールを復元
-            let screenSize = UIScreen.main.bounds.size
-
-            let restoredOffsetX =
-                backgroundImageManager.currentTransform.normalizedOffset.x * screenSize.width
-            let restoredOffsetY =
-                backgroundImageManager.currentTransform.normalizedOffset.y * screenSize.height
-
-            imageOffset = CGSize(width: restoredOffsetX, height: restoredOffsetY)
-            lastOffset = imageOffset
-            imageScale = backgroundImageManager.currentTransform.scale
-            lastScale = imageScale
-        }
-
-        // 背景色を復元
-        if let backgroundColor = backgroundImageManager.currentTransform.backgroundColor {
-            selectedBackgroundColor = Color(backgroundColor)
-        } else {
-            selectedBackgroundColor = Color.clear
-        }
-    }
-
-    private func saveImageConfiguration() {
-        // 正規化座標系でのTransformを作成（背景色も含む）
-        let screenSize = UIScreen.main.bounds.size
-        let normalizedOffsetX = imageOffset.width / screenSize.width
-        let normalizedOffsetY = imageOffset.height / screenSize.height
-
-        // 背景色をUIColorに変換（Color.clearの場合はnilに）
-        let bgColor: UIColor? =
-            selectedBackgroundColor == Color.clear ? nil : UIColor(selectedBackgroundColor)
-
-        let transform = ImageTransform(
-            scale: imageScale,
-            normalizedOffset: CGPoint(x: normalizedOffsetX, y: normalizedOffsetY),
-            backgroundColor: bgColor
-        )
-
-        // BackgroundImageManagerの新しいメソッドを使用して選択画像と編集状態を保存
-        backgroundImageManager.saveEditingState(selectedImage: selectedImage, transform: transform)
     }
 }
 

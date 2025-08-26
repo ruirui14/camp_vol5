@@ -184,7 +184,9 @@ struct ListHeartBeatsView: View {
                             userWithHeartbeat: userWithHeartbeat,
                             customBackgroundImage: backgroundImageManagers[
                                 userWithHeartbeat.user.id
-                            ]?.currentEditedImage
+                            ]?.currentEditedImage,
+                            displayName: nil,
+                            displayBPM: nil
                         )
                         .id(
                             "\(userWithHeartbeat.user.id)-\(backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage != nil ? "with-image" : "no-image")-\(backgroundImageRefreshTrigger)"

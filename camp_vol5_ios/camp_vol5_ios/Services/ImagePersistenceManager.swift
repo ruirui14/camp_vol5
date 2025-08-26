@@ -59,10 +59,13 @@ struct EnhancedPersistentImageData: Codable {
     let imageSize: CGSize
 }
 
-// MARK: - 画像処理エンジン
+// MARK: - 画像処理サービス
 
-class AdvancedImageProcessor {
-    static func createEditedImage(
+class ImageProcessingService {
+    static let shared = ImageProcessingService()
+    private init() {}
+
+    func createEditedImage(
         from originalImage: UIImage,
         transform: ImageTransform,
         outputSize: CGSize
@@ -104,7 +107,7 @@ class AdvancedImageProcessor {
         }
     }
 
-    static func createThumbnail(
+    func createThumbnail(
         from originalImage: UIImage,
         transform: ImageTransform,
         thumbnailSize: CGSize = CGSize(width: 300, height: 300)
@@ -114,7 +117,7 @@ class AdvancedImageProcessor {
         )
     }
 
-    static func createFullSizeEditedImage(
+    func createFullSizeEditedImage(
         from originalImage: UIImage,
         transform: ImageTransform,
         targetScreenSize: CGSize
@@ -126,7 +129,7 @@ class AdvancedImageProcessor {
         return createEditedImage(from: originalImage, transform: transform, outputSize: fullSize)
     }
 
-    private static func aspectFitSize(_ imageSize: CGSize, in containerSize: CGSize) -> CGSize {
+    private func aspectFitSize(_ imageSize: CGSize, in containerSize: CGSize) -> CGSize {
         let scale = min(
             containerSize.width / imageSize.width,
             containerSize.height / imageSize.height
@@ -138,11 +141,17 @@ class AdvancedImageProcessor {
     }
 }
 
-// MARK: - 画像永続化マネージャー
+// MARK: - 画像永続化サービス
 
-class EnhancedImagePersistenceManager {
-    static let shared = EnhancedImagePersistenceManager()
-    private init() {}
+class ImagePersistenceService {
+    static let shared = ImagePersistenceService()
+    private let imageProcessor: ImageProcessingService
+    private let fileManager: FileManager
+
+    private init() {
+        self.imageProcessor = ImageProcessingService.shared
+        self.fileManager = FileManager.default
+    }
 
     func saveEditedImageSet(
         originalImage: UIImage,
@@ -162,7 +171,7 @@ class EnhancedImagePersistenceManager {
         }
 
         guard
-            let editedImage = AdvancedImageProcessor.createFullSizeEditedImage(
+            let editedImage = imageProcessor.createFullSizeEditedImage(
                 from: originalImage,
                 transform: transform,
                 targetScreenSize: targetScreenSize
@@ -173,7 +182,7 @@ class EnhancedImagePersistenceManager {
         }
 
         guard
-            let thumbnail = AdvancedImageProcessor.createThumbnail(
+            let thumbnail = imageProcessor.createThumbnail(
                 from: originalImage,
                 transform: transform
             ), saveImage(thumbnail, fileName: thumbnailFileName)
@@ -229,7 +238,7 @@ class EnhancedImagePersistenceManager {
 
     func deleteImage(fileName: String) {
         let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
-        try? FileManager.default.removeItem(at: fileURL)
+        try? fileManager.removeItem(at: fileURL)
     }
 
     func deleteImageSet(_ data: EnhancedPersistentImageData) {
@@ -239,11 +248,15 @@ class EnhancedImagePersistenceManager {
     }
 }
 
-// MARK: - UserDefaults管理
+// MARK: - UserDefaults管理サービス
 
-class EnhancedUserDefaultsManager {
-    static let shared = EnhancedUserDefaultsManager()
-    private init() {}
+class UserDefaultsImageService {
+    static let shared = UserDefaultsImageService()
+    private let imagePersistenceService: ImagePersistenceService
+
+    private init() {
+        self.imagePersistenceService = ImagePersistenceService.shared
+    }
 
     private let userBackgroundKey = "enhancedUserBackgroundImages"
 
@@ -252,7 +265,7 @@ class EnhancedUserDefaultsManager {
 
         if let existingIndex = savedData.firstIndex(where: { $0.userId == data.userId }) {
             let existingData = savedData[existingIndex]
-            EnhancedImagePersistenceManager.shared.deleteImageSet(existingData)
+            imagePersistenceService.deleteImageSet(existingData)
             savedData.remove(at: existingIndex)
         }
 
@@ -282,7 +295,7 @@ class EnhancedUserDefaultsManager {
 
         if let existingIndex = savedData.firstIndex(where: { $0.userId == userId }) {
             let existingData = savedData[existingIndex]
-            EnhancedImagePersistenceManager.shared.deleteImageSet(existingData)
+            imagePersistenceService.deleteImageSet(existingData)
             savedData.remove(at: existingIndex)
         }
 
