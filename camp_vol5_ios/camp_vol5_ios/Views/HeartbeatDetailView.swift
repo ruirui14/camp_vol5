@@ -297,7 +297,8 @@ struct HeartbeatDetailView: View {
             heartSize: heartSize,
             showBPM: true,
             enableHaptic: false,  // VibrationServiceと競合しないよう無効
-            heartColor: .red
+            heartColor: .red,
+            syncWithVibration: isVibrationEnabled  // 振動との同期を制御
         )
     }
 

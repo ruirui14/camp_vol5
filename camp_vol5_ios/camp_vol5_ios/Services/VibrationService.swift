@@ -4,12 +4,16 @@
 
 import Foundation
 import UIKit
+import Combine
 
 class VibrationService: ObservableObject {
     static let shared = VibrationService()
 
     @Published var isVibrating = false
     private var vibrationTimer: Timer?
+    
+    /// UIアニメーションと同期するためのパブリッシャー
+    let heartbeatTrigger = PassthroughSubject<Void, Never>()
 
     private init() {}
 
@@ -57,6 +61,9 @@ class VibrationService: ObservableObject {
 
     /// 心拍の「ドクン」パターンを再現する振動
     private func triggerHeartbeatPattern() {
+        // UIアニメーションのトリガーを送信
+        heartbeatTrigger.send()
+        
         // 1回目の振動（ドク）- 強い振動
         let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
         heavyImpact.prepare()  // パフォーマンス向上のため事前準備
