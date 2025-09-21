@@ -14,6 +14,8 @@ struct ListHeartBeatsView: View {
     @State private var backgroundImageManagers: [String: BackgroundImageManager] = [:]
     @State private var backgroundImageRefreshTrigger = 0
     @State private var navigationPath = NavigationPath()
+    @State private var isStatusBarHidden = false
+    @State private var persistentSystemOverlaysVisibility: Visibility = .automatic
 
     init() {
         // 初期化時はダミーの AuthenticationManager を使用
@@ -123,10 +125,16 @@ struct ListHeartBeatsView: View {
                 case .qrScanner:
                     QRCodeScannerView().environmentObject(authenticationManager)
                 case let .heartbeatDetail(userWithHeartbeat):
-                    HeartbeatDetailView(userWithHeartbeat: userWithHeartbeat)
+                    HeartbeatDetailView(
+                        userWithHeartbeat: userWithHeartbeat,
+                        isStatusBarHidden: $isStatusBarHidden,
+                        isPersistentSystemOverlaysHidden: $persistentSystemOverlaysVisibility
+                    )
                 }
             }
         }
+        .statusBarHidden(isStatusBarHidden)
+        .persistentSystemOverlays(persistentSystemOverlaysVisibility)
     }
 
     // MARK: - View Components

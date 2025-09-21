@@ -25,17 +25,31 @@ struct HeartbeatDetailView: View {
     @State private var isVibrationEnabled = true
     @State private var savedBackgroundColor: Color = .clear
     @State private var isSleepMode = false
+    @Binding private var isStatusBarHidden: Bool
+    @Binding private var isPersistentSystemOverlaysHidden: Visibility
 
     private let persistenceManager = PersistenceManager.shared
 
-    init(userId: String) {
+    init(
+        userId: String,
+        isStatusBarHidden: Binding<Bool> = .constant(false),
+        isPersistentSystemOverlaysHidden: Binding<Visibility> = .constant(.automatic)
+    ) {
         _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
+        _isStatusBarHidden = isStatusBarHidden
+        _isPersistentSystemOverlaysHidden = isPersistentSystemOverlaysHidden
     }
 
-    init(userWithHeartbeat: UserWithHeartbeat) {
+    init(
+        userWithHeartbeat: UserWithHeartbeat,
+        isStatusBarHidden: Binding<Bool> = .constant(false),
+        isPersistentSystemOverlaysHidden: Binding<Visibility> = .constant(.automatic)
+    ) {
         _viewModel = StateObject(
             wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat)
         )
+        _isStatusBarHidden = isStatusBarHidden
+        _isPersistentSystemOverlaysHidden = isPersistentSystemOverlaysHidden
     }
 
     var body: some View {
@@ -338,6 +352,8 @@ struct HeartbeatDetailView: View {
 
     private func toggleSleepMode() {
         isSleepMode.toggle()
+        isStatusBarHidden = isSleepMode
+        isPersistentSystemOverlaysHidden = isSleepMode ? .hidden : .automatic
     }
 
     // MARK: - Vibration Control
