@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel: SettingsViewModel
+    @StateObject private var autoLockManager = AutoLockManager.shared
     @Environment(\.presentationMode) var presentationMode
 
     init() {
@@ -25,6 +26,8 @@ struct SettingsView: View {
                     qrCodeSection
                     heartbeatSection
                 }
+
+                autoLockSection
 
                 signOutSection
             }
@@ -330,6 +333,28 @@ extension SettingsView {
             } else {
                 Text("アプリのデータをリセットして再起動します。")
             }
+        }
+    }
+
+    private var autoLockSection: some View {
+        Section(header: Text("自動ロック"), footer: Text(autoLockManager.autoLockDisabled ? "指定した時間の間、iOSの自動ロックが無効になります。" : "iOSの通常の自動ロック設定が適用されます。")) {
+            Toggle("自動ロックを無効にする", isOn: $autoLockManager.autoLockDisabled)
+
+            if autoLockManager.autoLockDisabled {
+                Picker("無効化時間", selection: $autoLockManager.autoLockDuration) {
+                    ForEach(autoLockManager.availableDurations, id: \.self) { duration in
+                        Text(autoLockManager.durationDisplayText(duration))
+                            .tag(duration)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+            }
+        }
+        .onChange(of: autoLockManager.autoLockDisabled) { isDisabled in
+            autoLockManager.updateSettings(autoLockDisabled: isDisabled, duration: autoLockManager.autoLockDuration)
+        }
+        .onChange(of: autoLockManager.autoLockDuration) { duration in
+            autoLockManager.updateSettings(autoLockDisabled: autoLockManager.autoLockDisabled, duration: duration)
         }
     }
 

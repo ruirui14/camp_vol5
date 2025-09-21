@@ -27,6 +27,7 @@ struct HeartbeatDetailView: View {
     @State private var isSleepMode = false
     @Binding private var isStatusBarHidden: Bool
     @Binding private var isPersistentSystemOverlaysHidden: Visibility
+    @StateObject private var autoLockManager = AutoLockManager.shared
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -97,6 +98,24 @@ struct HeartbeatDetailView: View {
                                     .font(.caption)
                                     .foregroundColor(.white)
                                     .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                            }
+                        }
+
+                        // 自動ロック無効化残り時間
+                        if autoLockManager.autoLockDisabled && autoLockManager.remainingTime > 0
+                            && !isSleepMode
+                        {
+                            HStack {
+                                Image(systemName: "lock.slash")
+                                    .foregroundColor(.yellow)
+                                    .font(.caption)
+
+                                Text(
+                                    "自動ロック無効: \(formatRemainingTime(autoLockManager.remainingTime))"
+                                )
+                                .font(.caption)
+                                .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                             }
                         }
 
@@ -229,10 +248,17 @@ struct HeartbeatDetailView: View {
                     vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
                 }
             }
+
+            // 設定に応じてiOSの自動ロックを制御
+            if autoLockManager.autoLockDisabled {
+                autoLockManager.enableAutoLockDisabling()
+            }
         }
         .onDisappear {
             viewModel.stopMonitoring()
             vibrationService.stopVibration()
+            // 自動ロック無効化を解除
+            autoLockManager.disableAutoLockDisabling()
         }
 
         .onChange(of: viewModel.currentHeartbeat) { heartbeat in
@@ -354,6 +380,14 @@ struct HeartbeatDetailView: View {
         isSleepMode.toggle()
         isStatusBarHidden = isSleepMode
         isPersistentSystemOverlaysHidden = isSleepMode ? .hidden : .automatic
+    }
+
+    // MARK: - Helper Methods
+
+    private func formatRemainingTime(_ timeInterval: TimeInterval) -> String {
+        let minutes = Int(timeInterval) / 60
+        let seconds = Int(timeInterval) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
 
     // MARK: - Vibration Control
