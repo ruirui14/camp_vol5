@@ -1,5 +1,4 @@
 // Views/HeartbeatDetailView.swift
-// 修正版 - 画像位置を正確に再現 + 背景画像管理機能
 
 import PhotosUI
 import SwiftUI
@@ -25,6 +24,7 @@ struct HeartbeatDetailView: View {
     @State private var showingCardBackgroundEditSheet = false
     @State private var isVibrationEnabled = true
     @State private var savedBackgroundColor: Color = .clear
+    @State private var isSleepMode = false
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -118,61 +118,86 @@ struct HeartbeatDetailView: View {
                     .ignoresSafeArea()
             }
         }
+        .overlay {
+            if isSleepMode {
+                Color.black
+                    .ignoresSafeArea(.all, edges: .all)
+                    .onTapGesture {
+                        toggleSleepMode()
+                    }
+            }
+        }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         // 透明なナビゲーションバーの設定
         .navigationBarBackgroundTransparent()
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("戻る") {
-                    presentationMode.wrappedValue.dismiss()
+        // isSleepModeがfalseの時のみツールバーを表示
+        .if(!isSleepMode) { view in
+            view.toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("戻る") {
+                        presentationMode.wrappedValue.dismiss()
+                    }
+                    .foregroundColor(.white)
                 }
-                .foregroundColor(.white)
-            }
 
-            ToolbarItem(placement: .principal) {
-                WhiteCapsuleTitle(title: viewModel.user?.name ?? "読み込み中...")
-            }
+                ToolbarItem(placement: .principal) {
+                    WhiteCapsuleTitle(title: viewModel.user?.name ?? "読み込み中...")
+                }
 
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 15) {
-                    // 振動制御ボタン
-                    Button(action: {
-                        toggleVibration()
-                    }) {
-                        Image(systemName: isVibrationEnabled ? "heart.circle.fill" : "heart.circle")
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 15) {
+                        // 手動スリープボタン
+                        Button(action: {
+                            toggleSleepMode()
+                        }) {
+                            Image(systemName: "moon.circle")
+                                .foregroundColor(.white)
+                                .font(.title3)
+                                .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                        }
+
+                        // 振動制御ボタン
+                        Button(action: {
+                            toggleVibration()
+                        }) {
+                            Image(
+                                systemName: isVibrationEnabled
+                                    ? "heart.circle.fill" : "heart.circle"
+                            )
                             .foregroundColor(isVibrationEnabled ? .red : .white)
                             .font(.title2)
                             .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
-                    }
-
-                    Menu {
-                        Button("カード背景を編集") {
-                            // 編集ページを開く際に振動を停止
-                            vibrationService.stopVibration()
-                            showingCardBackgroundEditSheet = true
                         }
 
-                        Button("背景画像を編集") {
-                            // 編集ページを開く際に振動を停止
-                            vibrationService.stopVibration()
-                            showingImageEditor = true
-                        }
-
-                        if selectedImage != nil {
-                            Button("背景画像をリセット", role: .destructive) {
-                                selectedImage = nil
-                                editedImage = nil
-                                imageOffset = CGSize.zero
-                                imageScale = 1.0
-                                persistenceManager.clearAllData()
+                        Menu {
+                            Button("カード背景を編集") {
+                                // 編集ページを開く際に振動を停止
+                                vibrationService.stopVibration()
+                                showingCardBackgroundEditSheet = true
                             }
+
+                            Button("背景画像を編集") {
+                                // 編集ページを開く際に振動を停止
+                                vibrationService.stopVibration()
+                                showingImageEditor = true
+                            }
+
+                            if selectedImage != nil {
+                                Button("背景画像をリセット", role: .destructive) {
+                                    selectedImage = nil
+                                    editedImage = nil
+                                    imageOffset = CGSize.zero
+                                    imageScale = 1.0
+                                    persistenceManager.clearAllData()
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "photo")
+                                .foregroundColor(.white)
+                                .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                         }
-                    } label: {
-                        Image(systemName: "photo")
-                            .foregroundColor(.white)
-                            .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
                     }
                 }
             }
@@ -309,6 +334,12 @@ struct HeartbeatDetailView: View {
         return formatter
     }
 
+    // MARK: - Sleep Mode Control
+
+    private func toggleSleepMode() {
+        isSleepMode.toggle()
+    }
+
     // MARK: - Vibration Control
 
     private func toggleVibration() {
@@ -327,6 +358,18 @@ struct HeartbeatDetailView: View {
         } else {
             // 振動無効化時の処理
             vibrationService.stopVibration()
+        }
+    }
+}
+
+// SwiftUI条件付きモディファイア用のextension
+extension View {
+    @ViewBuilder
+    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
+        if condition {
+            transform(self)
+        } else {
+            self
         }
     }
 }
