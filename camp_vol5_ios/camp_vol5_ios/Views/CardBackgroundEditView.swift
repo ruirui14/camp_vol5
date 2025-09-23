@@ -11,8 +11,7 @@ struct CardBackgroundEditView: View {
     @StateObject private var viewModel: CardBackgroundEditViewModel
     @State private var cardFrame: CGRect = .zero
 
-    // UserHeartbeatCardと同じサイズ
-    private let cardSize = CGSize(width: 370, height: 120)
+    // UserHeartbeatCardの設定（CardConstants使用）
     let userId: String
 
     init(userId: String) {
@@ -72,6 +71,8 @@ struct CardBackgroundEditView: View {
 
     private var editingArea: some View {
         GeometryReader { geometry in
+            let cardWidth = CardConstants.cardWidth(for: geometry.size.width)
+
             ZStack {
                 // 画像があるときだけ背景画像を表示
                 if let image = viewModel.selectedImage {
@@ -80,9 +81,9 @@ struct CardBackgroundEditView: View {
                         if viewModel.selectedBackgroundColor != Color.clear {
                             viewModel.selectedBackgroundColor
                                 .mask(
-                                    RoundedRectangle(cornerRadius: 20)
+                                    RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
                                         .fill(Color.black)
-                                        .frame(width: cardSize.width, height: cardSize.height)
+                                        .frame(width: cardWidth, height: CardConstants.cardHeight)
                                 )
                         }
 
@@ -104,9 +105,9 @@ struct CardBackgroundEditView: View {
                             .offset(viewModel.imageOffset)
                             .scaleEffect(viewModel.imageScale)
                             .mask(
-                                RoundedRectangle(cornerRadius: 20)
+                                RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
                                     .fill(Color.black)
-                                    .frame(width: cardSize.width, height: cardSize.height)
+                                    .frame(width: cardWidth, height: CardConstants.cardHeight)
                             )
                     }
                     .gesture(
@@ -135,9 +136,9 @@ struct CardBackgroundEditView: View {
                 {
                     viewModel.selectedBackgroundColor
                         .mask(
-                            RoundedRectangle(cornerRadius: 20)
+                            RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
                                 .fill(Color.black)
-                                .frame(width: cardSize.width, height: cardSize.height)
+                                .frame(width: cardWidth, height: CardConstants.cardHeight)
                         )
                 }
 
@@ -149,7 +150,6 @@ struct CardBackgroundEditView: View {
                         displayName: "プレビュー",
                         displayBPM: "72"
                     )
-                    .frame(width: cardSize.width, height: cardSize.height)
                     Spacer()
                 }
             }

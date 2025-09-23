@@ -8,7 +8,6 @@ import SwiftUI
 struct UserHeartbeatCard: View {
     @StateObject private var viewModel: UserHeartbeatCardViewModel
 
-
     // 新しいイニシャライザー（カスタマイズ用）
     init(
         userWithHeartbeat: UserWithHeartbeat? = nil,
@@ -30,52 +29,64 @@ struct UserHeartbeatCard: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            // 背景画像の表示
-            if let customImage = viewModel.customBackgroundImage {
-                Image(uiImage: customImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 370, height: 120)
-                    .clipped()
-                    .cornerRadius(20)
-            } else {
-                // カード背景色（画像がない場合）
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 370, height: 120)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white, lineWidth: 2)
-                    )
-            }
+        GeometryReader { geometry in
+            let cardWidth = CardConstants.cardWidth(for: geometry.size.width)
+            let heartRightOffset = CardConstants.heartRightOffset(for: cardWidth)
 
-            HStack(spacing: 8) {
+            ZStack(alignment: .bottomLeading) {
+                // 背景画像の表示
+                if let customImage = viewModel.customBackgroundImage {
+                    Image(uiImage: customImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: cardWidth, height: CardConstants.cardHeight)
+                        .clipped()
+                        .cornerRadius(CardConstants.cornerRadius)
+                } else {
+                    // カード背景色（画像がない場合）
+                    RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: cardWidth, height: CardConstants.cardHeight)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
+                                .stroke(Color.white, lineWidth: 2)
+                        )
+                }
+
+                // 心拍数表示（右上）
                 ZStack {
                     Image("heart_beat")
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 60, height: 60)
+                        .frame(width: CardConstants.heartSize, height: CardConstants.heartSize)
                         .clipShape(Circle())
 
                     if !viewModel.displayBPM.isEmpty {
                         Text(viewModel.displayBPM)
-                            .font(.system(size: 14, weight: .bold))
+                            .font(
+                                .system(
+                                    size: CardConstants.heartFontSize, weight: .heavy,
+                                    design: .rounded)
+                            )
                             .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
                             .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                     }
                 }
-                .offset(x: 290, y: -36)
+                .offset(x: heartRightOffset, y: -CardConstants.heartBottomMargin)
 
+                // ユーザー名（左下）
                 Text(viewModel.displayName)
-                    .font(.system(size: 32, weight: .bold))
+                    .font(.system(size: CardConstants.nameFontSize(for: cardWidth), weight: .bold))
                     .foregroundColor(.base)
                     .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-                    .offset(x: -50, y: -48)
+                    .offset(x: CardConstants.nameLeftMargin, y: -CardConstants.nameBottomMargin)
             }
-            .padding()
+            .frame(width: cardWidth, height: CardConstants.cardHeight)
+            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
         }
-        .frame(width: 370, height: 120)
+        .frame(height: CardConstants.cardHeight)
     }
 }
 

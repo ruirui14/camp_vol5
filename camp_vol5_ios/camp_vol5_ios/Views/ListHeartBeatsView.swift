@@ -182,7 +182,7 @@ struct ListHeartBeatsView: View {
 
     private var followingUsersList: some View {
         ScrollView {
-            VStack(spacing: 10) {
+            VStack(spacing: CardConstants.cardVerticalSpacing) {
                 ForEach(viewModel.followingUsersWithHeartbeats) { userWithHeartbeat in
                     Button {
                         navigationPath.append(
