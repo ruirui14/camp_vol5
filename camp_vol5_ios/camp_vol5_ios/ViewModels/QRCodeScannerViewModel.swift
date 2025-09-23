@@ -12,6 +12,7 @@ class QRCodeScannerViewModel: ObservableObject {
     @Published var shouldDismiss: Bool = false
 
     private var authenticationManager: AuthenticationManager
+    private var localFollowService = LocalFollowService.shared
     private var cancellables = Set<AnyCancellable>()
 
     init(authenticationManager: AuthenticationManager) {
@@ -60,45 +61,46 @@ class QRCodeScannerViewModel: ObservableObject {
 
     // 既にフォロー済みかチェック
     private func checkIfAlreadyFollowing(_ user: User) {
-        guard let currentUserId = authenticationManager.currentUserId else {
-            isFollowingUser = false
-            return
+        if authenticationManager.isAuthenticated, let currentUserId = authenticationManager.currentUserId {
+            // 認証済みの場合はFirebaseでチェック
+            UserService.shared.getUser(uid: currentUserId)
+                .receive(on: DispatchQueue.main)
+                .sink(
+                    receiveCompletion: { [weak self] completion in
+                        if case let .failure(error) = completion {
+                            // エラーが発生してもフォロー状態はfalseとして継続
+                            self?.isFollowingUser = false
+                        }
+                    },
+                    receiveValue: { [weak self] currentUser in
+                        if let currentUser = currentUser {
+                            self?.isFollowingUser = currentUser.followingUserIds
+                                .contains(user.id)
+                        } else {
+                            self?.isFollowingUser = false
+                        }
+                    }
+                )
+                .store(in: &cancellables)
+        } else {
+            // 未認証の場合はローカルでチェック
+            isFollowingUser = localFollowService.isFollowing(user.id)
         }
-
-        UserService.shared.getUser(uid: currentUserId)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case let .failure(error) = completion {
-                        // エラーが発生してもフォロー状態はfalseとして継続
-                        self?.isFollowingUser = false
-                    }
-                },
-                receiveValue: { [weak self] currentUser in
-                    if let currentUser = currentUser {
-                        self?.isFollowingUser = currentUser.followingUserIds
-                            .contains(user.id)
-                    } else {
-                        self?.isFollowingUser = false
-                    }
-                }
-            )
-            .store(in: &cancellables)
     }
 
     // ユーザーをフォロー
     func followUser() {
-        guard let user = scannedUser,
-            let currentUserId = authenticationManager.currentUserId
-        else {
+        guard let user = scannedUser else {
             errorMessage = "ユーザー情報が取得できません"
             return
         }
 
-        // 自分自身はフォローできない
-        if user.id == currentUserId {
-            errorMessage = "自分自身をフォローすることはできません"
-            return
+        // 認証済みの場合は自分自身フォローチェック
+        if authenticationManager.isAuthenticated, let currentUserId = authenticationManager.currentUserId {
+            if user.id == currentUserId {
+                errorMessage = "自分自身をフォローすることはできません"
+                return
+            }
         }
 
         // 既にフォロー済み
@@ -107,15 +109,19 @@ class QRCodeScannerViewModel: ObservableObject {
             return
         }
 
+        if authenticationManager.isAuthenticated, let currentUser = authenticationManager.currentUser {
+            // 認証済みの場合はFirebaseでフォロー
+            followUserWithFirebase(currentUser: currentUser, targetUser: user)
+        } else {
+            // 未認証の場合はローカルでフォロー
+            followUserLocally(user: user)
+        }
+    }
+
+    private func followUserWithFirebase(currentUser: User, targetUser: User) {
         isLoading = true
 
-        guard let currentUser = authenticationManager.currentUser else {
-            errorMessage = "Current user not found"
-            isLoading = false
-            return
-        }
-
-        UserService.shared.followUser(currentUser: currentUser, targetUserId: user.id)
+        UserService.shared.followUser(currentUser: currentUser, targetUserId: targetUser.id)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
@@ -124,7 +130,7 @@ class QRCodeScannerViewModel: ObservableObject {
                         self?.errorMessage = error.localizedDescription
                     } else {
                         self?.isFollowingUser = true
-                        self?.successMessage = "\(user.name)さんをフォローしました"
+                        self?.successMessage = "\(targetUser.name)さんをフォローしました"
 
                         // フォロー成功後、現在のユーザー情報を更新
                         if let currentUserId = self?.authenticationManager.currentUserId {
@@ -144,21 +150,34 @@ class QRCodeScannerViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
+    private func followUserLocally(user: User) {
+        localFollowService.followUser(user.id)
+        isFollowingUser = true
+        successMessage = "\(user.name)さんをフォローしました"
+
+        // フォロー成功後、2秒後にページを閉じる
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.shouldDismiss = true
+        }
+    }
+
     // フォロー解除
     func unfollowUser() {
-        guard let user = scannedUser,
-            authenticationManager.currentUserId != nil
-        else { return }
+        guard let user = scannedUser else { return }
 
+        if authenticationManager.isAuthenticated, let currentUser = authenticationManager.currentUser {
+            // 認証済みの場合はFirebaseでフォロー解除
+            unfollowUserWithFirebase(currentUser: currentUser, targetUser: user)
+        } else {
+            // 未認証の場合はローカルでフォロー解除
+            unfollowUserLocally(user: user)
+        }
+    }
+
+    private func unfollowUserWithFirebase(currentUser: User, targetUser: User) {
         isLoading = true
 
-        guard let currentUser = authenticationManager.currentUser else {
-            errorMessage = "Current user not found"
-            isLoading = false
-            return
-        }
-
-        UserService.shared.unfollowUser(currentUser: currentUser, targetUserId: user.id)
+        UserService.shared.unfollowUser(currentUser: currentUser, targetUserId: targetUser.id)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
@@ -167,9 +186,9 @@ class QRCodeScannerViewModel: ObservableObject {
                         self?.errorMessage = error.localizedDescription
                     } else {
                         self?.isFollowingUser = false
-                        self?.successMessage = "\(user.name)さんのフォローを解除しました"
+                        self?.successMessage = "\(targetUser.name)さんのフォローを解除しました"
 
-                        // フォロー成功後、現在のユーザー情報を更新
+                        // フォロー解除後、現在のユーザー情報を更新
                         if let currentUserId = self?.authenticationManager.currentUserId {
                             self?.authenticationManager.loadCurrentUser(
                                 uid: currentUserId
@@ -180,6 +199,12 @@ class QRCodeScannerViewModel: ObservableObject {
                 receiveValue: { _ in }
             )
             .store(in: &cancellables)
+    }
+
+    private func unfollowUserLocally(user: User) {
+        localFollowService.unfollowUser(user.id)
+        isFollowingUser = false
+        successMessage = "\(user.name)さんのフォローを解除しました"
     }
 
     // QRコードスキャン結果を処理

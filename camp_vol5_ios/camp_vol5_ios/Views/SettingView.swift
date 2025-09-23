@@ -21,7 +21,7 @@ struct SettingsView: View {
             Form {
                 authStatusSection
 
-                if authenticationManager.isGoogleAuthenticated {
+                if authenticationManager.isAuthenticated {
                     userInfoSection
                     qrCodeSection
                     heartbeatSection
@@ -54,12 +54,12 @@ struct SettingsView: View {
             }
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
-                if authenticationManager.isGoogleAuthenticated {
+                if authenticationManager.isAuthenticated {
                     viewModel.loadCurrentUser()
                 }
             }
             .refreshable {
-                if authenticationManager.isGoogleAuthenticated {
+                if authenticationManager.isAuthenticated {
                     viewModel.loadCurrentUser()
                 }
             }
@@ -93,28 +93,27 @@ struct SettingsView: View {
         Section("認証状態") {
             HStack {
                 Image(
-                    systemName: authenticationManager.isGoogleAuthenticated
+                    systemName: authenticationManager.isAuthenticated
                         ? "checkmark.circle.fill" : "person.circle"
                 )
                 .foregroundColor(
-                    authenticationManager.isGoogleAuthenticated ? .green : .orange
+                    authenticationManager.isAuthenticated ? .green : .orange
                 )
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(
-                        authenticationManager.isGoogleAuthenticated
-                            ? "Google認証済み" : "ゲストユーザー"
+                        authenticationManager.isAuthenticated
+                            ? "認証済み" : "未認証"
                     )
                     .font(.headline)
 
-                    if authenticationManager.isAnonymous {
-                        Text("Google認証でフル機能が利用できます")
+                    if let firebaseUser = authenticationManager.user,
+                        let email = firebaseUser.email {
+                        Text(email)
                             .font(.caption)
                             .foregroundColor(.secondary)
-                    } else if let firebaseUser = authenticationManager.user,
-                        let email = firebaseUser.email
-                    {
-                        Text(email)
+                    } else {
+                        Text("認証済みでフル機能が利用できます")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -123,25 +122,6 @@ struct SettingsView: View {
                 Spacer()
             }
 
-            if authenticationManager.isAnonymous {
-                Button(action: {
-                    authenticationManager.signInWithGoogle()
-                }) {
-                    HStack {
-                        if authenticationManager.isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "globe")
-                        }
-                        Text(authenticationManager.isLoading ? "認証中..." : "Googleで認証")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(authenticationManager.isLoading)
-            }
 
             if let errorMessage = authenticationManager.errorMessage {
                 Text(errorMessage)
@@ -322,17 +302,13 @@ extension SettingsView {
 
     private var signOutSection: some View {
         Section {
-            Button(authenticationManager.isGoogleAuthenticated ? "サインアウト" : "アプリをリセット") {
+            Button("サインアウト") {
                 viewModel.signOut()
                 presentationMode.wrappedValue.dismiss()
             }
             .foregroundColor(.red)
         } footer: {
-            if authenticationManager.isGoogleAuthenticated {
-                Text("サインアウトすると、ゲストモードに戻ります。")
-            } else {
-                Text("アプリのデータをリセットして再起動します。")
-            }
+            Text("サインアウトすると、ログイン画面に戻ります。")
         }
     }
 

@@ -2,152 +2,343 @@ import SwiftUI
 
 struct AuthView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @StateObject private var viewModel: AuthViewModel
+    @State private var selectedAuthMethod: AuthMethod = .none
+    @State private var showEmailAuth = false
+    @State private var animateContent = false
 
-    init() {
-        _viewModel = StateObject(
-            wrappedValue: AuthViewModel(
-                authenticationManager: AuthenticationManager()
-            ))
+    let onStartWithoutAuth: () -> Void
+
+    enum AuthMethod {
+        case none, google, email
     }
 
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
-
-            // App Logo/Title Section
-            VStack(spacing: 20) {
-                Image(systemName: "heart.circle.fill")
-                    .font(.system(size: 80))
-                    .foregroundColor(.red)
-
-                Text("Heart Beat Monitor")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .multilineTextAlignment(.center)
-
-                Text("リアルタイムで心拍数を\n共有・モニタリング")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            Spacer()
-
-            // Authentication Section
-            VStack(spacing: 20) {
-                Text("Googleアカウントでサインイン")
-                    .font(.headline)
-                    .foregroundColor(.secondary)
-
-                // Google Sign In Button
-                Button(action: {
-                    viewModel.signInWithGoogle()
-                }) {
-                    HStack(spacing: 12) {
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "globe")
-                                .font(.title2)
-                        }
-
-                        Text(
-                            viewModel.isLoading ? "サインイン中..." : "Googleでサインイン"
-                        )
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.blue, Color.blue.opacity(0.8)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
-                }
-                .disabled(viewModel.isLoading)
-                .scaleEffect(viewModel.isLoading ? 0.95 : 1.0)
-                .animation(
-                    .easeInOut(duration: 0.1),
-                    value: viewModel.isLoading
+        GeometryReader { geometry in
+            ZStack {
+                // Background Gradient
+                LinearGradient(
+                    colors: [
+                        Color(.systemIndigo).opacity(0.1),
+                        Color(.systemBlue).opacity(0.05),
+                        Color(.systemBackground),
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
+                .ignoresSafeArea()
 
-                // Error Message
-                if let errorMessage = viewModel.errorMessage {
-                    VStack(spacing: 8) {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.red)
-                            Text(errorMessage)
-                                .foregroundColor(.red)
-                                .font(.callout)
-                        }
-                        .padding()
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(8)
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // Hero Section
+                        VStack(spacing: 24) {
+                            Spacer(minLength: 60)
 
-                        Button("再試行") {
-                            viewModel.clearError()
+                            // App Icon and Animation
+                            VStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [
+                                                    Color.red.opacity(0.2), Color.pink.opacity(0.1),
+                                                ],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                        .frame(width: 120, height: 120)
+                                        .scaleEffect(animateContent ? 1.0 : 0.8)
+                                        .animation(
+                                            .easeInOut(duration: 0.8).repeatForever(
+                                                autoreverses: true),
+                                            value: animateContent
+                                        )
+
+                                    Image(systemName: "heart.fill")
+                                        .font(.system(size: 50, weight: .medium))
+                                        .foregroundColor(.red)
+                                        .scaleEffect(animateContent ? 1.1 : 1.0)
+                                        .animation(
+                                            .easeInOut(duration: 1.0).repeatForever(
+                                                autoreverses: true),
+                                            value: animateContent
+                                        )
+                                }
+
+                                // Authentication Buttons
+                                VStack(spacing: 20) {
+                                    VStack(spacing: 16) {
+                                        Text("始めましょう")
+                                            .font(.title2)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.primary)
+
+                                        Text("アカウントを作成するか、既存のアカウントでサインインしてください")
+                                            .font(.subheadline)
+                                            .foregroundColor(.secondary)
+                                            .multilineTextAlignment(.center)
+                                            .padding(.horizontal, 20)
+                                    }
+
+                                    VStack(spacing: 8) {
+                                        Text("Heart Beat Monitor")
+                                            .font(
+                                                .system(size: 32, weight: .bold, design: .rounded)
+                                            )
+                                            .multilineTextAlignment(.center)
+                                            .opacity(animateContent ? 1.0 : 0.7)
+
+                                        Text("リアルタイムで心拍を共有")
+                                            .font(.title3)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.secondary)
+                                            .opacity(animateContent ? 1.0 : 0.5)
+                                    }
+                                }
+
+                            }
+                            .frame(height: geometry.size.height * 0.5)
+
+                            // Start Without Auth Button
+                            VStack(spacing: 12) {
+
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                        onStartWithoutAuth()
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "play.circle")
+                                            .font(.title2)
+                                        Text("はじめる")
+                                            .font(.headline)
+                                            .fontWeight(.semibold)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .foregroundColor(.accent)
+                                    .background(Color.accent.opacity(0.1))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.accent.opacity(0.3), lineWidth: 1)
+                                    )
+                                }
+                                .padding(.horizontal, 24)
+
+                                Text("認証なしでアプリを体験")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                Divider()
+                                    .padding(.horizontal, 24)
+
+                                Text("または")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.top, 8)
+
+                                // Email Authentication Button
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                        selectedAuthMethod = .email
+                                        showEmailAuth = true
+                                    }
+                                }) {
+                                    AuthButton(
+                                        icon: "envelope.fill",
+                                        title: "メールアドレスで続ける",
+                                        subtitle: "メールとパスワードで新規作成・ログイン",
+                                        color: .green,
+                                        isSelected: selectedAuthMethod == .email
+                                    )
+                                }
+
+                                // Google Authentication Button
+                                Button(action: {
+                                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                        selectedAuthMethod = .google
+                                        authenticationManager.signInWithGoogle()
+                                    }
+                                }) {
+                                    AuthButton(
+                                        icon: "globe",
+                                        title: "Googleで続ける",
+                                        subtitle: "Googleアカウントで簡単ログイン",
+                                        color: .blue,
+                                        isSelected: selectedAuthMethod == .google,
+                                        isLoading: authenticationManager.isLoading
+                                            && selectedAuthMethod == .google
+                                    )
+                                }
+                                .disabled(authenticationManager.isLoading)
+                            }
+                            .padding(.horizontal, 24)
                         }
-                        .font(.caption)
-                        .foregroundColor(.blue)
+
+                        // Error Display
+                        if let errorMessage = authenticationManager.errorMessage {
+                            ErrorCard(message: errorMessage) {
+                                authenticationManager.clearError()
+                                selectedAuthMethod = .none
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.top, 8)
+                        }
+
+                        Spacer(minLength: 20)
+
+                        Spacer(minLength: 40)
                     }
                 }
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.0)) {
+                animateContent = true
+            }
+        }
+        .sheet(
+            isPresented: $showEmailAuth,
+            onDismiss: {
+                selectedAuthMethod = .none
+            }
+        ) {
+            EmailAuthView()
+                .environmentObject(authenticationManager)
+        }
+    }
+}
 
-                // Features Preview
-                VStack(spacing: 12) {
-                    Divider()
-                        .padding(.vertical, 8)
+// MARK: - Supporting Views
 
-                    Text("主な機能")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
+struct AuthButton: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let color: Color
+    let isSelected: Bool
+    let isLoading: Bool
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        FeatureRow(icon: "heart.fill", text: "リアルタイム心拍モニタリング")
-                        FeatureRow(icon: "qrcode", text: "QRコードで簡単フォロー")
-                        FeatureRow(icon: "person.2.fill", text: "友達の心拍数を共有")
-                        FeatureRow(icon: "bell.fill", text: "リアルタイム通知")
-                    }
+    init(
+        icon: String, title: String, subtitle: String, color: Color, isSelected: Bool = false,
+        isLoading: Bool = false
+    ) {
+        self.icon = icon
+        self.title = title
+        self.subtitle = subtitle
+        self.color = color
+        self.isSelected = isSelected
+        self.isLoading = isLoading
+    }
+
+    var body: some View {
+        HStack(spacing: 16) {
+            // Icon Section
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.1))
+                    .frame(width: 50, height: 50)
+
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .tint(color)
+                } else {
+                    Image(systemName: icon)
+                        .font(.title2)
+                        .foregroundColor(color)
                 }
+            }
+
+            // Text Section
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.leading)
             }
 
             Spacer()
 
-            // Footer
-            Text("© 2024 Heart Beat Monitor")
+            // Arrow
+            Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundColor(.secondary)
+                .opacity(isSelected ? 1.0 : 0.6)
         }
-        .padding(.horizontal, 32)
-        .padding(.vertical, 20)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
         .background(
-            LinearGradient(
-                colors: [
-                    Color(.systemBackground),
-                    Color(.systemGray6).opacity(0.3),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(
+                    color: isSelected ? color.opacity(0.3) : Color.black.opacity(0.05),
+                    radius: isSelected ? 8 : 4,
+                    x: 0,
+                    y: 2
+                )
         )
-        .onAppear {
-            viewModel.updateAuthenticationManager(authenticationManager)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    isSelected ? color.opacity(0.5) : Color.clear,
+                    lineWidth: 2
+                )
+        )
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+}
+
+struct ErrorCard: View {
+    let message: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.red)
+                .font(.title3)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("エラーが発生しました")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.red)
+
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+
+            Button("閉じる", action: onDismiss)
+                .font(.caption)
+                .foregroundColor(.blue)
         }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.red.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.red.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 
 struct AuthView_Previews: PreviewProvider {
     static var previews: some View {
-        AuthView()
+        AuthView(onStartWithoutAuth: {})
             .environmentObject(AuthenticationManager())
     }
 }

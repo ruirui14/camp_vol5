@@ -219,7 +219,13 @@ class SettingsViewModel: ObservableObject {
     // MARK: - Authentication
 
     func signOut() {
-        authenticationManager.signOut()
+        if authenticationManager.isAuthenticated {
+            // 認証済みユーザーの場合は通常のサインアウト
+            authenticationManager.signOut()
+        } else {
+            // 未認証ユーザーの場合はアプリ状態をリセット
+            authenticationManager.resetAppState()
+        }
     }
 
     // エラーメッセージをクリア

@@ -169,11 +169,7 @@ struct QRCodeScannerView: View {
                 .disableAutocorrection(true)
 
                 Button("検索") {
-                    if authenticationManager.isGoogleAuthenticated {
-                        viewModel.searchUserByInviteCode(viewModel.inviteCode)
-                    } else {
-                        showingAuthRequired = true
-                    }
+                    viewModel.searchUserByInviteCode(viewModel.inviteCode)
                 }
                 .buttonStyle(.bordered)
                 // 入力されているかつローディング状態でない場合のみ表示させる
@@ -194,11 +190,7 @@ struct QRCodeScannerView: View {
 
             // QRコード読み取りボタン
             Button(action: {
-                if authenticationManager.isGoogleAuthenticated {
-                    showingQRScanner = true
-                } else {
-                    showingAuthRequired = true
-                }
+                showingQRScanner = true
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "qrcode.viewfinder")
@@ -222,7 +214,7 @@ struct QRCodeScannerView: View {
 
             // 自分のQRコード表示ボタン
             Button(action: {
-                if authenticationManager.isGoogleAuthenticated {
+                if authenticationManager.isAuthenticated {
                     showingQRCodeShare = true
                 } else {
                     showingAuthRequired = true

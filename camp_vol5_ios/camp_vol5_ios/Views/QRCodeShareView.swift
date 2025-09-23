@@ -16,7 +16,7 @@ struct QRCodeShareView: View {
     var body: some View {
         GeometryReader { geometry in
             VStack {
-                if authenticationManager.isGoogleAuthenticated {
+                if authenticationManager.isAuthenticated {
                     authenticatedContent
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -48,7 +48,7 @@ struct QRCodeShareView: View {
             .onAppear {
                 viewModel.updateAuthenticationManager(authenticationManager)
                 // Google認証済みの場合、ユーザー情報を読み込み
-                if authenticationManager.isGoogleAuthenticated {
+                if authenticationManager.isAuthenticated {
                     authenticationManager.refreshCurrentUser()
                 }
             }
@@ -259,7 +259,6 @@ struct QRCodeShareView_Previews: PreviewProvider {
                         )
                         let mockAuth = MockAuthenticationManager(
                             isAuthenticated: true,
-                            isAnonymous: false,
                             currentUser: mockUser
                         )
                         return unsafeBitCast(mockAuth, to: AuthenticationManager.self)

@@ -2,30 +2,55 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @State private var hasStartedWithoutAuth = UserDefaults.standard.bool(forKey: "hasStartedWithoutAuth")
 
     var body: some View {
         Group {
-            if authenticationManager.isAuthenticated {
-                // 1. 匿名ユーザ
-                // 2. 匿名ユーザではなく、カレントユーザを読み込んでいる
-                if (authenticationManager.isAnonymous && authenticationManager.currentUser == nil)
-                    || !authenticationManager.isAnonymous
-                        && (authenticationManager.currentUser != nil)
-                {
-                    ListHeartBeatsView()
-                }
-            } else if authenticationManager.isLoading {
-                // 認証中の場合はローディング画面を表示
+            if authenticationManager.isLoading {
+                // 認証処理中の場合はローディング画面を表示
                 LoadingView()
+            } else if authenticationManager.isAuthenticated {
+                // ログイン済みの場合
+                if authenticationManager.currentUser != nil {
+                    // ユーザー情報がある場合
+                    ListHeartBeatsView()
+                } else {
+                    // ユーザー情報読み込み中
+                    LoadingView()
+                }
+            } else if hasStartedWithoutAuth {
+                // 認証なしで開始した場合
+                ListHeartBeatsView()
             } else {
-                // 認証に失敗した場合のエラー画面
-                ErrorView()
+                // 未認証の場合は認証画面を表示
+                AuthView(onStartWithoutAuth: {
+                    hasStartedWithoutAuth = true
+                    UserDefaults.standard.set(true, forKey: "hasStartedWithoutAuth")
+                })
             }
         }
         .animation(
             .easeInOut(duration: 1.0),
-            value: authenticationManager.isAuthenticated
+            value: authenticationManager.isAuthenticated || hasStartedWithoutAuth
         )
+        .onChange(of: authenticationManager.isAuthenticated) { isAuthenticated in
+            if isAuthenticated {
+                // ログイン時: 認証なし開始フラグをリセット
+                hasStartedWithoutAuth = false
+                UserDefaults.standard.set(false, forKey: "hasStartedWithoutAuth")
+            } else {
+                // サインアウト時: 認証なし開始フラグもリセットしてログイン画面を表示
+                hasStartedWithoutAuth = false
+                UserDefaults.standard.set(false, forKey: "hasStartedWithoutAuth")
+            }
+        }
+        .onReceive(authenticationManager.objectWillChange) { _ in
+            // AuthenticationManagerの状態変更時にUserDefaultsから最新の値を読み込み
+            let currentValue = UserDefaults.standard.bool(forKey: "hasStartedWithoutAuth")
+            if hasStartedWithoutAuth != currentValue {
+                hasStartedWithoutAuth = currentValue
+            }
+        }
     }
 }
 
@@ -57,43 +82,3 @@ struct LoadingView: View {
     }
 }
 
-struct ErrorView: View {
-    @EnvironmentObject private var authenticationManager: AuthenticationManager
-
-    var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.orange)
-
-            Text("接続エラー")
-                .font(.title)
-                .fontWeight(.bold)
-
-            if let errorMessage = authenticationManager.errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.center)
-                    .padding()
-            }
-
-            Button("再試行") {
-                authenticationManager.clearError()
-                authenticationManager.signInAnonymously()
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            LinearGradient(
-                colors: [
-                    Color(.systemBackground),
-                    Color(.systemGray6).opacity(0.3),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
-    }
-}

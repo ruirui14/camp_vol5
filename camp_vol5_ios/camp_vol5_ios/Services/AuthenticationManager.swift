@@ -15,14 +15,14 @@ protocol AuthenticationProtocol: ObservableObject {
     var user: FirebaseAuth.User? { get }
     var currentUser: User? { get }
     var isAuthenticated: Bool { get }
-    var isAnonymous: Bool { get }
     var isLoading: Bool { get }
     var errorMessage: String? { get }
     var isGoogleAuthenticated: Bool { get }
     var currentUserId: String? { get }
 
-    func signInAnonymously()
     func signInWithGoogle()
+    func signInWithEmail(email: String, password: String)
+    func signUpWithEmail(email: String, password: String, name: String)
     func signOut()
     func refreshCurrentUser()
     func updateCurrentUser(_ user: User)
@@ -42,14 +42,11 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     /// アプリケーション内のユーザー情報
     @Published var currentUser: User?
 
-    /// 認証状態（匿名含む）
+    /// 認証状態
     @Published var isAuthenticated: Bool = false
 
-    /// 匿名ユーザーかどうか
-    @Published var isAnonymous: Bool = false
-
     /// 認証処理中かどうか
-    @Published var isLoading: Bool = true
+    @Published var isLoading: Bool = false
 
     /// エラーメッセージ
     @Published var errorMessage: String?
@@ -65,6 +62,10 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     /// 初期化
     init() {
         setupAuthStateListener()
+        // 初期化時に現在の認証状態をチェック
+        DispatchQueue.main.async {
+            self.updateAuthenticationState(with: Auth.auth().currentUser)
+        }
     }
 
     deinit {
@@ -90,7 +91,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     private func updateAuthenticationState(with firebaseUser: FirebaseAuth.User?) {
         user = firebaseUser
         isAuthenticated = firebaseUser != nil
-        isAnonymous = firebaseUser?.isAnonymous ?? false
 
         if let user = firebaseUser {
             handleAuthenticatedUser(user)
@@ -105,40 +105,14 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     /// 認証済みユーザーの処理
     /// - Parameter firebaseUser: Firebaseユーザー
     private func handleAuthenticatedUser(_ firebaseUser: FirebaseAuth.User) {
-        if !firebaseUser.isAnonymous {
-            // Google認証ユーザーの場合、Firestoreからユーザー情報を取得
-            loadCurrentUser(uid: firebaseUser.uid)
-        } else {
-            // 匿名ユーザーの場合、currentUserをクリア
-            currentUser = nil
-        }
+        // Google認証またはメール認証ユーザーの場合、Firestoreからユーザー情報を取得
+        loadCurrentUser(uid: firebaseUser.uid)
     }
 
     /// 未認証ユーザーの処理
     private func handleUnauthenticatedUser() {
         currentUser = nil
-        // 自動匿名ログインを実行（既に認証処理中でない場合）
-        if !isLoading {
-            signInAnonymouslyIfNeeded()
-        }
-    }
-
-    /// 必要に応じて匿名ログインを実行
-    private func signInAnonymouslyIfNeeded() {
-        guard !isAuthenticated else { return }
-
-        isLoading = true
-        errorMessage = nil
-
-        Auth.auth().signInAnonymously { [weak self] _, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-
-                if let error = error {
-                    self?.errorMessage = "匿名ログインに失敗しました: \(error.localizedDescription)"
-                }
-            }
-        }
+        isLoading = false
     }
 
     /// Firestoreからユーザー情報を取得
@@ -160,25 +134,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     }
 
     // MARK: - Public Methods
-
-    /// 匿名ログイン
-    func signInAnonymously() {
-        // 既に認証済みの場合は何もしない
-        if isAuthenticated { return }
-
-        isLoading = true
-        errorMessage = nil
-
-        Auth.auth().signInAnonymously { [weak self] _, error in
-            DispatchQueue.main.async {
-                self?.isLoading = false
-
-                if let error = error {
-                    self?.errorMessage = "匿名ログインに失敗しました: \(error.localizedDescription)"
-                }
-            }
-        }
-    }
 
     /// Googleサインイン
     func signInWithGoogle() {
@@ -224,12 +179,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     accessToken: user.accessToken.tokenString
                 )
 
-                // 匿名ユーザーとのリンクまたは通常のサインイン
-                if let currentUser = Auth.auth().currentUser, currentUser.isAnonymous {
-                    self?.linkAnonymousWithGoogle(credential: credential, googleUser: user)
-                } else {
-                    self?.signInWithCredential(credential: credential, googleUser: user)
-                }
+                // Google認証でサインイン
+                self?.signInWithCredential(credential: credential, googleUser: user)
             }
         }
     }
@@ -251,14 +202,14 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
     /// 現在のユーザー情報を再取得
     func refreshCurrentUser() {
-        guard let uid = user?.uid, !isAnonymous else { return }
+        guard let uid = user?.uid else { return }
         loadCurrentUser(uid: uid)
     }
 
     /// ユーザー情報を更新
     /// - Parameter user: 更新するユーザー情報
     func updateCurrentUser(_ user: User) {
-        guard isGoogleAuthenticated else { return }
+        guard isAuthenticated else { return }
 
         UserService.shared.updateUser(user)
             .receive(on: DispatchQueue.main)
@@ -280,6 +231,85 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         errorMessage = nil
     }
 
+    /// アプリ状態をリセット（未認証ユーザーのサインアウト用）
+    func resetAppState() {
+        UserDefaults.standard.set(false, forKey: "hasStartedWithoutAuth")
+        // 認証状態の変更を通知（ContentViewの更新をトリガー）
+        objectWillChange.send()
+    }
+
+    /// メール・パスワードでサインイン
+    /// - Parameters:
+    ///   - email: メールアドレス
+    ///   - password: パスワード
+    func signInWithEmail(email: String, password: String) {
+        guard !email.isEmpty, !password.isEmpty else {
+            errorMessage = "メールアドレスとパスワードを入力してください"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] authResult, error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    self?.errorMessage = "ログインに失敗しました: \(error.localizedDescription)"
+                    return
+                }
+
+                guard let firebaseUser = authResult?.user else {
+                    self?.errorMessage = "ユーザー情報の取得に失敗しました"
+                    return
+                }
+
+                // 既存ユーザーの場合、Firestoreからユーザー情報を取得
+                self?.loadCurrentUser(uid: firebaseUser.uid)
+            }
+        }
+    }
+
+    /// メール・パスワードでサインアップ
+    /// - Parameters:
+    ///   - email: メールアドレス
+    ///   - password: パスワード
+    ///   - name: 表示名
+    func signUpWithEmail(email: String, password: String, name: String) {
+        guard !email.isEmpty, !password.isEmpty, !name.isEmpty else {
+            errorMessage = "すべての項目を入力してください"
+            return
+        }
+
+        guard password.count >= 6 else {
+            errorMessage = "パスワードは6文字以上で入力してください"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        Auth.auth().createUser(withEmail: email, password: password) { [weak self] authResult, error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedDescription)"
+                    return
+                }
+
+                guard let firebaseUser = authResult?.user else {
+                    self?.errorMessage = "ユーザー情報の取得に失敗しました"
+                    return
+                }
+
+                // 新規ユーザーの場合、Firestoreにユーザー情報を保存
+                self?.saveUserToFirestore(uid: firebaseUser.uid, name: name)
+            }
+        }
+    }
+
     // MARK: - Computed Properties
 
     /// 現在のユーザーID
@@ -287,76 +317,16 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         return Auth.auth().currentUser?.uid
     }
 
-    /// Google認証が完了しているか
+    /// Google認証ユーザーかどうか
     var isGoogleAuthenticated: Bool {
-        return isAuthenticated && !isAnonymous
+        guard let user = user else { return false }
+        return user.providerData.contains { provider in
+            provider.providerID == "google.com"
+        }
     }
+
 
     // MARK: - Private Google Authentication Methods
-
-    /// 匿名ユーザーとGoogleアカウントをリンク
-    /// - Parameters:
-    ///   - credential: Google認証クレデンシャル
-    ///   - googleUser: Googleユーザー情報
-    private func linkAnonymousWithGoogle(credential: AuthCredential, googleUser: GIDGoogleUser) {
-        guard let currentUser = Auth.auth().currentUser else { return }
-
-        currentUser.link(with: credential) { [weak self] authResult, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    self?.handleGoogleLinkError(
-                        error: error, credential: credential, googleUser: googleUser
-                    )
-                } else if let firebaseUser = authResult?.user {
-                    let displayName = googleUser.profile?.name ?? "Google User"
-                    self?.saveUserToFirestore(uid: firebaseUser.uid, name: displayName)
-                }
-            }
-        }
-    }
-
-    /// Googleリンクエラーの処理
-    /// - Parameters:
-    ///   - error: エラー情報
-    ///   - credential: Google認証クレデンシャル
-    ///   - googleUser: Googleユーザー情報
-    private func handleGoogleLinkError(
-        error: Error, credential: AuthCredential, googleUser: GIDGoogleUser
-    ) {
-        let nsError = error as NSError
-
-        if nsError.code == AuthErrorCode.accountExistsWithDifferentCredential.rawValue
-            || nsError.code == AuthErrorCode.credentialAlreadyInUse.rawValue
-        {
-            signInWithExistingGoogleAccount(credential: credential, googleUser: googleUser)
-        } else {
-            errorMessage = "アカウントのリンクに失敗しました: \(error.localizedDescription)"
-        }
-    }
-
-    /// 既存のGoogleアカウントでログイン
-    /// - Parameters:
-    ///   - credential: Google認証クレデンシャル
-    ///   - googleUser: Googleユーザー情報
-    private func signInWithExistingGoogleAccount(
-        credential: AuthCredential, googleUser: GIDGoogleUser
-    ) {
-        Auth.auth().signIn(with: credential) { [weak self] authResult, error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    self?.errorMessage = "既存アカウントでのログインに失敗しました: \(error.localizedDescription)"
-                } else if let firebaseUser = authResult?.user {
-                    let displayName = googleUser.profile?.name ?? "Google User"
-
-                    if authResult?.additionalUserInfo?.isNewUser == false {
-                        self?.loadCurrentUser(uid: firebaseUser.uid)
-                    } else {
-                        self?.saveUserToFirestore(uid: firebaseUser.uid, name: displayName)
-                    }
-                }
-            }
-        }
-    }
 
     /// 通常のGoogle認証
     /// - Parameters:
@@ -412,32 +382,31 @@ final class MockAuthenticationManager: ObservableObject, AuthenticationProtocol 
     @Published var user: FirebaseAuth.User?
     @Published var currentUser: User?
     @Published var isAuthenticated: Bool = false
-    @Published var isAnonymous: Bool = false
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
     var currentUserId: String? { user?.uid }
-    var isGoogleAuthenticated: Bool { isAuthenticated && !isAnonymous }
+    var isGoogleAuthenticated: Bool { isAuthenticated }
 
-    init(isAuthenticated: Bool = false, isAnonymous: Bool = false, currentUser: User? = nil) {
+    init(isAuthenticated: Bool = false, currentUser: User? = nil) {
         self.isAuthenticated = isAuthenticated
-        self.isAnonymous = isAnonymous
         self.currentUser = currentUser
-    }
-
-    func signInAnonymously() {
-        isAuthenticated = true
-        isAnonymous = true
     }
 
     func signInWithGoogle() {
         isAuthenticated = true
-        isAnonymous = false
+    }
+
+    func signInWithEmail(email: String, password: String) {
+        isAuthenticated = true
+    }
+
+    func signUpWithEmail(email: String, password: String, name: String) {
+        isAuthenticated = true
     }
 
     func signOut() {
         isAuthenticated = false
-        isAnonymous = false
         currentUser = nil
     }
 

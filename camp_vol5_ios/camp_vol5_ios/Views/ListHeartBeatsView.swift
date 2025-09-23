@@ -52,7 +52,7 @@ struct ListHeartBeatsView: View {
 
                             Button("再試行") {
                                 viewModel.clearError()
-                                if authenticationManager.isGoogleAuthenticated {
+                                if authenticationManager.isAuthenticated {
                                     viewModel.loadFollowingUsersWithHeartbeats()
                                 }
                             }

@@ -51,12 +51,4 @@ class AuthViewModel: ObservableObject {
     var isAuthenticated: Bool {
         return authenticationManager.isAuthenticated
     }
-
-    var isAnonymous: Bool {
-        return authenticationManager.isAnonymous
-    }
-
-    var isGoogleAuthenticated: Bool {
-        return authenticationManager.isGoogleAuthenticated
-    }
 }

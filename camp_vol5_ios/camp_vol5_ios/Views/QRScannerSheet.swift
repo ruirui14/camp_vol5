@@ -42,7 +42,7 @@ struct QRScannerSheet: View {
                             .multilineTextAlignment(.center)
                             .shadow(color: .black, radius: 2)
 
-                        if authenticationManager.isGoogleAuthenticated {
+                        if authenticationManager.isAuthenticated {
                             Button(action: {
                                 showingQRCodeShare = true
                             }) {
