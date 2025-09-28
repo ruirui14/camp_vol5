@@ -2,26 +2,23 @@ import SwiftUI
 
 struct QRCodeShareView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @StateObject private var viewModel: QRCodeShareViewModel
-    @Environment(\.presentationMode) var presentationMode
-
-    init() {
-        _viewModel = StateObject(
-            wrappedValue: QRCodeShareViewModel(
-                authenticationManager: AuthenticationManager()
-            )
-        )
-    }
+    @State private var viewModel: QRCodeShareViewModel?
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         GeometryReader { geometry in
             VStack {
-                if authenticationManager.isAuthenticated {
-                    authenticatedContent
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if let viewModel = viewModel {
+                    if authenticationManager.isAuthenticated {
+                        authenticatedContent(viewModel: viewModel)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        guestUserContent
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 } else {
-                    guestUserContent
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ProgressView()
+                        .scaleEffect(1.5)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -30,7 +27,7 @@ struct QRCodeShareView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("戻る") {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
                     .foregroundColor(.white)
                 }
@@ -46,18 +43,46 @@ struct QRCodeShareView: View {
                 NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
             }
             .onAppear {
-                viewModel.updateAuthenticationManager(authenticationManager)
-                // Google認証済みの場合、ユーザー情報を読み込み
-                if authenticationManager.isAuthenticated {
+                // AuthenticationManagerが不安定な状態でないかチェック
+                guard authenticationManager.isAuthenticated else {
+                    return
+                }
+
+                guard authenticationManager.currentUser != nil else {
                     authenticationManager.refreshCurrentUser()
+                    // 少し待ってからViewModelを作成
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        if self.viewModel == nil && self.authenticationManager.currentUser != nil {
+                            self.viewModel = QRCodeShareViewModel(
+                                authenticationManager: self.authenticationManager)
+                        }
+                    }
+                    return
+                }
+
+                if viewModel == nil {
+                    self.viewModel = QRCodeShareViewModel(
+                        authenticationManager: authenticationManager)
                 }
             }
-            .alert(viewModel.saveAlertTitle, isPresented: $viewModel.showingSaveAlert) {
+            .alert(
+                viewModel?.saveAlertTitle ?? "",
+                isPresented: Binding<Bool>(
+                    get: { viewModel?.showingSaveAlert ?? false },
+                    set: { viewModel?.showingSaveAlert = $0 }
+                )
+            ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(viewModel.saveAlertMessage)
+                Text(viewModel?.saveAlertMessage ?? "")
             }
-            .alert("写真へのアクセス許可", isPresented: $viewModel.showingPermissionAlert) {
+            .alert(
+                "写真へのアクセス許可",
+                isPresented: Binding<Bool>(
+                    get: { viewModel?.showingPermissionAlert ?? false },
+                    set: { viewModel?.showingPermissionAlert = $0 }
+                )
+            ) {
                 Button("キャンセル", role: .cancel) {}
                 Button("設定を開く") {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -72,26 +97,34 @@ struct QRCodeShareView: View {
 
     // MARK: - View Components
 
-    private var authenticatedContent: some View {
+    private func authenticatedContent(viewModel: QRCodeShareViewModel) -> some View {
         VStack(spacing: 30) {
             Spacer()
 
             if let inviteCode = viewModel.inviteCode {
                 VStack(spacing: 40) {
                     // QRコード
-                    Image(uiImage: viewModel.generateQRCode(from: inviteCode))
-                        .resizable()
-                        .interpolation(.none)
-                        .scaledToFit()
-                        .frame(width: 250, height: 250)
-                        .background(Color.white)
-                        .cornerRadius(16)
-                        .shadow(
-                            color: .gray.opacity(0.3),
-                            radius: 8,
-                            x: 0,
-                            y: 4
-                        )
+                    Group {
+                        if let qrCodeImage = viewModel.qrCodeImage {
+                            Image(uiImage: qrCodeImage)
+                                .resizable()
+                                .interpolation(.none)
+                        } else {
+                            Image(systemName: "qrcode")
+                                .font(.system(size: 100))
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .scaledToFit()
+                    .frame(width: 250, height: 250)
+                    .background(Color.white)
+                    .cornerRadius(16)
+                    .shadow(
+                        color: .gray.opacity(0.3),
+                        radius: 8,
+                        x: 0,
+                        y: 4
+                    )
 
                     // ボタンたち
 

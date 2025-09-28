@@ -2,14 +2,15 @@ import SwiftUI
 
 struct AuthView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @State private var selectedAuthMethod: AuthMethod = .none
-    @State private var showEmailAuth = false
-    @State private var animateContent = false
+    @StateObject private var viewModel: AuthViewModel
 
     let onStartWithoutAuth: () -> Void
 
-    enum AuthMethod {
-        case none, google, email
+    init(onStartWithoutAuth: @escaping () -> Void) {
+        self.onStartWithoutAuth = onStartWithoutAuth
+        // 初期化時はダミーのAuthenticationManagerを使用
+        // 実際のAuthenticationManagerは@EnvironmentObjectで注入される
+        self._viewModel = StateObject(wrappedValue: AuthViewModel(authenticationManager: AuthenticationManager()))
     }
 
     var body: some View {
@@ -47,21 +48,21 @@ struct AuthView: View {
                                             )
                                         )
                                         .frame(width: 120, height: 120)
-                                        .scaleEffect(animateContent ? 1.0 : 0.8)
+                                        .scaleEffect(viewModel.animateContent ? 1.0 : 0.8)
                                         .animation(
                                             .easeInOut(duration: 0.8).repeatForever(
                                                 autoreverses: true),
-                                            value: animateContent
+                                            value: viewModel.animateContent
                                         )
 
                                     Image(systemName: "heart.fill")
                                         .font(.system(size: 50, weight: .medium))
                                         .foregroundColor(.red)
-                                        .scaleEffect(animateContent ? 1.1 : 1.0)
+                                        .scaleEffect(viewModel.animateContent ? 1.1 : 1.0)
                                         .animation(
                                             .easeInOut(duration: 1.0).repeatForever(
                                                 autoreverses: true),
-                                            value: animateContent
+                                            value: viewModel.animateContent
                                         )
                                 }
 
@@ -86,13 +87,13 @@ struct AuthView: View {
                                                 .system(size: 32, weight: .bold, design: .rounded)
                                             )
                                             .multilineTextAlignment(.center)
-                                            .opacity(animateContent ? 1.0 : 0.7)
+                                            .opacity(viewModel.animateContent ? 1.0 : 0.7)
 
                                         Text("リアルタイムで心拍を共有")
                                             .font(.title3)
                                             .fontWeight(.medium)
                                             .foregroundColor(.secondary)
-                                            .opacity(animateContent ? 1.0 : 0.5)
+                                            .opacity(viewModel.animateContent ? 1.0 : 0.5)
                                     }
                                 }
 
@@ -104,7 +105,7 @@ struct AuthView: View {
 
                                 Button(action: {
                                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                        onStartWithoutAuth()
+                                        viewModel.signInAnonymously()
                                     }
                                 }) {
                                     HStack(spacing: 8) {
@@ -141,8 +142,7 @@ struct AuthView: View {
                                 // Email Authentication Button
                                 Button(action: {
                                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                        selectedAuthMethod = .email
-                                        showEmailAuth = true
+                                        viewModel.showEmailAuthModal()
                                     }
                                 }) {
                                     AuthButton(
@@ -150,15 +150,14 @@ struct AuthView: View {
                                         title: "メールアドレスで続ける",
                                         subtitle: "メールとパスワードで新規作成・ログイン",
                                         color: .green,
-                                        isSelected: selectedAuthMethod == .email
+                                        isSelected: viewModel.selectedAuthMethod == .email
                                     )
                                 }
 
                                 // Google Authentication Button
                                 Button(action: {
                                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                        selectedAuthMethod = .google
-                                        authenticationManager.signInWithGoogle()
+                                        viewModel.signInWithGoogle()
                                     }
                                 }) {
                                     AuthButton(
@@ -166,21 +165,19 @@ struct AuthView: View {
                                         title: "Googleで続ける",
                                         subtitle: "Googleアカウントで簡単ログイン",
                                         color: .blue,
-                                        isSelected: selectedAuthMethod == .google,
-                                        isLoading: authenticationManager.isLoading
-                                            && selectedAuthMethod == .google
+                                        isSelected: viewModel.selectedAuthMethod == .google,
+                                        isLoading: viewModel.isGoogleLoading
                                     )
                                 }
-                                .disabled(authenticationManager.isLoading)
+                                .disabled(viewModel.isLoading)
                             }
                             .padding(.horizontal, 24)
                         }
 
                         // Error Display
-                        if let errorMessage = authenticationManager.errorMessage {
+                        if let errorMessage = viewModel.errorMessage {
                             ErrorCard(message: errorMessage) {
-                                authenticationManager.clearError()
-                                selectedAuthMethod = .none
+                                viewModel.clearError()
                             }
                             .padding(.horizontal, 24)
                             .padding(.top, 8)
@@ -194,14 +191,12 @@ struct AuthView: View {
             }
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.0)) {
-                animateContent = true
-            }
+            viewModel.updateAuthenticationManager(authenticationManager)
         }
         .sheet(
-            isPresented: $showEmailAuth,
+            isPresented: $viewModel.showEmailAuth,
             onDismiss: {
-                selectedAuthMethod = .none
+                viewModel.dismissEmailAuth()
             }
         ) {
             EmailAuthView()

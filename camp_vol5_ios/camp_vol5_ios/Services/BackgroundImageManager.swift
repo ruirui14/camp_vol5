@@ -18,18 +18,25 @@ class BackgroundImageManager: ObservableObject {
     private let persistenceService = ImagePersistenceService.shared
     private let userDefaultsService = UserDefaultsImageService.shared
 
+    var userIdForDebugging: String {
+        return userId
+    }
+
     init(userId: String) {
         self.userId = userId
         loadPersistedImages()
     }
 
     private func loadPersistedImages() {
+        print("=== BackgroundImageManager.loadPersistedImages for userId: \(userId) ===")
         isLoading = true
 
         DispatchQueue.global(qos: .background).async { [weak self] in
             guard let self = self else { return }
 
             if let savedData = self.userDefaultsService.loadBackgroundImageData(for: self.userId) {
+                print("Found saved data for \(self.userId): \(savedData.editedImageFileName)")
+
                 let editedImage = self.persistenceService.loadImage(
                     fileName: savedData.editedImageFileName
                 )
@@ -40,14 +47,20 @@ class BackgroundImageManager: ObservableObject {
                     fileName: savedData.originalImageFileName
                 )
 
+                print(
+                    "Loaded images for \(self.userId): edited=\(editedImage != nil), thumbnail=\(thumbnail != nil), original=\(originalImage != nil)"
+                )
+
                 DispatchQueue.main.async {
                     self.currentEditedImage = editedImage
                     self.currentThumbnail = thumbnail
                     self.currentOriginalImage = originalImage
                     self.currentTransform = savedData.transform
                     self.isLoading = false
+                    print("Updated BackgroundImageManager for \(self.userId) with new images")
                 }
             } else {
+                print("No saved data found for \(self.userId)")
                 DispatchQueue.main.async {
                     self.isLoading = false
                 }
@@ -112,6 +125,10 @@ class BackgroundImageManager: ObservableObject {
     }
 
     func saveEditingState(selectedImage: UIImage?, transform: ImageTransform) {
+        print("=== SAVING EDITING STATE ===")
+        print("UserId: \(userId)")
+        print("Has new image: \(selectedImage != nil)")
+
         // 新しく選択された画像がある場合は元画像として設定
         if let newImage = selectedImage {
             setOriginalImage(newImage)
@@ -124,6 +141,8 @@ class BackgroundImageManager: ObservableObject {
         if currentOriginalImage != nil {
             saveEditedResult(transform)
         }
+
+        print("=== SAVING COMPLETED FOR USER: \(userId) ===")
     }
 
     func resetBackgroundImage() {
@@ -151,6 +170,14 @@ class BackgroundImageManager: ObservableObject {
     }
 
     func refreshFromStorage() {
+        print("=== BackgroundImageManager.refreshFromStorage for userId: \(userId) ===")
+
+        // 既に画像が読み込まれている場合は再読み込みをスキップ
+        if currentEditedImage != nil {
+            print("Images already loaded for \(userId), skipping refresh")
+            return
+        }
+
         loadPersistedImages()
     }
 }

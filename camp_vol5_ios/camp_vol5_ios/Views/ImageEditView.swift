@@ -6,6 +6,7 @@ struct ImageEditView: View {
     @Binding var imageOffset: CGSize
     @Binding var imageScale: CGFloat
     let onApply: () -> Void
+    let userId: String
     @State private var tempOffset = CGSize.zero
     @State private var lastOffset = CGSize.zero
     @State private var tempScale: CGFloat = 1.0
@@ -144,7 +145,7 @@ struct ImageEditView: View {
                                     Slider(value: $heartSize, in: 60...200, step: 5)
                                         .accentColor(.white)
                                         .onChange(of: heartSize) { newSize in
-                                            persistenceManager.saveHeartSize(newSize)
+                                            persistenceManager.saveHeartSize(newSize, userId: userId)
                                         }
 
                                     Text("大")
@@ -205,14 +206,14 @@ struct ImageEditView: View {
                         imageScale = tempScale
 
                         // ハートの位置を保存
-                        persistenceManager.saveHeartPosition(heartOffset)
+                        persistenceManager.saveHeartPosition(heartOffset, userId: userId)
 
                         // 画像の変形情報を直接保存
                         persistenceManager.saveImageTransform(
-                            offset: tempOffset, scale: tempScale
+                            offset: tempOffset, scale: tempScale, userId: userId
                         )
 
-                        persistenceManager.saveBackgroundColor(tempColor)
+                        persistenceManager.saveBackgroundColor(tempColor, userId: userId)
 
                         onApply()
                     }
@@ -229,14 +230,14 @@ struct ImageEditView: View {
         }
         .onAppear {
             // ハートのサイズを読み込み
-            heartSize = persistenceManager.loadHeartSize()
+            heartSize = persistenceManager.loadHeartSize(userId: userId)
 
             // 背景色を読み込み
-            selectedBackgroundColor = persistenceManager.loadBackgroundColor()
+            selectedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userId)
 
             // 永続化されたデータを再読み込み（画像がある場合のみ）
             if image != nil {
-                let transform = persistenceManager.loadImageTransform()
+                let transform = persistenceManager.loadImageTransform(userId: userId)
                 imageOffset = transform.offset
                 imageScale = transform.scale
 
@@ -247,7 +248,7 @@ struct ImageEditView: View {
                 lastScale = transform.scale
 
                 // ハートの位置を読み込み
-                let heartPosition = persistenceManager.loadHeartPosition()
+                let heartPosition = persistenceManager.loadHeartPosition(userId: userId)
                 heartOffset = heartPosition
                 lastHeartOffset = heartPosition
             }
@@ -487,6 +488,7 @@ struct ColorPaletteView: View {
         image: .constant(UIImage(systemName: "photo")),
         imageOffset: .constant(CGSize.zero),
         imageScale: .constant(1.0),
-        onApply: {}
+        onApply: {},
+        userId: "preview_user"
     )
 }

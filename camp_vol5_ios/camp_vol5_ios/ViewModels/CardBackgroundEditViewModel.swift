@@ -20,6 +20,7 @@ class CardBackgroundEditViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     init(userId: String, authenticationManager: AuthenticationManager) {
+        print("=== CardBackgroundEditViewModel.init for userId: \(userId) ===")
         self.backgroundImageManager = BackgroundImageManager(userId: userId)
 
         // BackgroundImageManagerの状態を監視
@@ -79,6 +80,9 @@ class CardBackgroundEditViewModel: ObservableObject {
     }
 
     func saveImageConfiguration() {
+        print("=== CardBackgroundEditViewModel.saveImageConfiguration ===")
+        print("BackgroundImageManager userId: \(backgroundImageManager.userIdForDebugging)")
+
         let screenSize = UIScreen.main.bounds.size
         let normalizedOffsetX = imageOffset.width / screenSize.width
         let normalizedOffsetY = imageOffset.height / screenSize.height
@@ -92,6 +96,7 @@ class CardBackgroundEditViewModel: ObservableObject {
             backgroundColor: bgColor
         )
 
+        print("Calling saveEditingState for userId: \(backgroundImageManager.userIdForDebugging)")
         backgroundImageManager.saveEditingState(selectedImage: selectedImage, transform: transform)
     }
 

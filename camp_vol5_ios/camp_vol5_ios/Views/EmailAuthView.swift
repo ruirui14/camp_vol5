@@ -7,13 +7,14 @@ import SwiftUI
 
 struct EmailAuthView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @StateObject private var viewModel: EmailAuthViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var email: String = ""
-    @State private var password: String = ""
-    @State private var name: String = ""
-    @State private var isSignUp: Bool = false
-    @State private var showPassword: Bool = false
-    @State private var animateForm: Bool = false
+
+    init() {
+        // 初期化時はダミーのAuthenticationManagerを使用
+        // 実際のAuthenticationManagerは@EnvironmentObjectで注入される
+        self._viewModel = StateObject(wrappedValue: EmailAuthViewModel(authenticationManager: AuthenticationManager()))
+    }
 
     var body: some View {
         NavigationView {
@@ -23,13 +24,17 @@ struct EmailAuthView: View {
                     VStack(spacing: 16) {
                         ZStack {
                             Circle()
-                                .fill(LinearGradient(
-                                    colors: [Color.green.opacity(0.2), Color.green.opacity(0.1)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ))
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.green.opacity(0.2), Color.green.opacity(0.1),
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                                 .frame(width: 80, height: 80)
-                                .scaleEffect(animateForm ? 1.0 : 0.8)
+                                .scaleEffect(viewModel.animateForm ? 1.0 : 0.8)
 
                             Image(systemName: "envelope.fill")
                                 .font(.system(size: 32, weight: .medium))
@@ -37,36 +42,21 @@ struct EmailAuthView: View {
                         }
 
                         VStack(spacing: 8) {
-                            Text(isSignUp ? "アカウント作成" : "サインイン")
+                            Text(viewModel.authModeTitle)
                                 .font(.title2)
                                 .fontWeight(.bold)
 
-                            Text(isSignUp ? "新しいアカウントを作成します" : "既存のアカウントでログインします")
+                            Text(viewModel.authModeSubtitle)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                         }
                     }
                     .padding(.top, 20)
-                    .opacity(animateForm ? 1.0 : 0.7)
+                    .opacity(viewModel.animateForm ? 1.0 : 0.7)
 
                     // フォームセクション
                     VStack(spacing: 16) {
-                        // サインアップ時のみ表示される名前入力欄
-                        if isSignUp {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("名前")
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
-                                    .foregroundColor(.secondary)
-
-                                TextField("名前を入力", text: $name)
-                                    .textFieldStyle(ModernTextFieldStyle())
-                                    .textContentType(.name)
-                                    .autocapitalization(.words)
-                            }
-                            .transition(.move(edge: .top).combined(with: .opacity))
-                        }
 
                         // メールアドレス入力欄
                         VStack(alignment: .leading, spacing: 8) {
@@ -75,7 +65,7 @@ struct EmailAuthView: View {
                                 .fontWeight(.medium)
                                 .foregroundColor(.secondary)
 
-                            TextField("example@domain.com", text: $email)
+                            TextField("メールアドレスを入力", text: $viewModel.email)
                                 .textFieldStyle(ModernTextFieldStyle())
                                 .textContentType(.emailAddress)
                                 .keyboardType(.emailAddress)
@@ -91,27 +81,27 @@ struct EmailAuthView: View {
 
                             HStack {
                                 Group {
-                                    if showPassword {
-                                        TextField("パスワードを入力", text: $password)
+                                    if viewModel.showPassword {
+                                        TextField("パスワードを入力", text: $viewModel.password)
                                     } else {
-                                        SecureField("パスワードを入力", text: $password)
+                                        SecureField("パスワードを入力", text: $viewModel.password)
                                     }
                                 }
-                                .textContentType(isSignUp ? .newPassword : .password)
+                                .textContentType(viewModel.isSignUp ? .newPassword : .password)
 
                                 Button(action: {
                                     withAnimation(.easeInOut(duration: 0.2)) {
-                                        showPassword.toggle()
+                                        viewModel.togglePasswordVisibility()
                                     }
                                 }) {
-                                    Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
+                                    Image(systemName: viewModel.showPassword ? "eye.slash.fill" : "eye.fill")
                                         .foregroundColor(.secondary)
                                         .font(.title3)
                                 }
                             }
                             .textFieldStyle(ModernTextFieldStyle())
 
-                            if isSignUp {
+                            if viewModel.isSignUp {
                                 HStack(spacing: 8) {
                                     Image(systemName: "info.circle.fill")
                                         .font(.caption)
@@ -125,31 +115,27 @@ struct EmailAuthView: View {
                         }
                     }
                     .padding(.horizontal, 8)
-                    .opacity(animateForm ? 1.0 : 0.5)
+                    .opacity(viewModel.animateForm ? 1.0 : 0.5)
 
                     // ボタンセクション
                     VStack(spacing: 16) {
                         // メイン認証ボタン
                         Button(action: {
-                            if isSignUp {
-                                authenticationManager.signUpWithEmail(email: email, password: password, name: name)
-                            } else {
-                                authenticationManager.signInWithEmail(email: email, password: password)
-                            }
+                            viewModel.signInWithEmail()
                         }) {
                             HStack {
-                                if authenticationManager.isLoading {
+                                if viewModel.isLoading {
                                     ProgressView()
                                         .scaleEffect(0.8)
                                         .tint(.white)
                                 } else {
-                                    Image(systemName: isSignUp ? "person.badge.plus" : "envelope")
+                                    Image(systemName: viewModel.isSignUp ? "person.badge.plus" : "envelope")
                                         .font(.title3)
                                 }
 
-                                Text(authenticationManager.isLoading ? "処理中..." : (isSignUp ? "アカウント作成" : "サインイン"))
-                                    .font(.headline)
-                                    .fontWeight(.semibold)
+                                Text(viewModel.primaryButtonTitle)
+                                .font(.headline)
+                                .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -164,15 +150,14 @@ struct EmailAuthView: View {
                             .cornerRadius(12)
                             .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
                         }
-                        .disabled(authenticationManager.isLoading || !isFormValid)
-                        .opacity(isFormValid ? 1.0 : 0.6)
+                        .disabled(viewModel.isLoading || !viewModel.isFormValid)
+                        .opacity(viewModel.isFormValid ? 1.0 : 0.6)
 
                         // モード切り替えボタン
                         Button(action: {
-                            isSignUp.toggle()
-                            authenticationManager.clearError()
+                            viewModel.toggleAuthMode()
                         }) {
-                            Text(isSignUp ? "既にアカウントをお持ちの方はこちら" : "新規アカウント作成はこちら")
+                            Text(viewModel.toggleModeText)
                                 .font(.callout)
                                 .foregroundColor(.blue)
                                 .underline()
@@ -180,7 +165,7 @@ struct EmailAuthView: View {
                     }
 
                     // エラーメッセージ
-                    if let errorMessage = authenticationManager.errorMessage {
+                    if let errorMessage = viewModel.errorMessage {
                         VStack(spacing: 8) {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
@@ -195,7 +180,7 @@ struct EmailAuthView: View {
                             .cornerRadius(8)
 
                             Button("エラーを閉じる") {
-                                authenticationManager.clearError()
+                                viewModel.clearError()
                             }
                             .font(.caption)
                             .foregroundColor(.blue)
@@ -234,28 +219,11 @@ struct EmailAuthView: View {
                 )
             )
             .onAppear {
-                withAnimation(.easeInOut(duration: 0.8)) {
-                    animateForm = true
-                }
+                viewModel.updateAuthenticationManager(authenticationManager)
             }
         }
     }
 
-    // フォームの有効性をチェック
-    private var isFormValid: Bool {
-        if isSignUp {
-            return !email.isEmpty && !password.isEmpty && !name.isEmpty && isValidEmail(email)
-        } else {
-            return !email.isEmpty && !password.isEmpty && isValidEmail(email)
-        }
-    }
-
-    // メールアドレスの有効性をチェック
-    private func isValidEmail(_ email: String) -> Bool {
-        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
-        let emailPredicate = NSPredicate(format:"SELF MATCHES %@", emailRegex)
-        return emailPredicate.evaluate(with: email)
-    }
 }
 
 // モダンなテキストフィールドスタイル

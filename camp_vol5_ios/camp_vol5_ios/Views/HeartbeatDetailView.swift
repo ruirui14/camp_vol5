@@ -30,12 +30,14 @@ struct HeartbeatDetailView: View {
     @StateObject private var autoLockManager = AutoLockManager.shared
 
     private let persistenceManager = PersistenceManager.shared
+    private let userIdParams: String
 
     init(
         userId: String,
         isStatusBarHidden: Binding<Bool> = .constant(false),
         isPersistentSystemOverlaysHidden: Binding<Visibility> = .constant(.automatic)
     ) {
+        self.userIdParams = userId
         _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
         _isStatusBarHidden = isStatusBarHidden
         _isPersistentSystemOverlaysHidden = isPersistentSystemOverlaysHidden
@@ -46,8 +48,9 @@ struct HeartbeatDetailView: View {
         isStatusBarHidden: Binding<Bool> = .constant(false),
         isPersistentSystemOverlaysHidden: Binding<Visibility> = .constant(.automatic)
     ) {
+        self.userIdParams = userWithHeartbeat.user.id
         _viewModel = StateObject(
-            wrappedValue: HeartbeatDetailViewModel(userWithHeartbeat: userWithHeartbeat)
+            wrappedValue: HeartbeatDetailViewModel(userId: userWithHeartbeat.user.id)
         )
         _isStatusBarHidden = isStatusBarHidden
         _isPersistentSystemOverlaysHidden = isPersistentSystemOverlaysHidden
@@ -239,8 +242,10 @@ struct HeartbeatDetailView: View {
             viewModel.startContinuousMonitoring()
             loadPersistedData()
 
-            // 保存された背景色を読み込み
-            savedBackgroundColor = persistenceManager.loadBackgroundColor()
+            // 保存された背景色を読み込み（ユーザーID別）
+            print("Loading background color for user: \(userIdParams)")
+            savedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userIdParams)
+            print("Loaded background color: \(savedBackgroundColor)")
 
             // 初期状態で振動を有効にし、既にデータがある場合は振動開始
             if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
@@ -280,15 +285,15 @@ struct HeartbeatDetailView: View {
         .fullScreenCover(
             isPresented: $showingImageEditor,
             onDismiss: {
-                // ImageEditViewが閉じられたときにハートの位置とサイズを再読み込み
-                let heartPosition = persistenceManager.loadHeartPosition()
+                // ImageEditViewが閉じられたときにハートの位置とサイズを再読み込み（ユーザーID別）
+                let heartPosition = persistenceManager.loadHeartPosition(userId: userIdParams)
                 heartOffset = heartPosition
 
                 // ハートサイズの更新
-                heartSize = persistenceManager.loadHeartSize()
+                heartSize = persistenceManager.loadHeartSize(userId: userIdParams)
 
                 // 背景色の更新
-                savedBackgroundColor = persistenceManager.loadBackgroundColor()
+                savedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userIdParams)
 
                 // 振動を再開（振動が有効で心拍データがある場合）
                 if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
@@ -303,26 +308,36 @@ struct HeartbeatDetailView: View {
                 imageOffset: $imageOffset,
                 imageScale: $imageScale,
                 onApply: {
+                    print("=== HeartbeatDetailView onApply ===")
+                    print("Current user: \(viewModel.user?.name ?? "nil") (ID: \(userIdParams))")
+
                     editedImage = selectedImage
 
-                    // 画像と変形情報を永続化
+                    // 画像と変形情報を永続化（ユーザーID別）
                     if let image = selectedImage {
-                        persistenceManager.saveBackgroundImage(image)
+                        print("Saving background image for user: \(userIdParams)")
+                        persistenceManager.saveBackgroundImage(image, userId: userIdParams)
+                    } else {
+                        print("ERROR: Cannot save image - selectedImage: \(selectedImage != nil)")
                     }
-                    persistenceManager.saveImageTransform(offset: imageOffset, scale: imageScale)
+
+                    print("Saving image transform for user: \(userIdParams)")
+                    persistenceManager.saveImageTransform(offset: imageOffset, scale: imageScale, userId: userIdParams)
 
                     showingImageEditor = false
-                }
+                    print("=== End HeartbeatDetailView onApply ===")
+                },
+                userId: userIdParams
             )
         }
         .fullScreenCover(
             isPresented: $showingCardBackgroundEditSheet,
             onDismiss: {
-                // CardBackgroundEditViewが閉じられたときもハートサイズを更新
-                heartSize = persistenceManager.loadHeartSize()
+                // CardBackgroundEditViewが閉じられたときもハートサイズを更新（ユーザーID別）
+                heartSize = persistenceManager.loadHeartSize(userId: userIdParams)
 
                 // 背景色の更新
-                savedBackgroundColor = persistenceManager.loadBackgroundColor()
+                savedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userIdParams)
 
                 // 振動を再開（振動が有効で心拍データがある場合）
                 if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
@@ -332,28 +347,38 @@ struct HeartbeatDetailView: View {
                 }
             }
         ) {
-            if let user = viewModel.user {
-                CardBackgroundEditView(userId: user.id)
-            }
+            CardBackgroundEditView(userId: userIdParams)
         }
     }
 
     private func loadPersistedData() {
-        // 保存された画像を読み込み
-        if let savedImage = persistenceManager.loadBackgroundImage() {
+        print("=== HeartbeatDetailView loadPersistedData ===")
+        print("Current user: \(viewModel.user?.name ?? "nil") (ID: \(userIdParams))")
+
+        // 保存された画像を読み込み（ユーザーID別）
+        print("Loading background image for user: \(userIdParams)")
+        if let savedImage = persistenceManager.loadBackgroundImage(userId: userIdParams) {
+            print("Successfully loaded background image")
             selectedImage = savedImage
             editedImage = savedImage
+        } else {
+            print("No saved background image found for user: \(userIdParams)")
         }
 
-        // 保存された変形情報を読み込み
-        let transform = persistenceManager.loadImageTransform()
+        // 保存された変形情報を読み込み（ユーザーID別）
+        print("Loading transform data for user: \(userIdParams)")
+        let transform = persistenceManager.loadImageTransform(userId: userIdParams)
         imageOffset = transform.offset
         imageScale = transform.scale
+
         // ハートの位置を読み込み
-        let heartPosition = persistenceManager.loadHeartPosition()
+        let heartPosition = persistenceManager.loadHeartPosition(userId: userIdParams)
         heartOffset = heartPosition
+
         // ハートのサイズを読み込み
-        heartSize = persistenceManager.loadHeartSize()
+        heartSize = persistenceManager.loadHeartSize(userId: userIdParams)
+        print("Loaded data - offset: \(transform.offset), scale: \(transform.scale), heartOffset: \(heartPosition), heartSize: \(heartSize)")
+        print("=== End loadPersistedData ===")
     }
 
     private var heartbeatDisplayView: some View {

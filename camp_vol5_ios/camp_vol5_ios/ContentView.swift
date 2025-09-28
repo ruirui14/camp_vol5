@@ -2,54 +2,61 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @State private var hasStartedWithoutAuth = UserDefaults.standard.bool(forKey: "hasStartedWithoutAuth")
+    @State private var navigationPath = NavigationPath()
 
     var body: some View {
-        Group {
-            if authenticationManager.isLoading {
-                // 認証処理中の場合はローディング画面を表示
-                LoadingView()
-            } else if authenticationManager.isAuthenticated {
-                // ログイン済みの場合
-                if authenticationManager.currentUser != nil {
-                    // ユーザー情報がある場合
+        NavigationStack(path: $navigationPath) {
+            Group {
+                let _ = print(
+                    "🔥 ContentView - isLoading: \(authenticationManager.isLoading), needsUserNameInput: \(authenticationManager.needsUserNameInput), isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
+                )
+
+                if authenticationManager.isAuthenticated && authenticationManager.currentUser != nil
+                {
+                    // ログイン済みかつユーザー情報がある場合
+                    let _ = print("🔥 Showing ListHeartBeatsView")
                     ListHeartBeatsView()
                 } else {
-                    // ユーザー情報読み込み中
-                    LoadingView()
+                    // 認証されていない場合、またはユーザー情報がない場合は認証画面を表示
+                    let _ = print(
+                        "🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
+                    )
+                    AuthView(onStartWithoutAuth: {
+                        // このクロージャは現在使用されていない（匿名サインインに置き換えられた）
+                    })
                 }
-            } else if hasStartedWithoutAuth {
-                // 認証なしで開始した場合
-                ListHeartBeatsView()
-            } else {
-                // 未認証の場合は認証画面を表示
-                AuthView(onStartWithoutAuth: {
-                    hasStartedWithoutAuth = true
-                    UserDefaults.standard.set(true, forKey: "hasStartedWithoutAuth")
-                })
+            }
+            .navigationDestination(for: String.self) { destination in
+                if destination == "userNameInput" {
+                    let _ = print("🔥 Showing UserNameInputView via navigation")
+                    UserNameInputView(
+                        selectedAuthMethod: mapAuthMethod(authenticationManager.selectedAuthMethod)
+                    )
+                }
             }
         }
-        .animation(
-            .easeInOut(duration: 1.0),
-            value: authenticationManager.isAuthenticated || hasStartedWithoutAuth
-        )
-        .onChange(of: authenticationManager.isAuthenticated) { isAuthenticated in
-            if isAuthenticated {
-                // ログイン時: 認証なし開始フラグをリセット
-                hasStartedWithoutAuth = false
-                UserDefaults.standard.set(false, forKey: "hasStartedWithoutAuth")
+        .onChange(of: authenticationManager.needsUserNameInput) { needsInput in
+            if needsInput {
+                navigationPath.append("userNameInput")
             } else {
-                // サインアウト時: 認証なし開始フラグもリセットしてログイン画面を表示
-                hasStartedWithoutAuth = false
-                UserDefaults.standard.set(false, forKey: "hasStartedWithoutAuth")
+                // 名前入力完了時はパスをクリア
+                if !navigationPath.isEmpty {
+                    navigationPath.removeLast()
+                }
             }
         }
-        .onReceive(authenticationManager.objectWillChange) { _ in
-            // AuthenticationManagerの状態変更時にUserDefaultsから最新の値を読み込み
-            let currentValue = UserDefaults.standard.bool(forKey: "hasStartedWithoutAuth")
-            if hasStartedWithoutAuth != currentValue {
-                hasStartedWithoutAuth = currentValue
-            }
+    }
+
+    private func mapAuthMethod(_ method: String) -> SelectedAuthMethod {
+        switch method {
+        case "google":
+            return .google
+        case "email":
+            return .email
+        case "anonymous":
+            return .anonymous
+        default:
+            return .anonymous
         }
     }
 }
@@ -81,4 +88,3 @@ struct LoadingView: View {
         )
     }
 }
-

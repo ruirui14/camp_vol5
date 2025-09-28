@@ -23,10 +23,12 @@ protocol AuthenticationProtocol: ObservableObject {
     func signInWithGoogle()
     func signInWithEmail(email: String, password: String)
     func signUpWithEmail(email: String, password: String, name: String)
+    func signInAnonymously()
     func signOut()
     func refreshCurrentUser()
     func updateCurrentUser(_ user: User)
     func clearError()
+    func deleteAccount()
 }
 
 // MARK: - Authentication Manager
@@ -51,19 +53,30 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     /// エラーメッセージ
     @Published var errorMessage: String?
 
+    /// ユーザー名入力が必要かどうか
+    @Published var needsUserNameInput: Bool = false
+
+    /// 選択された認証方式
+    @Published var selectedAuthMethod: String = "anonymous"
+
     // MARK: - Private Properties
 
     // Firebase Service削除に伴い、直接Modelを使用
-    private var cancellables = Set<AnyCancellable>()
+    var cancellables = Set<AnyCancellable>()
     private var authStateListener: AuthStateDidChangeListenerHandle?
 
     // MARK: - Initialization
 
     /// 初期化
     init() {
+        print("🔥 AuthenticationManager init started")
+        print(
+            "🔥 Initial state - isLoading: \(isLoading), needsUserNameInput: \(needsUserNameInput), isAuthenticated: \(isAuthenticated)"
+        )
         setupAuthStateListener()
-        // 初期化時に現在の認証状態をチェック
-        DispatchQueue.main.async {
+        // 初期化時に現在の認証状態をチェック（遅延実行でFirebase初期化完了を待つ）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            print("🔥 Calling updateAuthenticationState after 0.5s delay")
             self.updateAuthenticationState(with: Auth.auth().currentUser)
         }
     }
@@ -89,24 +102,47 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     /// 認証状態の更新
     /// - Parameter firebaseUser: Firebaseユーザー
     private func updateAuthenticationState(with firebaseUser: FirebaseAuth.User?) {
+        print("🔥 updateAuthenticationState called with user: \(firebaseUser)")
         user = firebaseUser
         isAuthenticated = firebaseUser != nil
+        print("🔥 isAuthenticated set to: \(isAuthenticated)")
 
         if let user = firebaseUser {
+            print("🔥 Handling authenticated user: \(user.uid), isAnonymous: \(user.isAnonymous)")
             handleAuthenticatedUser(user)
         } else {
+            print("🔥 Handling unauthenticated user")
             handleUnauthenticatedUser()
         }
 
         // 認証状態確定後のローディング終了
         isLoading = false
+        print(
+            "🔥 Final state - isLoading: \(isLoading), needsUserNameInput: \(needsUserNameInput), isAuthenticated: \(isAuthenticated), currentUser: \(currentUser != nil)"
+        )
     }
 
     /// 認証済みユーザーの処理
     /// - Parameter firebaseUser: Firebaseユーザー
     private func handleAuthenticatedUser(_ firebaseUser: FirebaseAuth.User) {
-        // Google認証またはメール認証ユーザーの場合、Firestoreからユーザー情報を取得
-        loadCurrentUser(uid: firebaseUser.uid)
+        print("🔥 handleAuthenticatedUser - isAnonymous: \(firebaseUser.isAnonymous)")
+
+        // 匿名ユーザーの場合は基本的なユーザー情報を作成
+        if firebaseUser.isAnonymous {
+            handleAnonymousUser(firebaseUser)
+        } else {
+            // Google認証またはメール認証ユーザーの場合、まず既存ユーザーをチェック
+            print("🔥 Checking existing user for authenticated user: \(firebaseUser.uid)")
+            checkExistingUserOrRequireNameInput(uid: firebaseUser.uid)
+        }
+    }
+
+    /// 匿名ユーザーの処理
+    /// - Parameter firebaseUser: 匿名Firebaseユーザー
+    private func handleAnonymousUser(_ firebaseUser: FirebaseAuth.User) {
+        // 匿名ユーザーの場合、ユーザー名入力画面に遷移
+        print("🔥 Setting needsUserNameInput = true for anonymous user")
+        needsUserNameInput = true
     }
 
     /// 未認証ユーザーの処理
@@ -128,6 +164,43 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 },
                 receiveValue: { [weak self] (user: User?) in
                     self?.currentUser = user
+                }
+            )
+            .store(in: &cancellables)
+    }
+
+    /// 既存ユーザーをチェックし、存在しない場合はユーザー名入力を要求
+    /// - Parameter uid: ユーザーID
+    private func checkExistingUserOrRequireNameInput(uid: String) {
+        UserService.shared.getUser(uid: uid)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
+                    if case .failure(_) = completion {
+                        // ユーザーが見つからない場合、ユーザー名入力画面に遷移
+                        print("🔥 User not found, requiring name input")
+                        self?.needsUserNameInput = true
+                        // 認証方式を設定（既に AuthView で設定済みだが、念のため）
+                        if self?.selectedAuthMethod.isEmpty == true {
+                            self?.selectedAuthMethod = "google"  // デフォルトでgoogleを設定
+                        }
+                    }
+                },
+                receiveValue: { [weak self] (user: User?) in
+                    if let user = user {
+                        // 既存ユーザーが見つかった場合、直接ログイン
+                        print("🔥 Existing user found: \(user.name), skipping name input")
+                        self?.currentUser = user
+                        self?.needsUserNameInput = false
+                    } else {
+                        // ユーザーが見つからない場合、ユーザー名入力画面に遷移
+                        print("🔥 User not found, requiring name input")
+                        self?.needsUserNameInput = true
+                        // 認証方式を設定（既に AuthView で設定済みだが、念のため）
+                        if self?.selectedAuthMethod.isEmpty == true {
+                            self?.selectedAuthMethod = "google"  // デフォルトでgoogleを設定
+                        }
+                    }
                 }
             )
             .store(in: &cancellables)
@@ -231,6 +304,82 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         errorMessage = nil
     }
 
+    /// アカウントを削除
+    func deleteAccount() {
+        guard let firebaseUser = user else {
+            errorMessage = "認証されたユーザーがいません"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        // Firestoreからユーザードキュメントを削除
+        if let currentUser = currentUser {
+            UserService.shared.deleteUser(userId: currentUser.id)
+                .receive(on: DispatchQueue.main)
+                .sink(
+                    receiveCompletion: { [weak self] completion in
+                        if case let .failure(error) = completion {
+                            self?.isLoading = false
+                            self?.errorMessage = "ユーザーデータの削除に失敗しました: \(error.localizedDescription)"
+                            return
+                        }
+
+                        // Firestoreからの削除が成功したら、Firebaseアカウントを削除
+                        firebaseUser.delete { [weak self] error in
+                            DispatchQueue.main.async {
+                                self?.isLoading = false
+
+                                if let error = error {
+                                    self?.errorMessage =
+                                        "アカウントの削除に失敗しました: \(error.localizedDescription)"
+                                } else {
+                                    // 削除成功時は状態をリセット
+                                    self?.user = nil
+                                    self?.currentUser = nil
+                                    self?.isAuthenticated = false
+                                    self?.selectedAuthMethod = ""
+                                    self?.needsUserNameInput = false
+
+                                    // Google Sign Outも実行
+                                    GIDSignIn.sharedInstance.signOut()
+                                }
+                            }
+                        }
+                    },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
+        } else {
+            // currentUserがない場合は直接Firebaseアカウントを削除
+            firebaseUser.delete { [weak self] error in
+                DispatchQueue.main.async {
+                    self?.isLoading = false
+
+                    if let error = error {
+                        self?.errorMessage = "アカウントの削除に失敗しました: \(error.localizedDescription)"
+                    } else {
+                        // 削除成功時は状態をリセット
+                        self?.user = nil
+                        self?.currentUser = nil
+                        self?.isAuthenticated = false
+                        self?.selectedAuthMethod = ""
+                        self?.needsUserNameInput = false
+
+                        // Google Sign Outも実行
+                        GIDSignIn.sharedInstance.signOut()
+                    }
+                }
+            }
+        }
+    }
+
+    /// ユーザー名入力完了
+    func completeUserNameInput() {
+        needsUserNameInput = false
+    }
+
     /// アプリ状態をリセット（未認証ユーザーのサインアウト用）
     func resetAppState() {
         UserDefaults.standard.set(false, forKey: "hasStartedWithoutAuth")
@@ -265,8 +414,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     return
                 }
 
-                // 既存ユーザーの場合、Firestoreからユーザー情報を取得
-                self?.loadCurrentUser(uid: firebaseUser.uid)
+                // メール認証成功 - handleAuthenticatedUserで処理される
+                print("メール認証成功: \(firebaseUser.uid)")
             }
         }
     }
@@ -290,7 +439,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         isLoading = true
         errorMessage = nil
 
-        Auth.auth().createUser(withEmail: email, password: password) { [weak self] authResult, error in
+        Auth.auth().createUser(withEmail: email, password: password) {
+            [weak self] authResult, error in
             DispatchQueue.main.async {
                 self?.isLoading = false
 
@@ -304,8 +454,75 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     return
                 }
 
-                // 新規ユーザーの場合、Firestoreにユーザー情報を保存
-                self?.saveUserToFirestore(uid: firebaseUser.uid, name: name)
+                // メール新規登録の場合、名前が既にあるのでFirestoreに直接保存
+                print("メール新規登録成功: \(firebaseUser.uid), name: \(name)")
+                self?.createUserInFirestore(uid: firebaseUser.uid, name: name)
+            }
+        }
+    }
+
+    /// メール・パスワードでサインアップ（名前入力は後で）
+    /// - Parameters:
+    ///   - email: メールアドレス
+    ///   - password: パスワード
+    func signUpWithEmailOnly(email: String, password: String) {
+        guard !email.isEmpty, !password.isEmpty else {
+            errorMessage = "メールアドレスとパスワードを入力してください"
+            return
+        }
+
+        guard password.count >= 6 else {
+            errorMessage = "パスワードは6文字以上で入力してください"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+        selectedAuthMethod = "email"  // 認証方式を設定
+
+        Auth.auth().createUser(withEmail: email, password: password) {
+            [weak self] authResult, error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedDescription)"
+                    return
+                }
+
+                guard let firebaseUser = authResult?.user else {
+                    self?.errorMessage = "ユーザー情報の取得に失敗しました"
+                    return
+                }
+
+                // メール新規登録成功後、ユーザー名入力画面に遷移
+                print("🔥 Email signup success, will show name input: \(firebaseUser.uid)")
+                self?.needsUserNameInput = true
+            }
+        }
+    }
+
+    /// 匿名でサインイン
+    func signInAnonymously() {
+        isLoading = true
+        errorMessage = nil
+
+        Auth.auth().signInAnonymously { [weak self] authResult, error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    self?.errorMessage = "匿名認証に失敗しました: \(error.localizedDescription)"
+                    return
+                }
+
+                guard let firebaseUser = authResult?.user else {
+                    self?.errorMessage = "ユーザー情報の取得に失敗しました"
+                    return
+                }
+
+                // 匿名ユーザー処理は handleAuthenticatedUser で自動的に実行される
+                print("匿名ユーザーでサインインしました: \(firebaseUser.uid)")
             }
         }
     }
@@ -325,7 +542,6 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         }
     }
 
-
     // MARK: - Private Google Authentication Methods
 
     /// 通常のGoogle認証
@@ -338,12 +554,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 if let error = error {
                     self?.errorMessage = "認証に失敗しました: \(error.localizedDescription)"
                 } else if let firebaseUser = authResult?.user {
-                    if authResult?.additionalUserInfo?.isNewUser == true {
-                        let displayName = googleUser.profile?.name ?? "Google User"
-                        self?.saveUserToFirestore(uid: firebaseUser.uid, name: displayName)
-                    } else {
-                        self?.loadCurrentUser(uid: firebaseUser.uid)
-                    }
+                    // Google認証成功 - handleAuthenticatedUserで処理される
+                    print("Google認証成功: \(firebaseUser.uid)")
                 }
             }
         }
@@ -369,6 +581,28 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 },
                 receiveValue: { [weak self] (user: User) in
                     self?.currentUser = user
+                }
+            )
+            .store(in: &cancellables)
+    }
+
+    /// メール新規登録時にFirestoreにユーザーを作成
+    /// - Parameters:
+    ///   - uid: ユーザーID
+    ///   - name: ユーザー名
+    private func createUserInFirestore(uid: String, name: String) {
+        UserService.shared.createUser(uid: uid, name: name)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
+                    if case let .failure(error) = completion {
+                        self?.errorMessage = "ユーザー情報の保存に失敗しました: \(error.localizedDescription)"
+                    }
+                },
+                receiveValue: { [weak self] (user: User) in
+                    print("🔥 Email signup user created in Firestore: \(user.name)")
+                    self?.currentUser = user
+                    self?.needsUserNameInput = false  // 名前入力をスキップ
                 }
             )
             .store(in: &cancellables)
@@ -405,6 +639,11 @@ final class MockAuthenticationManager: ObservableObject, AuthenticationProtocol 
         isAuthenticated = true
     }
 
+    func signInAnonymously() {
+        isAuthenticated = true
+        currentUser = User(id: "anonymous", name: "Guest User", imageName: nil)
+    }
+
     func signOut() {
         isAuthenticated = false
         currentUser = nil
@@ -413,4 +652,8 @@ final class MockAuthenticationManager: ObservableObject, AuthenticationProtocol 
     func refreshCurrentUser() {}
     func updateCurrentUser(_ user: User) { currentUser = user }
     func clearError() { errorMessage = nil }
+    func deleteAccount() {
+        isAuthenticated = false
+        currentUser = nil
+    }
 }

@@ -1,8 +1,8 @@
 // Services/LocalFollowService.swift
 // ログインしていないユーザーのフォロー状況をローカルに保存するサービス
 
-import Foundation
 import Combine
+import Foundation
 
 /// ローカルフォロー管理サービス
 final class LocalFollowService: ObservableObject {

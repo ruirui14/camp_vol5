@@ -4,12 +4,12 @@ import SwiftUI
 
 struct QRScannerSheet: View {
     let onQRCodeScanned: (String) -> Void
-    @State private var showingQRCodeShare = false
+    @State private var navigateToQRShare = false
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @Environment(\.presentationMode) var presentationMode
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // QRコードスキャナー部分
                 QRScannerViewController_Wrapper(onQRCodeScanned: onQRCodeScanned)
@@ -44,7 +44,8 @@ struct QRScannerSheet: View {
 
                         if authenticationManager.isAuthenticated {
                             Button(action: {
-                                showingQRCodeShare = true
+                                print("📱 [QRScannerSheet] QRコード表示ボタンタップ")
+                                navigateToQRShare = true
                             }) {
                                 VStack(spacing: 8) {
                                     Image(systemName: "qrcode")
@@ -85,11 +86,13 @@ struct QRScannerSheet: View {
                 }
             }
             .navigationBarHidden(true)
-        }
-        .navigationViewStyle(StackNavigationViewStyle())
-        .sheet(isPresented: $showingQRCodeShare) {
-            QRCodeShareView()
-                .environmentObject(authenticationManager)
+            .navigationDestination(isPresented: $navigateToQRShare) {
+                QRCodeShareView()
+                    .environmentObject(authenticationManager)
+                    .onDisappear {
+                        print("📱 [QRScannerSheet] QRCodeShareView navigationから戻った")
+                    }
+            }
         }
     }
 }

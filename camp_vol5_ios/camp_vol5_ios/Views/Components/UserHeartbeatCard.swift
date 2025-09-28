@@ -7,6 +7,7 @@ import SwiftUI
 
 struct UserHeartbeatCard: View {
     @StateObject private var viewModel: UserHeartbeatCardViewModel
+    let customBackgroundImage: UIImage?
 
     // 新しいイニシャライザー（カスタマイズ用）
     init(
@@ -15,6 +16,8 @@ struct UserHeartbeatCard: View {
         displayName: String? = nil,
         displayBPM: String? = nil
     ) {
+        self.customBackgroundImage = customBackgroundImage
+
         if let userWithHeartbeat = userWithHeartbeat {
             self._viewModel = StateObject(
                 wrappedValue: UserHeartbeatCardViewModel(
@@ -34,8 +37,8 @@ struct UserHeartbeatCard: View {
             let heartRightOffset = CardConstants.heartRightOffset(for: cardWidth)
 
             ZStack(alignment: .bottomLeading) {
-                // 背景画像の表示
-                if let customImage = viewModel.customBackgroundImage {
+                // 背景画像の表示（customBackgroundImageを直接使用）
+                if let customImage = customBackgroundImage {
                     Image(uiImage: customImage)
                         .resizable()
                         .scaledToFill()

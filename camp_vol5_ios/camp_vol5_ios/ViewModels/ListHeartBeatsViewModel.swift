@@ -2,10 +2,17 @@
 import Combine
 import Foundation
 
+enum SortOption: String, CaseIterable {
+    case name = "名前順"
+    case timestamp = "新しい順"
+    case bpm = "心拍数高い順"
+}
+
 class ListHeartBeatsViewModel: ObservableObject {
     @Published var followingUsersWithHeartbeats: [UserWithHeartbeat] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var currentSortOption: SortOption = .name
 
     private var authenticationManager: AuthenticationManager
     private var cancellables = Set<AnyCancellable>()
@@ -94,7 +101,7 @@ class ListHeartBeatsViewModel: ObservableObject {
                     }
                 },
                 receiveValue: { [weak self] usersWithHeartbeats in
-                    self?.followingUsersWithHeartbeats = usersWithHeartbeats
+                    self?.followingUsersWithHeartbeats = self?.sortUsers(usersWithHeartbeats, by: self?.currentSortOption ?? .name) ?? usersWithHeartbeats
                 }
             )
             .store(in: &cancellables)
@@ -103,17 +110,46 @@ class ListHeartBeatsViewModel: ObservableObject {
     func clearError() {
         errorMessage = nil
     }
+
+    func changeSortOption(_ sortOption: SortOption) {
+        currentSortOption = sortOption
+        followingUsersWithHeartbeats = sortUsers(followingUsersWithHeartbeats, by: sortOption)
+    }
+
+    private func sortUsers(_ users: [UserWithHeartbeat], by sortOption: SortOption) -> [UserWithHeartbeat] {
+        switch sortOption {
+        case .name:
+            return users.sorted { $0.user.name < $1.user.name }
+        case .timestamp:
+            return users.sorted { user1, user2 in
+                let timestamp1 = user1.heartbeat?.timestamp ?? Date.distantPast
+                let timestamp2 = user2.heartbeat?.timestamp ?? Date.distantPast
+                return timestamp1 > timestamp2
+            }
+        case .bpm:
+            return users.sorted { user1, user2 in
+                let bpm1 = user1.heartbeat?.bpm ?? 0
+                let bpm2 = user2.heartbeat?.bpm ?? 0
+                return bpm1 > bpm2
+            }
+        }
+    }
 }
 
 // MARK: - Helper Models
 
 struct UserWithHeartbeat: Identifiable, Hashable {
-    let id = UUID()
+    var id: String {
+        print("UserWithHeartbeat.id accessed for user: \(user.name), returning: \(user.id)")
+        return user.id
+    }
     let user: User
     var heartbeat: Heartbeat?
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(user.id)
+        hasher.combine(user.name)
+        hasher.combine(heartbeat?.bpm)
     }
 
     static func == (lhs: UserWithHeartbeat, rhs: UserWithHeartbeat) -> Bool {

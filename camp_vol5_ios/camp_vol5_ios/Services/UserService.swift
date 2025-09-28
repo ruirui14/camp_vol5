@@ -83,20 +83,22 @@ class UserService {
                 return
             }
 
-            var updatedUser = User(
-                id: user.id,
-                name: user.name,
-                inviteCode: user.inviteCode,
-                allowQRRegistration: user.allowQRRegistration,
-                followingUserIds: user.followingUserIds
-            )
+            let updateData: [String: Any] = [
+                "name": user.name,
+                "inviteCode": user.inviteCode,
+                "allowQRRegistration": user.allowQRRegistration,
+                "followingUserIds": user.followingUserIds,
+                "updatedAt": Timestamp(date: Date()),
+            ]
 
-            self.db.collection("users").document(user.id).setData(updatedUser.toDictionary()) {
-                error in
+            self.db.collection("users").document(user.id).updateData(updateData) { error in
                 if let error = error {
                     promise(.failure(error))
                 } else {
-                    promise(.success(updatedUser))
+                    var updatedUser = user
+                    // ここでupdatedAtを更新した新しいUserインスタンスを作成する必要があるが、
+                    // Userが構造体なので直接変更できない。代わりに元のuserを返す
+                    promise(.success(user))
                 }
             }
         }
@@ -154,16 +156,12 @@ class UserService {
 
             let newInviteCode = UUID().uuidString
 
-            let updatedUser = User(
-                id: user.id,
-                name: user.name,
-                inviteCode: newInviteCode,
-                allowQRRegistration: user.allowQRRegistration,
-                followingUserIds: user.followingUserIds
-            )
+            let updateData: [String: Any] = [
+                "inviteCode": newInviteCode,
+                "updatedAt": Timestamp(date: Date()),
+            ]
 
-            self.db.collection("users").document(user.id).setData(updatedUser.toDictionary()) {
-                error in
+            self.db.collection("users").document(user.id).updateData(updateData) { error in
                 if let error = error {
                     promise(.failure(error))
                 } else {
@@ -195,16 +193,12 @@ class UserService {
                 updatedFollowingIds.append(targetUserId)
             }
 
-            let updatedUser = User(
-                id: currentUser.id,
-                name: currentUser.name,
-                inviteCode: currentUser.inviteCode,
-                allowQRRegistration: currentUser.allowQRRegistration,
-                followingUserIds: updatedFollowingIds
-            )
+            let updateData: [String: Any] = [
+                "followingUserIds": updatedFollowingIds,
+                "updatedAt": Timestamp(date: Date()),
+            ]
 
-            self.db.collection("users").document(currentUser.id).setData(updatedUser.toDictionary())
-            { error in
+            self.db.collection("users").document(currentUser.id).updateData(updateData) { error in
                 if let error = error {
                     promise(.failure(error))
                 } else {
@@ -231,16 +225,12 @@ class UserService {
 
             let updatedFollowingIds = currentUser.followingUserIds.filter { $0 != targetUserId }
 
-            let updatedUser = User(
-                id: currentUser.id,
-                name: currentUser.name,
-                inviteCode: currentUser.inviteCode,
-                allowQRRegistration: currentUser.allowQRRegistration,
-                followingUserIds: updatedFollowingIds
-            )
+            let updateData: [String: Any] = [
+                "followingUserIds": updatedFollowingIds,
+                "updatedAt": Timestamp(date: Date()),
+            ]
 
-            self.db.collection("users").document(currentUser.id).setData(updatedUser.toDictionary())
-            { error in
+            self.db.collection("users").document(currentUser.id).updateData(updateData) { error in
                 if let error = error {
                     promise(.failure(error))
                 } else {
@@ -303,16 +293,37 @@ class UserService {
                 return
             }
 
-            let updatedUser = User(
-                id: user.id,
-                name: user.name,
-                inviteCode: user.inviteCode,
-                allowQRRegistration: allow,
-                followingUserIds: user.followingUserIds
-            )
+            let updateData: [String: Any] = [
+                "allowQRRegistration": allow,
+                "updatedAt": Timestamp(date: Date()),
+            ]
 
-            self.db.collection("users").document(user.id).setData(updatedUser.toDictionary()) {
-                error in
+            self.db.collection("users").document(user.id).updateData(updateData) { error in
+                if let error = error {
+                    promise(.failure(error))
+                } else {
+                    promise(.success(()))
+                }
+            }
+        }
+        .eraseToAnyPublisher()
+    }
+
+    /// ユーザーを削除する
+    func deleteUser(userId: String) -> AnyPublisher<Void, Error> {
+        return Future { [weak self] promise in
+            guard let self = self else {
+                promise(
+                    .failure(
+                        NSError(
+                            domain: "UserService",
+                            code: -1,
+                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
+                        )))
+                return
+            }
+
+            self.db.collection("users").document(userId).delete { error in
                 if let error = error {
                     promise(.failure(error))
                 } else {

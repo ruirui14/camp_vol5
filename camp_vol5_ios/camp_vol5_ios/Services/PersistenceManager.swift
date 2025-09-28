@@ -27,47 +27,93 @@ class PersistenceManager {
 
     private init() {}
 
-    // 画像をDocuments Directoryに保存
-    func saveBackgroundImage(_ image: UIImage) {
-        guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+    // ユーザーID付きキーを生成するヘルパーメソッド
+    private func userSpecificKey(_ baseKey: String, userId: String) -> String {
+        return "\(baseKey)_\(userId)"
+    }
+
+    // 画像をDocuments Directoryに保存（ユーザーID別）
+    func saveBackgroundImage(_ image: UIImage, userId: String) {
+        print("=== PersistenceManager.saveBackgroundImage ===")
+        print("UserId: \(userId)")
+
+        guard let data = image.jpegData(compressionQuality: 0.8) else {
+            print("ERROR: Failed to convert image to JPEG data")
+            return
+        }
 
         if let documentsPath = FileManager.default.urls(
             for: .documentDirectory, in: .userDomainMask
         ).first {
-            let imagePath = documentsPath.appendingPathComponent("backgroundImage.jpg")
-            try? data.write(to: imagePath)
+            let fileName = "backgroundImage_\(userId).jpg"
+            let imagePath = documentsPath.appendingPathComponent(fileName)
+            print("Saving image to: \(imagePath.path)")
+
+            do {
+                try data.write(to: imagePath)
+                print("Successfully saved image with size: \(data.count) bytes")
+            } catch {
+                print("ERROR: Failed to save image: \(error)")
+            }
+        } else {
+            print("ERROR: Failed to get documents directory")
         }
+        print("=== End saveBackgroundImage ===")
     }
 
-    // 保存された画像を読み込み
-    func loadBackgroundImage() -> UIImage? {
+    // 保存された画像を読み込み（ユーザーID別）
+    func loadBackgroundImage(userId: String) -> UIImage? {
+        print("=== PersistenceManager.loadBackgroundImage ===")
+        print("UserId: \(userId)")
+
         guard
             let documentsPath = FileManager.default.urls(
                 for: .documentDirectory, in: .userDomainMask
             ).first
-        else { return nil }
-
-        let imagePath = documentsPath.appendingPathComponent("backgroundImage.jpg")
-
-        if FileManager.default.fileExists(atPath: imagePath.path) {
-            return UIImage(contentsOfFile: imagePath.path)
+        else {
+            print("ERROR: Failed to get documents directory")
+            return nil
         }
 
-        return nil
+        let fileName = "backgroundImage_\(userId).jpg"
+        let imagePath = documentsPath.appendingPathComponent(fileName)
+        print("Looking for image at: \(imagePath.path)")
+
+        if FileManager.default.fileExists(atPath: imagePath.path) {
+            print("File exists, loading image...")
+            if let image = UIImage(contentsOfFile: imagePath.path) {
+                print("Successfully loaded image with size: \(image.size)")
+                return image
+            } else {
+                print("ERROR: Failed to create UIImage from file")
+                return nil
+            }
+        } else {
+            print("File does not exist")
+            return nil
+        }
     }
 
-    // 画像の位置とスケール情報を保存
-    func saveImageTransform(offset: CGSize, scale: CGFloat) {
-        userDefaults.set(offset.width, forKey: imageOffsetXKey)
-        userDefaults.set(offset.height, forKey: imageOffsetYKey)
-        userDefaults.set(scale, forKey: imageScaleKey)
+    // 画像の位置とスケール情報を保存（ユーザーID別）
+    func saveImageTransform(offset: CGSize, scale: CGFloat, userId: String) {
+        let offsetXKey = userSpecificKey(imageOffsetXKey, userId: userId)
+        let offsetYKey = userSpecificKey(imageOffsetYKey, userId: userId)
+        let scaleKey = userSpecificKey(imageScaleKey, userId: userId)
+
+        userDefaults.set(offset.width, forKey: offsetXKey)
+        userDefaults.set(offset.height, forKey: offsetYKey)
+        userDefaults.set(scale, forKey: scaleKey)
     }
 
-    // 保存された画像の位置とスケール情報を読み込み
-    func loadImageTransform() -> (offset: CGSize, scale: CGFloat) {
-        let offsetX = userDefaults.double(forKey: imageOffsetXKey)
-        let offsetY = userDefaults.double(forKey: imageOffsetYKey)
-        let scale = userDefaults.double(forKey: imageScaleKey)
+    // 保存された画像の位置とスケール情報を読み込み（ユーザーID別）
+    func loadImageTransform(userId: String) -> (offset: CGSize, scale: CGFloat) {
+        let offsetXKey = userSpecificKey(imageOffsetXKey, userId: userId)
+        let offsetYKey = userSpecificKey(imageOffsetYKey, userId: userId)
+        let scaleKey = userSpecificKey(imageScaleKey, userId: userId)
+
+        let offsetX = userDefaults.double(forKey: offsetXKey)
+        let offsetY = userDefaults.double(forKey: offsetYKey)
+        let scale = userDefaults.double(forKey: scaleKey)
 
         return (
             offset: CGSize(width: offsetX, height: offsetY),
@@ -94,14 +140,20 @@ class PersistenceManager {
         userDefaults.removeObject(forKey: heartSizeKey)
     }
 
-    // ハートの位置を保存
-    func saveHeartPosition(_ offset: CGSize) {
+    // ハートの位置を保存（ユーザーID別）
+    func saveHeartPosition(_ offset: CGSize, userId: String) {
+        let heartOffsetXKey = userSpecificKey(self.heartOffsetXKey, userId: userId)
+        let heartOffsetYKey = userSpecificKey(self.heartOffsetYKey, userId: userId)
+
         userDefaults.set(Double(offset.width), forKey: heartOffsetXKey)
         userDefaults.set(Double(offset.height), forKey: heartOffsetYKey)
     }
 
-    // ハートの位置を読み込み
-    func loadHeartPosition() -> CGSize {
+    // ハートの位置を読み込み（ユーザーID別）
+    func loadHeartPosition(userId: String) -> CGSize {
+        let heartOffsetXKey = userSpecificKey(self.heartOffsetXKey, userId: userId)
+        let heartOffsetYKey = userSpecificKey(self.heartOffsetYKey, userId: userId)
+
         let x = userDefaults.double(forKey: heartOffsetXKey)
         let y = userDefaults.double(forKey: heartOffsetYKey)
         return CGSize(width: x, height: y)
@@ -109,13 +161,15 @@ class PersistenceManager {
 
     // MARK: - Heart Size Management
 
-    /// ハートのサイズを保存
-    func saveHeartSize(_ size: CGFloat) {
+    /// ハートのサイズを保存（ユーザーID別）
+    func saveHeartSize(_ size: CGFloat, userId: String) {
+        let heartSizeKey = userSpecificKey(self.heartSizeKey, userId: userId)
         userDefaults.set(Double(size), forKey: heartSizeKey)
     }
 
-    /// ハートのサイズを読み込み
-    func loadHeartSize() -> CGFloat {
+    /// ハートのサイズを読み込み（ユーザーID別）
+    func loadHeartSize(userId: String) -> CGFloat {
+        let heartSizeKey = userSpecificKey(self.heartSizeKey, userId: userId)
         let size = userDefaults.double(forKey: heartSizeKey)
         // デフォルトサイズは105（元のサイズ）
         let heartSize = size == 0 ? 105.0 : size
@@ -124,14 +178,19 @@ class PersistenceManager {
 
     // MARK: - Background Color Persistence
 
-    // 背景色を保存
-    func saveBackgroundColor(_ color: Color) {
+    // 背景色を保存（ユーザーID別）
+    func saveBackgroundColor(_ color: Color, userId: String) {
+        let redKey = userSpecificKey(backgroundColorRedKey, userId: userId)
+        let greenKey = userSpecificKey(backgroundColorGreenKey, userId: userId)
+        let blueKey = userSpecificKey(backgroundColorBlueKey, userId: userId)
+        let alphaKey = userSpecificKey(backgroundColorAlphaKey, userId: userId)
+
         if color == Color.clear {
             // クリア（デフォルト）の場合は保存されたデータを削除
-            userDefaults.removeObject(forKey: backgroundColorRedKey)
-            userDefaults.removeObject(forKey: backgroundColorGreenKey)
-            userDefaults.removeObject(forKey: backgroundColorBlueKey)
-            userDefaults.removeObject(forKey: backgroundColorAlphaKey)
+            userDefaults.removeObject(forKey: redKey)
+            userDefaults.removeObject(forKey: greenKey)
+            userDefaults.removeObject(forKey: blueKey)
+            userDefaults.removeObject(forKey: alphaKey)
         } else {
             // UIColorに変換してRGBA値を取得
             let uiColor = UIColor(color)
@@ -142,21 +201,26 @@ class PersistenceManager {
 
             uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
 
-            userDefaults.set(Double(red), forKey: backgroundColorRedKey)
-            userDefaults.set(Double(green), forKey: backgroundColorGreenKey)
-            userDefaults.set(Double(blue), forKey: backgroundColorBlueKey)
-            userDefaults.set(Double(alpha), forKey: backgroundColorAlphaKey)
+            userDefaults.set(Double(red), forKey: redKey)
+            userDefaults.set(Double(green), forKey: greenKey)
+            userDefaults.set(Double(blue), forKey: blueKey)
+            userDefaults.set(Double(alpha), forKey: alphaKey)
         }
     }
 
-    // 背景色を読み込み
-    func loadBackgroundColor() -> Color {
+    // 背景色を読み込み（ユーザーID別）
+    func loadBackgroundColor(userId: String) -> Color {
+        let redKey = userSpecificKey(backgroundColorRedKey, userId: userId)
+        let greenKey = userSpecificKey(backgroundColorGreenKey, userId: userId)
+        let blueKey = userSpecificKey(backgroundColorBlueKey, userId: userId)
+        let alphaKey = userSpecificKey(backgroundColorAlphaKey, userId: userId)
+
         // デフォルト値がある場合は保存された色を復元
-        if userDefaults.object(forKey: backgroundColorRedKey) != nil {
-            let red = userDefaults.double(forKey: backgroundColorRedKey)
-            let green = userDefaults.double(forKey: backgroundColorGreenKey)
-            let blue = userDefaults.double(forKey: backgroundColorBlueKey)
-            let alpha = userDefaults.double(forKey: backgroundColorAlphaKey)
+        if userDefaults.object(forKey: redKey) != nil {
+            let red = userDefaults.double(forKey: redKey)
+            let green = userDefaults.double(forKey: greenKey)
+            let blue = userDefaults.double(forKey: blueKey)
+            let alpha = userDefaults.double(forKey: alphaKey)
 
             let color = Color(
                 red: red,

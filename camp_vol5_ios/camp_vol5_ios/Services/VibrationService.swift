@@ -2,16 +2,16 @@
 // 心拍BPMに応じて振動パターンを生成するサービス
 // より心臓の鼓動に近い2段階の振動パターンを実現
 
+import Combine
 import Foundation
 import UIKit
-import Combine
 
 class VibrationService: ObservableObject {
     static let shared = VibrationService()
 
     @Published var isVibrating = false
     private var vibrationTimer: Timer?
-    
+
     /// UIアニメーションと同期するためのパブリッシャー
     let heartbeatTrigger = PassthroughSubject<Void, Never>()
 
@@ -63,7 +63,7 @@ class VibrationService: ObservableObject {
     private func triggerHeartbeatPattern() {
         // UIアニメーションのトリガーを送信
         heartbeatTrigger.send()
-        
+
         // 1回目の振動（ドク）- 強い振動
         let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
         heavyImpact.prepare()  // パフォーマンス向上のため事前準備

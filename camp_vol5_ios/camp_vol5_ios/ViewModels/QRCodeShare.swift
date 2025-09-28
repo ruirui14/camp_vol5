@@ -8,6 +8,7 @@ class QRCodeShareViewModel: ObservableObject {
     @Published var inviteCode: String?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var qrCodeImage: UIImage?
 
     @Published var showingSaveAlert = false
     @Published var saveAlertTitle = ""
@@ -23,24 +24,70 @@ class QRCodeShareViewModel: ObservableObject {
     init(authenticationManager: AuthenticationManager) {
         self.authenticationManager = authenticationManager
         setupBindings()
+
+        // 初期化時に既存のinviteCodeがある場合は設定
+        if let currentUser = authenticationManager.currentUser,
+           !currentUser.inviteCode.isEmpty {
+            inviteCode = currentUser.inviteCode
+            qrCodeImage = generateQRCode(from: currentUser.inviteCode)
+        } else if authenticationManager.isAuthenticated {
+            authenticationManager.refreshCurrentUser()
+
+            // 少し待ってからinviteCodeがない場合は新規生成
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if let currentUser = self.authenticationManager.currentUser,
+                   currentUser.inviteCode.isEmpty {
+                    self.generateNewInviteCode()
+                }
+            }
+        }
     }
 
     func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
         self.authenticationManager = authenticationManager
         cancellables.removeAll()
         setupBindings()
+
+        // 既存のinviteCodeがある場合は設定
+        if let currentUser = authenticationManager.currentUser,
+           !currentUser.inviteCode.isEmpty {
+            inviteCode = currentUser.inviteCode
+            qrCodeImage = generateQRCode(from: currentUser.inviteCode)
+        } else if authenticationManager.isAuthenticated {
+            authenticationManager.refreshCurrentUser()
+
+            // 少し待ってからinviteCodeがない場合は新規生成
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if let currentUser = self.authenticationManager.currentUser,
+                   currentUser.inviteCode.isEmpty {
+                    self.generateNewInviteCode()
+                }
+            }
+        }
     }
 
     private func setupBindings() {
+        guard authenticationManager.isAuthenticated else {
+            return
+        }
+
         authenticationManager.$currentUser
-            .map { $0?.inviteCode }
+            .compactMap { $0?.inviteCode }
+            .filter { !$0.isEmpty }
+            .removeDuplicates()
             .receive(on: DispatchQueue.main)
-            .assign(to: \.inviteCode, on: self)
+            .sink { [weak self] inviteCode in
+                // ローディング中でない場合のみ更新（生成中の重複更新を防ぐ）
+                guard self?.isLoading == false else { return }
+
+                self?.inviteCode = inviteCode
+                self?.qrCodeImage = self?.generateQRCode(from: inviteCode)
+            }
             .store(in: &cancellables)
     }
 
     func generateNewInviteCode() {
-        guard let userId = authenticationManager.currentUserId else {
+        guard authenticationManager.currentUserId != nil else {
             errorMessage = "User not logged in"
             return
         }
@@ -63,8 +110,15 @@ class QRCodeShareViewModel: ObservableObject {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
-                receiveValue: { [weak self] _ in
-                    self?.authenticationManager.refreshCurrentUser()
+                receiveValue: { [weak self] newInviteCode in
+                    // 直接inviteCodeとQRコードを更新
+                    self?.inviteCode = newInviteCode
+                    self?.qrCodeImage = self?.generateQRCode(from: newInviteCode)
+
+                    // AuthenticationManagerの現在のユーザー情報も更新（バックグラウンドで）
+                    DispatchQueue.global(qos: .background).async {
+                        self?.authenticationManager.refreshCurrentUser()
+                    }
                 }
             )
             .store(in: &cancellables)
@@ -89,7 +143,9 @@ class QRCodeShareViewModel: ObservableObject {
     }
 
     func saveQRCodeToPhotos() {
-        guard let inviteCode = inviteCode else { return }
+        guard let inviteCode = inviteCode else {
+            return
+        }
 
         let qrImage = generateHighResolutionQRCode(from: inviteCode)
 
@@ -190,11 +246,13 @@ class QRCodeShareViewModel: ObservableObject {
         case .notDetermined:
             PHPhotoLibrary.requestAuthorization(for: .addOnly) { newStatus in
                 DispatchQueue.main.async {
-                    completion(newStatus == .authorized || newStatus == .limited)
+                    let granted = newStatus == .authorized || newStatus == .limited
+                    completion(granted)
                 }
             }
         @unknown default:
             completion(false)
         }
     }
+    
 }

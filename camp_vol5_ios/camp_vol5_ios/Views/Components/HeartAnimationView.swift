@@ -69,7 +69,9 @@ struct HeartAnimationView: View {
                 viewModel.stopSimulation()
             }
         }
-        .onReceive(syncWithVibration ? vibrationService.heartbeatTrigger : viewModel.heartbeatSubject) { _ in
+        .onReceive(
+            syncWithVibration ? vibrationService.heartbeatTrigger : viewModel.heartbeatSubject
+        ) { _ in
             withAnimation(.spring(response: 0.2, dampingFraction: 0.6)) {
                 isBeating = true
             }
@@ -129,23 +131,35 @@ struct HeartAnimationView: View {
 
 extension HeartAnimationView {
     /// 大きなハート用
-    static func large(bpm: Int, showBPM: Bool = true, syncWithVibration: Bool = false) -> HeartAnimationView {
-        HeartAnimationView(bpm: bpm, heartSize: 200, showBPM: showBPM, syncWithVibration: syncWithVibration)
+    static func large(bpm: Int, showBPM: Bool = true, syncWithVibration: Bool = false)
+        -> HeartAnimationView
+    {
+        HeartAnimationView(
+            bpm: bpm, heartSize: 200, showBPM: showBPM, syncWithVibration: syncWithVibration)
     }
 
     /// 中サイズハート用
-    static func medium(bpm: Int, showBPM: Bool = true, syncWithVibration: Bool = false) -> HeartAnimationView {
-        HeartAnimationView(bpm: bpm, heartSize: 120, showBPM: showBPM, syncWithVibration: syncWithVibration)
+    static func medium(bpm: Int, showBPM: Bool = true, syncWithVibration: Bool = false)
+        -> HeartAnimationView
+    {
+        HeartAnimationView(
+            bpm: bpm, heartSize: 120, showBPM: showBPM, syncWithVibration: syncWithVibration)
     }
 
     /// 小さなハート用
-    static func small(bpm: Int, showBPM: Bool = false, syncWithVibration: Bool = false) -> HeartAnimationView {
-        HeartAnimationView(bpm: bpm, heartSize: 60, showBPM: showBPM, syncWithVibration: syncWithVibration)
+    static func small(bpm: Int, showBPM: Bool = false, syncWithVibration: Bool = false)
+        -> HeartAnimationView
+    {
+        HeartAnimationView(
+            bpm: bpm, heartSize: 60, showBPM: showBPM, syncWithVibration: syncWithVibration)
     }
 
     /// カスタムカラー用
-    static func custom(bpm: Int, size: CGFloat, color: Color, syncWithVibration: Bool = false) -> HeartAnimationView {
-        HeartAnimationView(bpm: bpm, heartSize: size, heartColor: color, syncWithVibration: syncWithVibration)
+    static func custom(bpm: Int, size: CGFloat, color: Color, syncWithVibration: Bool = false)
+        -> HeartAnimationView
+    {
+        HeartAnimationView(
+            bpm: bpm, heartSize: size, heartColor: color, syncWithVibration: syncWithVibration)
     }
 }
 
