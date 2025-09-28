@@ -292,8 +292,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                         self?.errorMessage = error.localizedDescription
                     }
                 },
-                receiveValue: { [weak self] (updatedUser: User) in
-                    self?.currentUser = updatedUser
+                receiveValue: { [weak self] _ in
+                    self?.currentUser = user
                 }
             )
             .store(in: &cancellables)

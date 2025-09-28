@@ -50,8 +50,6 @@ class UserService: UserServiceProtocol {
 
     // MARK: - User Management
 
-    // MARK: - User Management
-
     func createUser(uid: String, name: String) -> AnyPublisher<User, Error> {
         return Future { [weak self] promise in
             guard let self = self else {
@@ -104,7 +102,7 @@ class UserService: UserServiceProtocol {
     }
 
     /// ユーザー情報を更新する
-    func updateUser(_ user: User) -> AnyPublisher<User, Error> {
+    func updateUser(_ user: User) -> AnyPublisher<Void, Error> {
         return Future { [weak self] promise in
             guard let self = self else {
                 promise(
@@ -129,10 +127,7 @@ class UserService: UserServiceProtocol {
                 if let error = error {
                     promise(.failure(error))
                 } else {
-                    var updatedUser = user
-                    // ここでupdatedAtを更新した新しいUserインスタンスを作成する必要があるが、
-                    // Userが構造体なので直接変更できない。代わりに元のuserを返す
-                    promise(.success(user))
+                    promise(.success(()))
                 }
             }
         }

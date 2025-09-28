@@ -203,8 +203,8 @@ class UserNameInputViewModel: ObservableObject {
                         self?.handleError("更新に失敗しました: \(error.localizedDescription)")
                     }
                 },
-                receiveValue: { [weak self] user in
-                    self?.handleUserSaveSuccess(user)
+                receiveValue: { [weak self] _ in
+                    self?.handleUserSaveSuccess(updatedUser)
                 }
             )
             .store(in: &cancellables)

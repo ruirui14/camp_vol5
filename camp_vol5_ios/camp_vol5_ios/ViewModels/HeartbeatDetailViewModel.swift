@@ -170,6 +170,7 @@ class HeartbeatDetailViewModel: ObservableObject {
 
     // MARK: - Lifecycle
     deinit {
-        stopMonitoring()
+        // Note: stopMonitoring() should be called from view lifecycle (onDisappear)
+        // to ensure proper MainActor context
     }
 }

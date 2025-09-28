@@ -205,7 +205,7 @@ struct HeartbeatDetailView: View {
                 savedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userIdParams)
 
                 // 振動を再開（振動が有効で心拍データがある場合）
-                if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
+                if viewModel.isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
                     if vibrationService.isValidBPM(heartbeat.bpm) {
                         vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
                     }
@@ -249,7 +249,7 @@ struct HeartbeatDetailView: View {
                 savedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userIdParams)
 
                 // 振動を再開（振動が有効で心拍データがある場合）
-                if isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
+                if viewModel.isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
                     if vibrationService.isValidBPM(heartbeat.bpm) {
                         vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
                     }
