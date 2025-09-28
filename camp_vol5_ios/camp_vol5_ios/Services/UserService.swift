@@ -1,39 +1,73 @@
 // Services/UserService.swift
 // Firestoreを使用したユーザー関連のCRUD操作を提供するサービス
+// ベストプラクティスに従いエラーハンドリングとログを改善
 
 import Combine
 import Firebase
 import FirebaseFirestore
 import Foundation
 
-class UserService {
-    static let shared = UserService()
-    private let db = Firestore.firestore()
+// MARK: - UserService Protocol
+protocol UserServiceProtocol {
+    func createUser(uid: String, name: String) -> AnyPublisher<User, Error>
+    func getUser(uid: String) -> AnyPublisher<User?, Error>
+    func updateUser(_ user: User) -> AnyPublisher<Void, Error>
+    func findUserByInviteCode(_ inviteCode: String) -> AnyPublisher<User?, Error>
+    func getFollowingUsers(followingUserIds: [String]) -> AnyPublisher<[User], Error>
+    func followUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error>
+    func unfollowUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error>
+}
 
-    private init() {}
+// MARK: - UserService Errors
+enum UserServiceError: LocalizedError {
+    case userNotFound
+    case invalidInviteCode
+    case firestoreError(Error)
+    case serviceUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .userNotFound:
+            return "ユーザーが見つかりません"
+        case .invalidInviteCode:
+            return "無効な招待コードです"
+        case .firestoreError(let error):
+            return "データベースエラー: \(error.localizedDescription)"
+        case .serviceUnavailable:
+            return "サービスが使用できません"
+        }
+    }
+}
+
+class UserService: UserServiceProtocol {
+    static let shared = UserService()
+    private let db: Firestore
+    private let logger = FirebaseLogger.shared
+
+    init(db: Firestore = Firestore.firestore()) {
+        self.db = db
+    }
 
     // MARK: - User Management
 
-    /// ユーザーを新規作成する
+    // MARK: - User Management
+
     func createUser(uid: String, name: String) -> AnyPublisher<User, Error> {
         return Future { [weak self] promise in
             guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
+                promise(.failure(UserServiceError.serviceUnavailable))
                 return
             }
 
             let user = User(id: uid, name: name)
+            self.logger.log("Creating user: \(name) with ID: \(uid)")
 
             self.db.collection("users").document(uid).setData(user.toDictionary()) { error in
                 if let error = error {
-                    promise(.failure(error))
+                    self.logger.error("Failed to create user: \(error.localizedDescription)")
+                    promise(.failure(UserServiceError.firestoreError(error)))
                 } else {
+                    self.logger.log("Successfully created user: \(name)")
                     promise(.success(user))
                 }
             }

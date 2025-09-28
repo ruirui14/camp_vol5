@@ -224,7 +224,7 @@ struct ListHeartBeatsView: View {
                 .contentShape(Rectangle())
             }
             .refreshable {
-                viewModel.loadFollowingUsersWithHeartbeats()
+                viewModel.refreshData()
             }
         }
     }
@@ -255,12 +255,41 @@ struct ListHeartBeatsView: View {
             .padding(.top, 20)
         }
         .refreshable {
-            viewModel.loadFollowingUsersWithHeartbeats()
+            viewModel.refreshData()
             loadBackgroundImages()
         }
     }
 
     // MARK: - Helper Methods
+
+    private func setupView() {
+        viewModel.updateAuthenticationManager(authenticationManager)
+        viewModel.loadData()
+
+        if viewModel.hasFollowingUsers {
+            loadBackgroundImages()
+        }
+    }
+
+    private func handleUsersWithHeartbeatsUpdate(_ usersWithHeartbeats: [UserWithHeartbeat]) {
+        if !usersWithHeartbeats.isEmpty {
+            let needsLoading = usersWithHeartbeats.contains { userWithHeartbeat in
+                let userId = userWithHeartbeat.user.id
+                return backgroundImageManagers[userId] == nil ||
+                       backgroundImageManagers[userId]?.currentEditedImage == nil
+            }
+
+            if needsLoading {
+                loadBackgroundImages()
+            }
+        }
+    }
+
+    private func handleLoadingStateChange(_ isLoading: Bool) {
+        if !isLoading && viewModel.hasFollowingUsers {
+            loadBackgroundImages()
+        }
+    }
 
     private func loadBackgroundImages() {
         let now = Date()

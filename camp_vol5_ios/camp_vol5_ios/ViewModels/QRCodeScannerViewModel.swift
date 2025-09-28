@@ -1,8 +1,13 @@
 // ViewModels/QRCodeScannerViewModel.swift
+// QRコードスキャナー画面のビューモデル - MVVM設計パターンに従いビジネスロジックを集約
+// ユーザー検索、フォロー処理、認証状態管理を責務として持つ
+
 import Combine
 import Foundation
 
+@MainActor
 class QRCodeScannerViewModel: ObservableObject {
+    // MARK: - Published Properties
     @Published var scannedUser: User?
     @Published var inviteCode: String = ""
     @Published var isLoading: Bool = false
@@ -11,12 +16,37 @@ class QRCodeScannerViewModel: ObservableObject {
     @Published var isFollowingUser: Bool = false
     @Published var shouldDismiss: Bool = false
 
+    // MARK: - Private Properties
     private var authenticationManager: AuthenticationManager
-    private var localFollowService = LocalFollowService.shared
     private var cancellables = Set<AnyCancellable>()
 
-    init(authenticationManager: AuthenticationManager) {
+    // MARK: - Dependencies
+    private let userService: UserService
+    private let localFollowService: LocalFollowService
+
+    // MARK: - Computed Properties
+    var canFollowUser: Bool {
+        guard let user = scannedUser else { return false }
+        guard !isFollowingUser else { return false }
+
+        // 認証済みの場合は自分自身をフォローできない
+        if authenticationManager.isAuthenticated,
+           let currentUserId = authenticationManager.currentUserId {
+            return user.id != currentUserId
+        }
+
+        return true
+    }
+
+    // MARK: - Initialization
+    init(
+        authenticationManager: AuthenticationManager,
+        userService: UserService = UserService.shared,
+        localFollowService: LocalFollowService = LocalFollowService.shared
+    ) {
         self.authenticationManager = authenticationManager
+        self.userService = userService
+        self.localFollowService = localFollowService
     }
 
     func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
@@ -25,249 +55,82 @@ class QRCodeScannerViewModel: ObservableObject {
         print("🔧 [QRCodeScannerViewModel] updateAuthenticationManager: 完了")
     }
 
-    // 招待コードまたはQRコードからユーザー情報を取得
+    // MARK: - Public Methods
+
     func searchUserByInviteCode(_ code: String) {
         print("🔍 [QRCodeScannerViewModel] searchUserByInviteCode: 開始 - code: \(code)")
-        guard !code.isEmpty else {
-            print("❌ [QRCodeScannerViewModel] searchUserByInviteCode: エラー - コードが空")
-            errorMessage = "招待コードを入力してください"
-            return
-        }
+
+        guard validateInviteCode(code) else { return }
 
         inviteCode = code
         isLoading = true
         scannedUser = nil
-        // shouldDismissの設定を削除（初期化時のfalseのままにする）
 
-        UserService.shared.findUserByInviteCode(code)
+        userService.findUserByInviteCode(code)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    self?.isLoading = false
-                    if case let .failure(error) = completion {
-                        print("❌ [QRCodeScannerViewModel] searchUserByInviteCode: エラー - \(error.localizedDescription)")
-                        self?.errorMessage = error.localizedDescription
-                    }
-                    print("🔍 [QRCodeScannerViewModel] searchUserByInviteCode: 完了")
+                    self?.handleSearchCompletion(completion)
                 },
                 receiveValue: { [weak self] user in
-                    if let user = user {
-                        print("✅ [QRCodeScannerViewModel] searchUserByInviteCode: ユーザー発見 - \(user.name)")
-                        // 少し遅延を入れてからユーザー情報を設定
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            self?.scannedUser = user
-                            self?.checkIfAlreadyFollowing(user)
-                        }
-                    } else {
-                        print("❌ [QRCodeScannerViewModel] searchUserByInviteCode: ユーザーが見つからない")
-                        self?.errorMessage = "ユーザーが見つかりません"
-                    }
+                    self?.handleSearchResult(user)
                 }
             )
             .store(in: &cancellables)
     }
 
-    // 既にフォロー済みかチェック
-    private func checkIfAlreadyFollowing(_ user: User) {
-        print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 開始 - user: \(user.name)")
-        if authenticationManager.isAuthenticated,
-            let currentUserId = authenticationManager.currentUserId
-        {
-            // 認証済みの場合はFirebaseでチェック
-            UserService.shared.getUser(uid: currentUserId)
-                .receive(on: DispatchQueue.main)
-                .sink(
-                    receiveCompletion: { [weak self] completion in
-                        if case let .failure(error) = completion {
-                            // エラーが発生してもフォロー状態はfalseとして継続
-                            self?.isFollowingUser = false
-                        }
-                    },
-                    receiveValue: { [weak self] currentUser in
-                        if let currentUser = currentUser {
-                            let isFollowing = currentUser.followingUserIds.contains(user.id)
-                            self?.isFollowingUser = isFollowing
-                            print("✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)")
-                        } else {
-                            self?.isFollowingUser = false
-                            print("⚠️ [QRCodeScannerViewModel] checkIfAlreadyFollowing: currentUserがnil")
-                        }
-                        print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 完了")
-                    }
-                )
-                .store(in: &cancellables)
-        } else {
-            // 未認証の場合はローカルでチェック
-            let isFollowing = localFollowService.isFollowing(user.id)
-            isFollowingUser = isFollowing
-            print("✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: ローカル確認完了 - isFollowing: \(isFollowing)")
-            print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 完了")
-        }
-    }
-
-    // ユーザーをフォロー
-    func followUser() {
-        print("💖 [QRCodeScannerViewModel] followUser: 開始")
-        guard let user = scannedUser else {
-            print("❌ [QRCodeScannerViewModel] followUser: エラー - scannedUserがnil")
-            errorMessage = "ユーザー情報が取得できません"
-            return
-        }
-
-        // 認証済みの場合は自分自身フォローチェック
-        if authenticationManager.isAuthenticated,
-            let currentUserId = authenticationManager.currentUserId
-        {
-            if user.id == currentUserId {
-                print("❌ [QRCodeScannerViewModel] followUser: エラー - 自分自身をフォロー")
-                errorMessage = "自分自身をフォローすることはできません"
-                return
-            }
-        }
-
-        // 既にフォロー済み
-        if isFollowingUser {
-            print("❌ [QRCodeScannerViewModel] followUser: エラー - 既にフォロー済み")
-            errorMessage = "既にフォロー済みです"
-            return
-        }
-
-        if authenticationManager.isAuthenticated,
-            let currentUser = authenticationManager.currentUser
-        {
-            // 認証済みの場合はFirebaseでフォロー
-            print("🔥 [QRCodeScannerViewModel] followUser: Firebaseでフォロー処理")
-            followUserWithFirebase(currentUser: currentUser, targetUser: user)
-        } else {
-            // 未認証の場合はローカルでフォロー
-            print("📱 [QRCodeScannerViewModel] followUser: ローカルでフォロー処理")
-            followUserLocally(user: user)
-        }
-        print("💖 [QRCodeScannerViewModel] followUser: 完了")
-    }
-
-    private func followUserWithFirebase(currentUser: User, targetUser: User) {
-        print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 開始 - target: \(targetUser.name)")
-        isLoading = true
-
-        UserService.shared.followUser(currentUser: currentUser, targetUserId: targetUser.id)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.isLoading = false
-                    if case let .failure(error) = completion {
-                        print("❌ [QRCodeScannerViewModel] followUserWithFirebase: エラー - \(error.localizedDescription)")
-                        self?.errorMessage = error.localizedDescription
-                    } else {
-                        print("✅ [QRCodeScannerViewModel] followUserWithFirebase: 成功")
-                        self?.isFollowingUser = true
-                        self?.successMessage = "\(targetUser.name)さんをフォローしました"
-
-                        // フォロー成功後、現在のユーザー情報を更新
-                        if let currentUserId = self?.authenticationManager.currentUserId {
-                            self?.authenticationManager.loadCurrentUser(
-                                uid: currentUserId
-                            )
-                        }
-
-                        // フォロー成功後、2秒後にページを閉じる
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                            self?.shouldDismiss = true
-                        }
-                    }
-                    print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 完了")
-                },
-                receiveValue: { _ in }
-            )
-            .store(in: &cancellables)
-    }
-
-    private func followUserLocally(user: User) {
-        print("📱 [QRCodeScannerViewModel] followUserLocally: 開始 - user: \(user.name)")
-        localFollowService.followUser(user.id)
-        isFollowingUser = true
-        successMessage = "\(user.name)さんをフォローしました"
-        print("✅ [QRCodeScannerViewModel] followUserLocally: 成功")
-
-        // フォロー成功後、2秒後にページを閉じる
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            self.shouldDismiss = true
-        }
-        print("📱 [QRCodeScannerViewModel] followUserLocally: 完了")
-    }
-
-    // フォロー解除
-    func unfollowUser() {
-        print("💔 [QRCodeScannerViewModel] unfollowUser: 開始")
-        guard let user = scannedUser else {
-            print("❌ [QRCodeScannerViewModel] unfollowUser: エラー - scannedUserがnil")
-            return
-        }
-
-        if authenticationManager.isAuthenticated,
-            let currentUser = authenticationManager.currentUser
-        {
-            // 認証済みの場合はFirebaseでフォロー解除
-            print("🔥 [QRCodeScannerViewModel] unfollowUser: Firebaseでフォロー解除処理")
-            unfollowUserWithFirebase(currentUser: currentUser, targetUser: user)
-        } else {
-            // 未認証の場合はローカルでフォロー解除
-            print("📱 [QRCodeScannerViewModel] unfollowUser: ローカルでフォロー解除処理")
-            unfollowUserLocally(user: user)
-        }
-        print("💔 [QRCodeScannerViewModel] unfollowUser: 完了")
-    }
-
-    private func unfollowUserWithFirebase(currentUser: User, targetUser: User) {
-        print("🔥 [QRCodeScannerViewModel] unfollowUserWithFirebase: 開始 - target: \(targetUser.name)")
-        isLoading = true
-
-        UserService.shared.unfollowUser(currentUser: currentUser, targetUserId: targetUser.id)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.isLoading = false
-                    if case let .failure(error) = completion {
-                        print("❌ [QRCodeScannerViewModel] unfollowUserWithFirebase: エラー - \(error.localizedDescription)")
-                        self?.errorMessage = error.localizedDescription
-                    } else {
-                        print("✅ [QRCodeScannerViewModel] unfollowUserWithFirebase: 成功")
-                        self?.isFollowingUser = false
-                        self?.successMessage = "\(targetUser.name)さんのフォローを解除しました"
-
-                        // フォロー解除後、現在のユーザー情報を更新
-                        if let currentUserId = self?.authenticationManager.currentUserId {
-                            self?.authenticationManager.loadCurrentUser(
-                                uid: currentUserId
-                            )
-                        }
-                    }
-                    print("🔥 [QRCodeScannerViewModel] unfollowUserWithFirebase: 完了")
-                },
-                receiveValue: { _ in }
-            )
-            .store(in: &cancellables)
-    }
-
-    private func unfollowUserLocally(user: User) {
-        print("📱 [QRCodeScannerViewModel] unfollowUserLocally: 開始 - user: \(user.name)")
-        localFollowService.unfollowUser(user.id)
-        isFollowingUser = false
-        successMessage = "\(user.name)さんのフォローを解除しました"
-        print("✅ [QRCodeScannerViewModel] unfollowUserLocally: 成功")
-        print("📱 [QRCodeScannerViewModel] unfollowUserLocally: 完了")
-    }
-
-    // QRコードスキャン結果を処理
     func handleQRCodeScan(_ code: String) {
         print("📷 [QRCodeScannerViewModel] handleQRCodeScan: 開始 - code: \(code)")
-        // エラーをクリアしてからユーザー検索を開始
-        errorMessage = nil
+        clearError()
         searchUserByInviteCode(code)
         print("📷 [QRCodeScannerViewModel] handleQRCodeScan: 完了")
     }
 
-    // 入力をクリア
+    func followUser() {
+        print("💖 [QRCodeScannerViewModel] followUser: 開始")
+
+        guard let user = scannedUser else {
+            handleError("ユーザー情報が取得できません")
+            return
+        }
+
+        guard canFollowUser else {
+            if isFollowingUser {
+                handleError("既にフォロー済みです")
+            } else {
+                handleError("自分自身をフォローすることはできません")
+            }
+            return
+        }
+
+        if authenticationManager.isAuthenticated,
+           let currentUser = authenticationManager.currentUser {
+            followUserWithFirebase(currentUser: currentUser, targetUser: user)
+        } else {
+            followUserLocally(user: user)
+        }
+
+        print("💖 [QRCodeScannerViewModel] followUser: 完了")
+    }
+
+    func unfollowUser() {
+        print("💔 [QRCodeScannerViewModel] unfollowUser: 開始")
+
+        guard let user = scannedUser else {
+            handleError("ユーザー情報が取得できません")
+            return
+        }
+
+        if authenticationManager.isAuthenticated,
+           let currentUser = authenticationManager.currentUser {
+            unfollowUserWithFirebase(currentUser: currentUser, targetUser: user)
+        } else {
+            unfollowUserLocally(user: user)
+        }
+
+        print("💔 [QRCodeScannerViewModel] unfollowUser: 完了")
+    }
+
     func clearInput() {
         print("🧹 [QRCodeScannerViewModel] clearInput: 開始")
         inviteCode = ""
@@ -287,5 +150,180 @@ class QRCodeScannerViewModel: ObservableObject {
     func clearSuccessMessage() {
         print("🧹 [QRCodeScannerViewModel] clearSuccessMessage: 実行")
         successMessage = nil
+    }
+
+    // MARK: - Private Methods
+
+    private func validateInviteCode(_ code: String) -> Bool {
+        guard !code.isEmpty else {
+            handleError("招待コードを入力してください")
+            return false
+        }
+        return true
+    }
+
+    private func handleSearchCompletion(_ completion: Subscribers.Completion<Error>) {
+        isLoading = false
+        if case let .failure(error) = completion {
+            print("❌ [QRCodeScannerViewModel] searchUserByInviteCode: エラー - \(error.localizedDescription)")
+            handleError(error.localizedDescription)
+        }
+        print("🔍 [QRCodeScannerViewModel] searchUserByInviteCode: 完了")
+    }
+
+    private func handleSearchResult(_ user: User?) {
+        if let user = user {
+            print("✅ [QRCodeScannerViewModel] searchUserByInviteCode: ユーザー発見 - \(user.name)")
+            // 少し遅延を入れてからユーザー情報を設定
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                self.scannedUser = user
+                self.checkIfAlreadyFollowing(user)
+            }
+        } else {
+            print("❌ [QRCodeScannerViewModel] searchUserByInviteCode: ユーザーが見つからない")
+            handleError("ユーザーが見つかりません")
+        }
+    }
+
+    private func handleError(_ message: String) {
+        print("❌ [QRCodeScannerViewModel] エラー: \(message)")
+        errorMessage = message
+    }
+
+    private func checkIfAlreadyFollowing(_ user: User) {
+        print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 開始 - user: \(user.name)")
+
+        if authenticationManager.isAuthenticated,
+           let currentUserId = authenticationManager.currentUserId {
+            checkFollowingStatusWithFirebase(userId: currentUserId, targetUserId: user.id)
+        } else {
+            checkFollowingStatusLocally(targetUserId: user.id)
+        }
+    }
+
+    private func checkFollowingStatusWithFirebase(userId: String, targetUserId: String) {
+        userService.getUser(uid: userId)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    if case let .failure(_) = completion {
+                        self?.isFollowingUser = false
+                    }
+                },
+                receiveValue: { [weak self] currentUser in
+                    if let currentUser = currentUser {
+                        let isFollowing = currentUser.followingUserIds.contains(targetUserId)
+                        self?.isFollowingUser = isFollowing
+                        print("✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)")
+                    } else {
+                        self?.isFollowingUser = false
+                        print("⚠️ [QRCodeScannerViewModel] checkIfAlreadyFollowing: currentUserがnil")
+                    }
+                    print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 完了")
+                }
+            )
+            .store(in: &cancellables)
+    }
+
+    private func checkFollowingStatusLocally(targetUserId: String) {
+        let isFollowing = localFollowService.isFollowing(targetUserId)
+        isFollowingUser = isFollowing
+        print("✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: ローカル確認完了 - isFollowing: \(isFollowing)")
+        print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 完了")
+    }
+
+
+    private func followUserWithFirebase(currentUser: User, targetUser: User) {
+        print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 開始 - target: \(targetUser.name)")
+        isLoading = true
+
+        userService.followUser(currentUser: currentUser, targetUserId: targetUser.id)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    self?.handleFollowCompletion(completion, targetUserName: targetUser.name)
+                },
+                receiveValue: { _ in }
+            )
+            .store(in: &cancellables)
+    }
+
+    private func followUserLocally(user: User) {
+        print("📱 [QRCodeScannerViewModel] followUserLocally: 開始 - user: \(user.name)")
+        localFollowService.followUser(user.id)
+        handleFollowSuccess(targetUserName: user.name)
+        print("📱 [QRCodeScannerViewModel] followUserLocally: 完了")
+    }
+
+
+    private func unfollowUserWithFirebase(currentUser: User, targetUser: User) {
+        print("🔥 [QRCodeScannerViewModel] unfollowUserWithFirebase: 開始 - target: \(targetUser.name)")
+        isLoading = true
+
+        userService.unfollowUser(currentUser: currentUser, targetUserId: targetUser.id)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    self?.handleUnfollowCompletion(completion, targetUserName: targetUser.name)
+                },
+                receiveValue: { _ in }
+            )
+            .store(in: &cancellables)
+    }
+
+    private func unfollowUserLocally(user: User) {
+        print("📱 [QRCodeScannerViewModel] unfollowUserLocally: 開始 - user: \(user.name)")
+        localFollowService.unfollowUser(user.id)
+        handleUnfollowSuccess(targetUserName: user.name)
+        print("📱 [QRCodeScannerViewModel] unfollowUserLocally: 完了")
+    }
+
+    private func handleFollowCompletion(_ completion: Subscribers.Completion<Error>, targetUserName: String) {
+        isLoading = false
+        if case let .failure(error) = completion {
+            print("❌ [QRCodeScannerViewModel] followUserWithFirebase: エラー - \(error.localizedDescription)")
+            handleError(error.localizedDescription)
+        } else {
+            handleFollowSuccess(targetUserName: targetUserName)
+            updateCurrentUserAfterFollow()
+        }
+        print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 完了")
+    }
+
+    private func handleUnfollowCompletion(_ completion: Subscribers.Completion<Error>, targetUserName: String) {
+        isLoading = false
+        if case let .failure(error) = completion {
+            print("❌ [QRCodeScannerViewModel] unfollowUserWithFirebase: エラー - \(error.localizedDescription)")
+            handleError(error.localizedDescription)
+        } else {
+            handleUnfollowSuccess(targetUserName: targetUserName)
+            updateCurrentUserAfterFollow()
+        }
+        print("🔥 [QRCodeScannerViewModel] unfollowUserWithFirebase: 完了")
+    }
+
+    private func handleFollowSuccess(targetUserName: String) {
+        print("✅ [QRCodeScannerViewModel] フォロー成功")
+        isFollowingUser = true
+        successMessage = "\(targetUserName)さんをフォローしました"
+        scheduleAutoClose()
+    }
+
+    private func handleUnfollowSuccess(targetUserName: String) {
+        print("✅ [QRCodeScannerViewModel] フォロー解除成功")
+        isFollowingUser = false
+        successMessage = "\(targetUserName)さんのフォローを解除しました"
+    }
+
+    private func updateCurrentUserAfterFollow() {
+        if let currentUserId = authenticationManager.currentUserId {
+            authenticationManager.loadCurrentUser(uid: currentUserId)
+        }
+    }
+
+    private func scheduleAutoClose() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.shouldDismiss = true
+        }
     }
 }
