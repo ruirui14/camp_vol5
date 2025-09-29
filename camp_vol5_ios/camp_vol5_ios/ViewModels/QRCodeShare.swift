@@ -68,8 +68,11 @@ class QRCodeShareViewModel: ObservableObject {
 
     private func setupBindings() {
         guard authenticationManager.isAuthenticated else {
+            print("🔄 [QRCodeShareViewModel] setupBindings skipped - not authenticated")
             return
         }
+
+        print("🔄 [QRCodeShareViewModel] Setting up bindings")
 
         authenticationManager.$currentUser
             .compactMap { $0?.inviteCode }
@@ -77,17 +80,26 @@ class QRCodeShareViewModel: ObservableObject {
             .removeDuplicates()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] inviteCode in
-                // ローディング中でない場合のみ更新（生成中の重複更新を防ぐ）
-                guard self?.isLoading == false else { return }
+                // ローディング中または既に同じinviteCodeの場合は更新をスキップ
+                guard let self = self,
+                      !self.isLoading,
+                      self.inviteCode != inviteCode else {
+                    print("🔄 [QRCodeShareViewModel] Binding update skipped - loading: \(self?.isLoading ?? false), same code: \(self?.inviteCode == inviteCode)")
+                    return
+                }
 
-                self?.inviteCode = inviteCode
-                self?.qrCodeImage = self?.generateQRCode(from: inviteCode)
+                print("🔄 [QRCodeShareViewModel] Updating invite code from binding: \(inviteCode)")
+                self.inviteCode = inviteCode
+                self.qrCodeImage = self.generateQRCode(from: inviteCode)
             }
             .store(in: &cancellables)
     }
 
     func generateNewInviteCode() {
+        print("🔄 [QRCodeShareViewModel] generateNewInviteCode called")
+
         guard authenticationManager.currentUserId != nil else {
+            print("❌ [QRCodeShareViewModel] currentUserId is nil")
             errorMessage = "User not logged in"
             return
         }
@@ -96,10 +108,13 @@ class QRCodeShareViewModel: ObservableObject {
         errorMessage = nil
 
         guard let currentUser = authenticationManager.currentUser else {
+            print("❌ [QRCodeShareViewModel] currentUser is nil")
             errorMessage = "User not logged in"
             isLoading = false
             return
         }
+
+        print("✅ [QRCodeShareViewModel] Proceeding with invite code generation for user: \(currentUser.name)")
 
         UserService.shared.generateNewInviteCode(for: currentUser)
             .receive(on: DispatchQueue.main)
@@ -111,14 +126,13 @@ class QRCodeShareViewModel: ObservableObject {
                     }
                 },
                 receiveValue: { [weak self] newInviteCode in
+                    print("✅ [QRCodeShareViewModel] New invite code generated: \(newInviteCode)")
                     // 直接inviteCodeとQRコードを更新
                     self?.inviteCode = newInviteCode
                     self?.qrCodeImage = self?.generateQRCode(from: newInviteCode)
 
-                    // AuthenticationManagerの現在のユーザー情報も更新（バックグラウンドで）
-                    DispatchQueue.global(qos: .background).async {
-                        self?.authenticationManager.refreshCurrentUser()
-                    }
+                    // 循環参照を防ぐため、authenticationManager.refreshCurrentUser()は呼ばない
+                    // UserServiceがFirebaseを更新するので、setupBindingsで自動的に反映される
                 }
             )
             .store(in: &cancellables)

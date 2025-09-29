@@ -2,23 +2,23 @@ import SwiftUI
 
 struct QRCodeShareView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @State private var viewModel: QRCodeShareViewModel?
+    @StateObject private var viewModel: QRCodeShareViewModel
     @Environment(\.dismiss) private var dismiss
+
+    init() {
+        // ダミーのAuthenticationManagerで初期化（@EnvironmentObjectで実際のものが注入される）
+        _viewModel = StateObject(wrappedValue: QRCodeShareViewModel(authenticationManager: AuthenticationManager()))
+    }
 
     var body: some View {
         GeometryReader { geometry in
             VStack {
-                if let viewModel = viewModel {
-                    if authenticationManager.isAuthenticated {
-                        authenticatedContent(viewModel: viewModel)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    } else {
-                        guestUserContent
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
+                if authenticationManager.isAuthenticated {
+                    authenticatedContent(viewModel: viewModel)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    ProgressView()
-                        .scaleEffect(1.5)
+                    guestUserContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
@@ -43,45 +43,21 @@ struct QRCodeShareView: View {
                 NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
             }
             .onAppear {
-                // AuthenticationManagerが不安定な状態でないかチェック
-                guard authenticationManager.isAuthenticated else {
-                    return
-                }
-
-                guard authenticationManager.currentUser != nil else {
-                    authenticationManager.refreshCurrentUser()
-                    // 少し待ってからViewModelを作成
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        if self.viewModel == nil && self.authenticationManager.currentUser != nil {
-                            self.viewModel = QRCodeShareViewModel(
-                                authenticationManager: self.authenticationManager)
-                        }
-                    }
-                    return
-                }
-
-                if viewModel == nil {
-                    self.viewModel = QRCodeShareViewModel(
-                        authenticationManager: authenticationManager)
-                }
+                print("🔄 [QRCodeShareView] onAppear called")
+                // ViewModelに実際のAuthenticationManagerを設定
+                viewModel.updateAuthenticationManager(authenticationManager)
             }
             .alert(
-                viewModel?.saveAlertTitle ?? "",
-                isPresented: Binding<Bool>(
-                    get: { viewModel?.showingSaveAlert ?? false },
-                    set: { viewModel?.showingSaveAlert = $0 }
-                )
+                viewModel.saveAlertTitle,
+                isPresented: $viewModel.showingSaveAlert
             ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(viewModel?.saveAlertMessage ?? "")
+                Text(viewModel.saveAlertMessage)
             }
             .alert(
                 "写真へのアクセス許可",
-                isPresented: Binding<Bool>(
-                    get: { viewModel?.showingPermissionAlert ?? false },
-                    set: { viewModel?.showingPermissionAlert = $0 }
-                )
+                isPresented: $viewModel.showingPermissionAlert
             ) {
                 Button("キャンセル", role: .cancel) {}
                 Button("設定を開く") {
