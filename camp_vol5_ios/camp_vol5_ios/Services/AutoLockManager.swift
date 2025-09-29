@@ -39,9 +39,9 @@ class AutoLockManager: ObservableObject {
             }
         }
 
-        // 残り時間を1秒ごとに更新
+        // 残り時間を1分ごとに更新（UI負荷軽減）
         updateTimer?.invalidate()
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { _ in
             DispatchQueue.main.async {
                 self.updateRemainingTime()
             }
@@ -61,7 +61,13 @@ class AutoLockManager: ObservableObject {
     private func updateRemainingTime() {
         guard let startTime = startTime else { return }
         let elapsed = Date().timeIntervalSince(startTime)
-        remainingTime = max(0, autoLockDuration - elapsed)
+        let newRemainingTime = max(0, autoLockDuration - elapsed)
+
+        // 残り時間が1分以上変化した場合、または終了間近（2分以下）の場合のみ更新
+        let timeDifference = abs(newRemainingTime - remainingTime)
+        if timeDifference >= 60 || newRemainingTime <= 120 {
+            remainingTime = newRemainingTime
+        }
     }
 
     func updateSettings(autoLockDisabled: Bool, duration: TimeInterval) {

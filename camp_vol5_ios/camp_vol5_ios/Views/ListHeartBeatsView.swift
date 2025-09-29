@@ -28,6 +28,7 @@ struct ListHeartBeatsView: View {
     @State private var navigationPath = NavigationPath()
     @State private var isStatusBarHidden = false
     @State private var persistentSystemOverlaysVisibility: Visibility = .automatic
+    @State private var hasAppearedBefore = false
 
     init() {
         // 初期化時はダミーの AuthenticationManager を使用
@@ -68,7 +69,8 @@ struct ListHeartBeatsView: View {
                     } else {
                         FollowingUsersListView(
                             users: viewModel.followingUsersWithHeartbeats,
-                            backgroundImageManagers: backgroundImageCoordinator.backgroundImageManagers,
+                            backgroundImageManagers: backgroundImageCoordinator
+                                .backgroundImageManagers,
                             onUserTapped: { userWithHeartbeat in
                                 navigationPath.append(
                                     NavigationDestination.heartbeatDetail(userWithHeartbeat.user.id)
@@ -76,7 +78,8 @@ struct ListHeartBeatsView: View {
                             },
                             onRefresh: {
                                 viewModel.refreshData()
-                                backgroundImageCoordinator.loadBackgroundImages(for: viewModel.followingUsersWithHeartbeats)
+                                backgroundImageCoordinator.loadBackgroundImages(
+                                    for: viewModel.followingUsersWithHeartbeats)
                             }
                         )
                     }
@@ -85,14 +88,26 @@ struct ListHeartBeatsView: View {
             .toolbarBackground(Color.white, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
-                viewModel.updateAuthenticationManager(authenticationManager)
+                print(
+                    "🔄 [ListHeartBeatsView] onAppear called (hasAppearedBefore: \(hasAppearedBefore))"
+                )
 
-                // データ読み込みを確実に実行（キャッシュがあってもUIが初期表示時は実行）
-                viewModel.loadFollowingUsersWithHeartbeats()
+                // 初回のみ実行する処理
+                if !hasAppearedBefore {
+                    hasAppearedBefore = true
+                    viewModel.updateAuthenticationManager(authenticationManager)
+                    viewModel.loadFollowingUsersWithHeartbeats()
 
-                // データが既に存在する場合は背景画像を読み込み
-                if !viewModel.followingUsersWithHeartbeats.isEmpty {
-                    backgroundImageCoordinator.loadBackgroundImages(for: viewModel.followingUsersWithHeartbeats)
+                    // データが既に存在する場合は背景画像を読み込み
+                    if !viewModel.followingUsersWithHeartbeats.isEmpty {
+                        print(
+                            "🔄 [ListHeartBeatsView] Loading background images from onAppear (first time)"
+                        )
+                        backgroundImageCoordinator.loadBackgroundImages(
+                            for: viewModel.followingUsersWithHeartbeats)
+                    }
+                } else {
+                    print("🔄 [ListHeartBeatsView] onAppear skipped (not first time)")
                 }
             }
             .onReceive(
@@ -101,18 +116,22 @@ struct ListHeartBeatsView: View {
                 )
             ) { _ in
                 // アプリがフォアグラウンドに戻った時に背景画像を更新
-                backgroundImageCoordinator.loadBackgroundImages(for: viewModel.followingUsersWithHeartbeats)
+                backgroundImageCoordinator.loadBackgroundImages(
+                    for: viewModel.followingUsersWithHeartbeats)
             }
             .onReceive(viewModel.$followingUsersWithHeartbeats) { usersWithHeartbeats in
                 // フォローユーザーのデータが更新された時に背景画像を更新
-                if !usersWithHeartbeats.isEmpty && backgroundImageCoordinator.needsLoading(for: usersWithHeartbeats) {
+                if !usersWithHeartbeats.isEmpty
+                    && backgroundImageCoordinator.needsLoading(for: usersWithHeartbeats)
+                {
                     backgroundImageCoordinator.loadBackgroundImages(for: usersWithHeartbeats)
                 }
             }
             .onChange(of: viewModel.isLoading) { isLoading in
                 // データ読み込み完了時に背景画像を更新
                 if !isLoading && !viewModel.followingUsersWithHeartbeats.isEmpty {
-                    backgroundImageCoordinator.loadBackgroundImages(for: viewModel.followingUsersWithHeartbeats)
+                    backgroundImageCoordinator.loadBackgroundImages(
+                        for: viewModel.followingUsersWithHeartbeats)
                 }
             }
             .toolbar {
@@ -170,7 +189,6 @@ struct ListHeartBeatsView: View {
         .statusBarHidden(isStatusBarHidden)
         .persistentSystemOverlays(persistentSystemOverlaysVisibility)
     }
-
 
 }
 
