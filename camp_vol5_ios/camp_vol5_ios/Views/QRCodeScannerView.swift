@@ -243,30 +243,23 @@ struct QRCodeScannerView: View {
     }
 
     private func scannedUserSection(user: User) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             Divider()
 
-            VStack(spacing: 12) {
-                // User Avatar Placeholder
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 80, height: 80)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.title)
-                            .foregroundColor(.gray)
-                    )
-
+            VStack(spacing: 8) {
                 // User Info
-                VStack(spacing: 4) {
+                VStack(spacing: 2) {
                     Text(user.name)
-                        .font(.title2)
+                        .font(.title3)
                         .fontWeight(.semibold)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
 
                     Text("招待コード: \(user.inviteCode)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                         .font(.system(.caption, design: .monospaced))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
 
                 // Follow Status
@@ -276,16 +269,18 @@ struct QRCodeScannerView: View {
                             .foregroundColor(.green)
                         Text("フォロー済み")
                             .foregroundColor(.green)
+                            .font(.footnote)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .background(Color.green.opacity(0.1))
-                    .cornerRadius(20)
+                    .cornerRadius(16)
 
                     Button("フォロー解除") {
                         viewModel.unfollowUser()
                     }
                     .buttonStyle(.bordered)
+                    .controlSize(.small)
                     .foregroundColor(.red)
                     .disabled(viewModel.isLoading)
 
@@ -294,12 +289,13 @@ struct QRCodeScannerView: View {
                         showingFollowConfirmation = true
                     }
                     .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                     .disabled(viewModel.isLoading)
                 }
             }
-            .padding()
+            .padding(12)
             .background(Color(.systemGray6))
-            .cornerRadius(16)
+            .cornerRadius(12)
         }
     }
 
