@@ -43,7 +43,6 @@ struct QRCodeShareView: View {
                 NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
             }
             .onAppear {
-                print("🔄 [QRCodeShareView] onAppear called")
                 // ViewModelに実際のAuthenticationManagerを設定
                 viewModel.updateAuthenticationManager(authenticationManager)
             }
