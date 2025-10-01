@@ -157,13 +157,6 @@ class BackgroundImageManager: ObservableObject {
 
     func refreshFromStorage() {
         print("=== BackgroundImageManager.refreshFromStorage for userId: \(userId) ===")
-
-        // 既に画像が読み込まれている場合は再読み込みをスキップ
-        if currentEditedImage != nil {
-            print("Images already loaded for \(userId), skipping refresh")
-            return
-        }
-
         loadPersistedImages()
     }
 }

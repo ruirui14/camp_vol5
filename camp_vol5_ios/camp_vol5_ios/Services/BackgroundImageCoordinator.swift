@@ -50,7 +50,7 @@ class BackgroundImageCoordinator: ObservableObject {
 
     func refreshFromStorage() {
         for manager in backgroundImageManagers.values {
-            if manager.currentEditedImage == nil && !manager.isLoading {
+            if !manager.isLoading {
                 manager.refreshFromStorage()
             }
         }
@@ -84,11 +84,11 @@ class BackgroundImageCoordinator: ObservableObject {
         } else {
             // 既存のManagerがある場合は、初回読み込み以降のみrefreshを実行
             if hasLoadedOnce, let existingManager = backgroundImageManagers[userId] {
-                if existingManager.currentEditedImage == nil && !existingManager.isLoading {
-                    print("  Refreshing existing manager for \(userId) (no image loaded)")
+                if !existingManager.isLoading {
+                    print("  Refreshing existing manager for \(userId)")
                     existingManager.refreshFromStorage()
                 } else {
-                    print("  Existing manager for \(userId) already has image or is loading")
+                    print("  Existing manager for \(userId) is loading")
                 }
             } else {
                 print("  Skipping refresh for \(userId) during initial load")
