@@ -105,7 +105,7 @@ struct HeartbeatRefreshButton: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         HeartbeatSettingsView(
             viewModel: SettingsViewModel(authenticationManager: AuthenticationManager())
         )

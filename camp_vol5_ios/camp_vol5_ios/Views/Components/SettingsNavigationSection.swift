@@ -62,7 +62,7 @@ struct SettingsNavigationSection: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         Form {
             SettingsNavigationSection(
                 viewModel: SettingsViewModel(authenticationManager: AuthenticationManager()),

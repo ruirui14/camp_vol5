@@ -141,7 +141,7 @@ struct LoadingUserInfoView: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         UserInfoSettingsView(
             viewModel: SettingsViewModel(authenticationManager: AuthenticationManager())
         )

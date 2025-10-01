@@ -140,7 +140,7 @@ struct UserNameEditView: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         UserNameEditView(
             viewModel: SettingsViewModel(authenticationManager: AuthenticationManager())
         )

@@ -89,7 +89,7 @@ struct TermsSection: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         TermsOfServiceView()
     }
 }

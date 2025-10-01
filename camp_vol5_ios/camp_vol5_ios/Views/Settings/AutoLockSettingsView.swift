@@ -72,7 +72,7 @@ struct AutoLockFooterText: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         AutoLockSettingsView(autoLockManager: AutoLockManager.shared)
     }
 }

@@ -22,7 +22,7 @@ struct CardBackgroundEditView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // 背景
                 MainAccentGradient()

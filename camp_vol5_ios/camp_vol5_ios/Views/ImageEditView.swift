@@ -26,7 +26,7 @@ struct ImageEditView: View {
     private let persistenceManager = PersistenceManager.shared
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // 背景色選択またはデフォルトグラデーション
                 if selectedBackgroundColor != Color.clear {
@@ -209,7 +209,6 @@ struct ImageEditView: View {
                 }
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
         .sheet(isPresented: $showingPhotoPicker) {
             PhotoPicker(selectedImage: $image)
         }
@@ -464,7 +463,7 @@ struct ColorPaletteView: View {
     ]
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 Text("背景色を選択")
                     .font(.title2)

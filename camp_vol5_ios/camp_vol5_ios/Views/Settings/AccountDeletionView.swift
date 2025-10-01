@@ -240,7 +240,7 @@ struct DeletionItem: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         AccountDeletionView(
             viewModel: SettingsViewModel(authenticationManager: AuthenticationManager())
         )

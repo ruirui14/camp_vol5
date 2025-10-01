@@ -25,7 +25,7 @@ struct SettingsToolbar: ToolbarContent {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         Text("Settings Content")
             .toolbar {
                 SettingsToolbar(onDismiss: {})
