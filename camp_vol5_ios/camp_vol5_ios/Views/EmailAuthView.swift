@@ -13,7 +13,8 @@ struct EmailAuthView: View {
     init() {
         // 初期化時はダミーのAuthenticationManagerを使用
         // 実際のAuthenticationManagerは@EnvironmentObjectで注入される
-        self._viewModel = StateObject(wrappedValue: EmailAuthViewModel(authenticationManager: AuthenticationManager()))
+        self._viewModel = StateObject(
+            wrappedValue: EmailAuthViewModel(authenticationManager: AuthenticationManager()))
     }
 
     var body: some View {
@@ -94,9 +95,12 @@ struct EmailAuthView: View {
                                         viewModel.togglePasswordVisibility()
                                     }
                                 }) {
-                                    Image(systemName: viewModel.showPassword ? "eye.slash.fill" : "eye.fill")
-                                        .foregroundColor(.secondary)
-                                        .font(.title3)
+                                    Image(
+                                        systemName: viewModel.showPassword
+                                            ? "eye.slash.fill" : "eye.fill"
+                                    )
+                                    .foregroundColor(.secondary)
+                                    .font(.title3)
                                 }
                             }
                             .textFieldStyle(ModernTextFieldStyle())
@@ -129,13 +133,16 @@ struct EmailAuthView: View {
                                         .scaleEffect(0.8)
                                         .tint(.white)
                                 } else {
-                                    Image(systemName: viewModel.isSignUp ? "person.badge.plus" : "envelope")
-                                        .font(.title3)
+                                    Image(
+                                        systemName: viewModel.isSignUp
+                                            ? "person.badge.plus" : "envelope"
+                                    )
+                                    .font(.title3)
                                 }
 
                                 Text(viewModel.primaryButtonTitle)
-                                .font(.headline)
-                                .fontWeight(.semibold)
+                                    .font(.headline)
+                                    .fontWeight(.semibold)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
@@ -225,7 +232,6 @@ struct EmailAuthView: View {
     }
 
 }
-
 
 struct EmailAuthView_Previews: PreviewProvider {
     static var previews: some View {

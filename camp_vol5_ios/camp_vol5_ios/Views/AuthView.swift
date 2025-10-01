@@ -10,7 +10,8 @@ struct AuthView: View {
         self.onStartWithoutAuth = onStartWithoutAuth
         // 初期化時はダミーのAuthenticationManagerを使用
         // 実際のAuthenticationManagerは@EnvironmentObjectで注入される
-        self._viewModel = StateObject(wrappedValue: AuthViewModel(authenticationManager: AuthenticationManager()))
+        self._viewModel = StateObject(
+            wrappedValue: AuthViewModel(authenticationManager: AuthenticationManager()))
     }
 
     var body: some View {

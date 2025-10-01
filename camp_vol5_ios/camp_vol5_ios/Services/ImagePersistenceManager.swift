@@ -19,7 +19,10 @@ struct ImageTransform: Codable {
         case backgroundColor
     }
 
-    init(scale: CGFloat = 1.0, normalizedOffset: CGPoint = .zero, rotation: Double = 0.0, backgroundColor: UIColor? = nil) {
+    init(
+        scale: CGFloat = 1.0, normalizedOffset: CGPoint = .zero, rotation: Double = 0.0,
+        backgroundColor: UIColor? = nil
+    ) {
         self.scale = scale
         self.normalizedOffset = normalizedOffset
         self.rotation = rotation
@@ -122,7 +125,6 @@ class ImageProcessingService {
         }
     }
 
-
     func createFullSizeEditedImage(
         from originalImage: UIImage,
         transform: ImageTransform,
@@ -185,7 +187,6 @@ class ImagePersistenceService {
             deleteImage(fileName: originalFileName)
             return nil
         }
-
 
         let persistentData = EnhancedPersistentImageData(
             originalImageFileName: originalFileName,

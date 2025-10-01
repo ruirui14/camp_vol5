@@ -7,7 +7,8 @@ struct QRCodeShareView: View {
 
     init() {
         // ダミーのAuthenticationManagerで初期化（@EnvironmentObjectで実際のものが注入される）
-        _viewModel = StateObject(wrappedValue: QRCodeShareViewModel(authenticationManager: AuthenticationManager()))
+        _viewModel = StateObject(
+            wrappedValue: QRCodeShareViewModel(authenticationManager: AuthenticationManager()))
     }
 
     var body: some View {

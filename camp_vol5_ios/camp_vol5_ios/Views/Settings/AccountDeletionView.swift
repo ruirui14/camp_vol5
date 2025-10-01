@@ -239,7 +239,6 @@ struct DeletionItem: View {
     }
 }
 
-
 #Preview {
     NavigationView {
         AccountDeletionView(

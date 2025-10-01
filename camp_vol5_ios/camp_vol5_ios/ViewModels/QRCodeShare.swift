@@ -27,7 +27,8 @@ class QRCodeShareViewModel: ObservableObject {
 
         // 初期化時に既存のinviteCodeがある場合は設定
         if let currentUser = authenticationManager.currentUser,
-           !currentUser.inviteCode.isEmpty {
+            !currentUser.inviteCode.isEmpty
+        {
             inviteCode = currentUser.inviteCode
             qrCodeImage = generateQRCode(from: currentUser.inviteCode)
         } else if authenticationManager.isAuthenticated {
@@ -36,7 +37,8 @@ class QRCodeShareViewModel: ObservableObject {
             // 少し待ってからinviteCodeがない場合は新規生成
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if let currentUser = self.authenticationManager.currentUser,
-                   currentUser.inviteCode.isEmpty {
+                    currentUser.inviteCode.isEmpty
+                {
                     self.generateNewInviteCode()
                 }
             }
@@ -50,7 +52,8 @@ class QRCodeShareViewModel: ObservableObject {
 
         // 既存のinviteCodeがある場合は設定
         if let currentUser = authenticationManager.currentUser,
-           !currentUser.inviteCode.isEmpty {
+            !currentUser.inviteCode.isEmpty
+        {
             inviteCode = currentUser.inviteCode
             qrCodeImage = generateQRCode(from: currentUser.inviteCode)
         } else if authenticationManager.isAuthenticated {
@@ -59,7 +62,8 @@ class QRCodeShareViewModel: ObservableObject {
             // 少し待ってからinviteCodeがない場合は新規生成
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if let currentUser = self.authenticationManager.currentUser,
-                   currentUser.inviteCode.isEmpty {
+                    currentUser.inviteCode.isEmpty
+                {
                     self.generateNewInviteCode()
                 }
             }
@@ -79,8 +83,9 @@ class QRCodeShareViewModel: ObservableObject {
             .sink { [weak self] inviteCode in
                 // ローディング中または既に同じinviteCodeの場合は更新をスキップ
                 guard let self = self,
-                      !self.isLoading,
-                      self.inviteCode != inviteCode else {
+                    !self.isLoading,
+                    self.inviteCode != inviteCode
+                else {
                     return
                 }
 
@@ -256,5 +261,5 @@ class QRCodeShareViewModel: ObservableObject {
             completion(false)
         }
     }
-    
+
 }

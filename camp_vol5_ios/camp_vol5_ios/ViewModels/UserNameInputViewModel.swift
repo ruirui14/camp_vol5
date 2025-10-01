@@ -107,8 +107,9 @@ class UserNameInputViewModel: ObservableObject {
                         receiveCompletion: { _ in },
                         receiveValue: { [weak self] existingUser in
                             if let existingUser = existingUser,
-                               let self = self,
-                               self.userName.isEmpty {
+                                let self = self,
+                                self.userName.isEmpty
+                            {
                                 self.userName = existingUser.name
                             }
                         }

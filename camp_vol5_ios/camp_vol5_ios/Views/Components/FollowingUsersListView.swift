@@ -20,8 +20,12 @@ struct FollowingUsersListView: View {
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        print("Tapping card for user: \(userWithHeartbeat.user.name), id: \(userWithHeartbeat.user.id)")
-                        print("Background image for \(userWithHeartbeat.user.id): \(backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage != nil ? "present" : "nil")")
+                        print(
+                            "Tapping card for user: \(userWithHeartbeat.user.name), id: \(userWithHeartbeat.user.id)"
+                        )
+                        print(
+                            "Background image for \(userWithHeartbeat.user.id): \(backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage != nil ? "present" : "nil")"
+                        )
                         onUserTapped(userWithHeartbeat)
                     }
                     .id("card-\(userWithHeartbeat.user.id)")

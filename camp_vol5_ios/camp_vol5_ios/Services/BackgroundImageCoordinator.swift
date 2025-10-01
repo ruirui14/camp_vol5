@@ -43,8 +43,8 @@ class BackgroundImageCoordinator: ObservableObject {
     func needsLoading(for users: [UserWithHeartbeat]) -> Bool {
         return users.contains { userWithHeartbeat in
             let userId = userWithHeartbeat.user.id
-            return backgroundImageManagers[userId] == nil ||
-                   backgroundImageManagers[userId]?.currentEditedImage == nil
+            return backgroundImageManagers[userId] == nil
+                || backgroundImageManagers[userId]?.currentEditedImage == nil
         }
     }
 
@@ -61,7 +61,8 @@ class BackgroundImageCoordinator: ObservableObject {
     private func loadImagesTask(for users: [UserWithHeartbeat]) async {
         for userWithHeartbeat in users {
             let userId = userWithHeartbeat.user.id
-            print("Loading background image for user: \(userWithHeartbeat.user.name) (ID: \(userId))")
+            print(
+                "Loading background image for user: \(userWithHeartbeat.user.name) (ID: \(userId))")
 
             await createOrRefreshManager(for: userId, userName: userWithHeartbeat.user.name)
 

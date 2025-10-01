@@ -121,7 +121,8 @@ class ListHeartBeatsViewModel: ObservableObject {
 
         userService.getFollowingUsers(followingUserIds: currentUser.followingUserIds)
             .flatMap { [weak self] users -> AnyPublisher<[UserWithHeartbeat], Error> in
-                self?.loadHeartbeatsForUsers(users) ?? Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
+                self?.loadHeartbeatsForUsers(users)
+                    ?? Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
             }
             .receive(on: DispatchQueue.main)
             .sink(
@@ -135,7 +136,8 @@ class ListHeartBeatsViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    private func loadHeartbeatsForUsers(_ users: [User]) -> AnyPublisher<[UserWithHeartbeat], Error> {
+    private func loadHeartbeatsForUsers(_ users: [User]) -> AnyPublisher<[UserWithHeartbeat], Error>
+    {
         guard !users.isEmpty else {
             return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
@@ -169,10 +171,13 @@ class ListHeartBeatsViewModel: ObservableObject {
     }
 
     private func applySorting() {
-        followingUsersWithHeartbeats = sortUsers(followingUsersWithHeartbeats, by: currentSortOption)
+        followingUsersWithHeartbeats = sortUsers(
+            followingUsersWithHeartbeats, by: currentSortOption)
     }
 
-    private func sortUsers(_ users: [UserWithHeartbeat], by sortOption: SortOption) -> [UserWithHeartbeat] {
+    private func sortUsers(_ users: [UserWithHeartbeat], by sortOption: SortOption)
+        -> [UserWithHeartbeat]
+    {
         switch sortOption {
         case .name:
             return users.sorted { $0.user.name < $1.user.name }

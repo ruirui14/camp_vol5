@@ -31,7 +31,8 @@ class QRCodeScannerViewModel: ObservableObject {
 
         // 認証済みの場合は自分自身をフォローできない
         if authenticationManager.isAuthenticated,
-           let currentUserId = authenticationManager.currentUserId {
+            let currentUserId = authenticationManager.currentUserId
+        {
             return user.id != currentUserId
         }
 
@@ -104,7 +105,8 @@ class QRCodeScannerViewModel: ObservableObject {
         }
 
         if authenticationManager.isAuthenticated,
-           let currentUser = authenticationManager.currentUser {
+            let currentUser = authenticationManager.currentUser
+        {
             followUserWithFirebase(currentUser: currentUser, targetUser: user)
         } else {
             followUserLocally(user: user)
@@ -122,7 +124,8 @@ class QRCodeScannerViewModel: ObservableObject {
         }
 
         if authenticationManager.isAuthenticated,
-           let currentUser = authenticationManager.currentUser {
+            let currentUser = authenticationManager.currentUser
+        {
             unfollowUserWithFirebase(currentUser: currentUser, targetUser: user)
         } else {
             unfollowUserLocally(user: user)
@@ -165,7 +168,9 @@ class QRCodeScannerViewModel: ObservableObject {
     private func handleSearchCompletion(_ completion: Subscribers.Completion<Error>) {
         isLoading = false
         if case let .failure(error) = completion {
-            print("❌ [QRCodeScannerViewModel] searchUserByInviteCode: エラー - \(error.localizedDescription)")
+            print(
+                "❌ [QRCodeScannerViewModel] searchUserByInviteCode: エラー - \(error.localizedDescription)"
+            )
             handleError(error.localizedDescription)
         }
         print("🔍 [QRCodeScannerViewModel] searchUserByInviteCode: 完了")
@@ -194,7 +199,8 @@ class QRCodeScannerViewModel: ObservableObject {
         print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 開始 - user: \(user.name)")
 
         if authenticationManager.isAuthenticated,
-           let currentUserId = authenticationManager.currentUserId {
+            let currentUserId = authenticationManager.currentUserId
+        {
             checkFollowingStatusWithFirebase(userId: currentUserId, targetUserId: user.id)
         } else {
             checkFollowingStatusLocally(targetUserId: user.id)
@@ -214,7 +220,9 @@ class QRCodeScannerViewModel: ObservableObject {
                     if let currentUser = currentUser {
                         let isFollowing = currentUser.followingUserIds.contains(targetUserId)
                         self?.isFollowingUser = isFollowing
-                        print("✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)")
+                        print(
+                            "✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)"
+                        )
                     } else {
                         self?.isFollowingUser = false
                         print("⚠️ [QRCodeScannerViewModel] checkIfAlreadyFollowing: currentUserがnil")
@@ -228,10 +236,11 @@ class QRCodeScannerViewModel: ObservableObject {
     private func checkFollowingStatusLocally(targetUserId: String) {
         let isFollowing = localFollowService.isFollowing(targetUserId)
         isFollowingUser = isFollowing
-        print("✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: ローカル確認完了 - isFollowing: \(isFollowing)")
+        print(
+            "✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: ローカル確認完了 - isFollowing: \(isFollowing)"
+        )
         print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 完了")
     }
-
 
     private func followUserWithFirebase(currentUser: User, targetUser: User) {
         print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 開始 - target: \(targetUser.name)")
@@ -255,9 +264,9 @@ class QRCodeScannerViewModel: ObservableObject {
         print("📱 [QRCodeScannerViewModel] followUserLocally: 完了")
     }
 
-
     private func unfollowUserWithFirebase(currentUser: User, targetUser: User) {
-        print("🔥 [QRCodeScannerViewModel] unfollowUserWithFirebase: 開始 - target: \(targetUser.name)")
+        print(
+            "🔥 [QRCodeScannerViewModel] unfollowUserWithFirebase: 開始 - target: \(targetUser.name)")
         isLoading = true
 
         userService.unfollowUser(currentUser: currentUser, targetUserId: targetUser.id)
@@ -278,10 +287,14 @@ class QRCodeScannerViewModel: ObservableObject {
         print("📱 [QRCodeScannerViewModel] unfollowUserLocally: 完了")
     }
 
-    private func handleFollowCompletion(_ completion: Subscribers.Completion<Error>, targetUserName: String) {
+    private func handleFollowCompletion(
+        _ completion: Subscribers.Completion<Error>, targetUserName: String
+    ) {
         isLoading = false
         if case let .failure(error) = completion {
-            print("❌ [QRCodeScannerViewModel] followUserWithFirebase: エラー - \(error.localizedDescription)")
+            print(
+                "❌ [QRCodeScannerViewModel] followUserWithFirebase: エラー - \(error.localizedDescription)"
+            )
             handleError(error.localizedDescription)
         } else {
             handleFollowSuccess(targetUserName: targetUserName)
@@ -290,10 +303,14 @@ class QRCodeScannerViewModel: ObservableObject {
         print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 完了")
     }
 
-    private func handleUnfollowCompletion(_ completion: Subscribers.Completion<Error>, targetUserName: String) {
+    private func handleUnfollowCompletion(
+        _ completion: Subscribers.Completion<Error>, targetUserName: String
+    ) {
         isLoading = false
         if case let .failure(error) = completion {
-            print("❌ [QRCodeScannerViewModel] unfollowUserWithFirebase: エラー - \(error.localizedDescription)")
+            print(
+                "❌ [QRCodeScannerViewModel] unfollowUserWithFirebase: エラー - \(error.localizedDescription)"
+            )
             handleError(error.localizedDescription)
         } else {
             handleUnfollowSuccess(targetUserName: targetUserName)

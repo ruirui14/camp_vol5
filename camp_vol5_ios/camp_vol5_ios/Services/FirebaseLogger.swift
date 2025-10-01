@@ -8,7 +8,8 @@ import os.log
 class FirebaseLogger {
     static let shared = FirebaseLogger()
 
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "Firebase")
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.app", category: "Firebase")
 
     private init() {}
 

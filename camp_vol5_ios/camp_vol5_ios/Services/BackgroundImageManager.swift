@@ -155,7 +155,6 @@ class BackgroundImageManager: ObservableObject {
         return currentEditedImage
     }
 
-
     func refreshFromStorage() {
         print("=== BackgroundImageManager.refreshFromStorage for userId: \(userId) ===")
 
