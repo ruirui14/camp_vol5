@@ -28,7 +28,6 @@ struct ListHeartBeatsView: View {
     @State private var navigationPath = NavigationPath()
     @State private var isStatusBarHidden = false
     @State private var persistentSystemOverlaysVisibility: Visibility = .automatic
-    @State private var hasAppearedBefore = false
 
     init() {
         // 初期化時はダミーの AuthenticationManager を使用
@@ -87,27 +86,16 @@ struct ListHeartBeatsView: View {
             .toolbarBackground(Color.white, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
-                print(
-                    "🔄 [ListHeartBeatsView] onAppear called (hasAppearedBefore: \(hasAppearedBefore))"
-                )
+                print("🔄 [ListHeartBeatsView] onAppear called")
+                viewModel.updateAuthenticationManager(authenticationManager)
+                viewModel.loadFollowingUsersWithHeartbeats()
 
-                // 初回のみ実行する処理
-                if !hasAppearedBefore {
-                    hasAppearedBefore = true
-                    viewModel.updateAuthenticationManager(authenticationManager)
-                    viewModel.loadFollowingUsersWithHeartbeats()
-
-                    // データが既に存在する場合は背景画像を読み込み
-                    if !viewModel.followingUsersWithHeartbeats.isEmpty {
-                        print(
-                            "🔄 [ListHeartBeatsView] Loading background images from onAppear (first time)"
-                        )
-                        backgroundImageCoordinator.loadBackgroundImages(
-                            for: viewModel.followingUsersWithHeartbeats)
-                    }
-                } else {
-                    print("🔄 [ListHeartBeatsView] onAppear skipped (not first time)")
+                // データが既に存在する場合は背景画像を読み込み
+                if !viewModel.followingUsersWithHeartbeats.isEmpty {
+                    backgroundImageCoordinator.loadBackgroundImages(
+                        for: viewModel.followingUsersWithHeartbeats)
                 }
+
             }
             .onReceive(
                 NotificationCenter.default.publisher(
