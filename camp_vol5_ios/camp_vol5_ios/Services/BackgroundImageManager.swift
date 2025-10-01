@@ -8,7 +8,6 @@ import UIKit
 
 class BackgroundImageManager: ObservableObject {
     @Published var currentEditedImage: UIImage?
-    @Published var currentThumbnail: UIImage?
     @Published var currentOriginalImage: UIImage?
     @Published var currentTransform: ImageTransform = .init()
     @Published var isLoading = false
@@ -40,20 +39,16 @@ class BackgroundImageManager: ObservableObject {
                 let editedImage = self.persistenceService.loadImage(
                     fileName: savedData.editedImageFileName
                 )
-                let thumbnail = self.persistenceService.loadImage(
-                    fileName: savedData.thumbnailFileName
-                )
                 let originalImage = self.persistenceService.loadImage(
                     fileName: savedData.originalImageFileName
                 )
 
                 print(
-                    "Loaded images for \(self.userId): edited=\(editedImage != nil), thumbnail=\(thumbnail != nil), original=\(originalImage != nil)"
+                    "Loaded images for \(self.userId): edited=\(editedImage != nil), original=\(originalImage != nil)"
                 )
 
                 DispatchQueue.main.async {
                     self.currentEditedImage = editedImage
-                    self.currentThumbnail = thumbnail
                     self.currentOriginalImage = originalImage
                     self.currentTransform = savedData.transform
                     self.isLoading = false
@@ -112,13 +107,9 @@ class BackgroundImageManager: ObservableObject {
             let editedImage = self.persistenceService.loadImage(
                 fileName: persistentData.editedImageFileName
             )
-            let thumbnail = self.persistenceService.loadImage(
-                fileName: persistentData.thumbnailFileName
-            )
 
             DispatchQueue.main.async {
                 self.currentEditedImage = editedImage
-                self.currentThumbnail = thumbnail
                 self.isSaving = false
             }
         }
@@ -152,7 +143,6 @@ class BackgroundImageManager: ObservableObject {
         userDefaultsService.deleteBackgroundImageData(for: userId)
 
         currentEditedImage = nil
-        currentThumbnail = nil
         currentOriginalImage = nil
         currentTransform = ImageTransform()
     }
@@ -165,9 +155,6 @@ class BackgroundImageManager: ObservableObject {
         return currentEditedImage
     }
 
-    func getThumbnailImage() -> UIImage? {
-        return currentThumbnail
-    }
 
     func refreshFromStorage() {
         print("=== BackgroundImageManager.refreshFromStorage for userId: \(userId) ===")

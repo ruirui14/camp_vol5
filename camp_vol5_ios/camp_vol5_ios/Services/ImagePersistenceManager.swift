@@ -57,7 +57,6 @@ struct ImageTransform: Codable {
 struct EnhancedPersistentImageData: Codable {
     let originalImageFileName: String
     let editedImageFileName: String
-    let thumbnailFileName: String
     let transform: ImageTransform
     let createdAt: Date
     let userId: String
@@ -123,15 +122,6 @@ class ImageProcessingService {
         }
     }
 
-    func createThumbnail(
-        from originalImage: UIImage,
-        transform: ImageTransform,
-        thumbnailSize: CGSize = CGSize(width: 300, height: 300)
-    ) -> UIImage? {
-        return createEditedImage(
-            from: originalImage, transform: transform, outputSize: thumbnailSize
-        )
-    }
 
     func createFullSizeEditedImage(
         from originalImage: UIImage,
@@ -180,7 +170,6 @@ class ImagePersistenceService {
         let timestamp = UUID().uuidString
         let originalFileName = "\(userId)_original_\(timestamp).jpg"
         let editedFileName = "\(userId)_edited_\(timestamp).jpg"
-        let thumbnailFileName = "\(userId)_thumb_\(timestamp).jpg"
 
         guard saveImage(originalImage, fileName: originalFileName) else {
             return nil
@@ -197,21 +186,10 @@ class ImagePersistenceService {
             return nil
         }
 
-        guard
-            let thumbnail = imageProcessor.createThumbnail(
-                from: originalImage,
-                transform: transform
-            ), saveImage(thumbnail, fileName: thumbnailFileName)
-        else {
-            deleteImage(fileName: originalFileName)
-            deleteImage(fileName: editedFileName)
-            return nil
-        }
 
         let persistentData = EnhancedPersistentImageData(
             originalImageFileName: originalFileName,
             editedImageFileName: editedFileName,
-            thumbnailFileName: thumbnailFileName,
             transform: transform,
             createdAt: Date(),
             userId: userId,
@@ -260,7 +238,6 @@ class ImagePersistenceService {
     func deleteImageSet(_ data: EnhancedPersistentImageData) {
         deleteImage(fileName: data.originalImageFileName)
         deleteImage(fileName: data.editedImageFileName)
-        deleteImage(fileName: data.thumbnailFileName)
     }
 }
 
