@@ -9,7 +9,6 @@ struct UserHeartbeatCard: View {
     @StateObject private var viewModel: UserHeartbeatCardViewModel
     let customBackgroundImage: UIImage?
 
-    // 新しいイニシャライザー（カスタマイズ用）
     init(
         userWithHeartbeat: UserWithHeartbeat? = nil,
         customBackgroundImage: UIImage? = nil,
@@ -37,7 +36,7 @@ struct UserHeartbeatCard: View {
             let heartRightOffset = CardConstants.heartRightOffset(for: cardWidth)
 
             ZStack(alignment: .bottomLeading) {
-                // 背景画像の表示（customBackgroundImageを直接使用）
+                // 背景画像の表示
                 if let customImage = customBackgroundImage {
                     Image(uiImage: customImage)
                         .resizable()

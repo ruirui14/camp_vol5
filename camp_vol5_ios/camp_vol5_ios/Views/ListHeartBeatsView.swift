@@ -69,8 +69,7 @@ struct ListHeartBeatsView: View {
                     } else {
                         FollowingUsersListView(
                             users: viewModel.followingUsersWithHeartbeats,
-                            backgroundImageManagers: backgroundImageCoordinator
-                                .backgroundImageManagers,
+                            backgroundImageCoordinator: backgroundImageCoordinator,
                             onUserTapped: { userWithHeartbeat in
                                 navigationPath.append(
                                     NavigationDestination.heartbeatDetail(userWithHeartbeat.user.id)

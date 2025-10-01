@@ -6,7 +6,7 @@ import SwiftUI
 
 struct FollowingUsersListView: View {
     let users: [UserWithHeartbeat]
-    let backgroundImageManagers: [String: BackgroundImageManager]
+    @ObservedObject var backgroundImageCoordinator: BackgroundImageCoordinator
     let onUserTapped: (UserWithHeartbeat) -> Void
     let onRefresh: () -> Void
 
@@ -14,9 +14,9 @@ struct FollowingUsersListView: View {
         ScrollView {
             VStack(spacing: CardConstants.cardVerticalSpacing) {
                 ForEach(users, id: \.user.id) { userWithHeartbeat in
-                    UserHeartbeatCardWrapper(
+                    UserHeartbeatCard(
                         userWithHeartbeat: userWithHeartbeat,
-                        backgroundImageManager: backgroundImageManagers[userWithHeartbeat.user.id]
+                        customBackgroundImage: backgroundImageCoordinator.backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -24,7 +24,7 @@ struct FollowingUsersListView: View {
                             "Tapping card for user: \(userWithHeartbeat.user.name), id: \(userWithHeartbeat.user.id)"
                         )
                         print(
-                            "Background image for \(userWithHeartbeat.user.id): \(backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage != nil ? "present" : "nil")"
+                            "Background image for \(userWithHeartbeat.user.id): \(backgroundImageCoordinator.backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage != nil ? "present" : "nil")"
                         )
                         onUserTapped(userWithHeartbeat)
                     }
@@ -42,7 +42,7 @@ struct FollowingUsersListView: View {
 #Preview {
     FollowingUsersListView(
         users: [],
-        backgroundImageManagers: [:],
+        backgroundImageCoordinator: BackgroundImageCoordinator(),
         onUserTapped: { _ in },
         onRefresh: {}
     )
