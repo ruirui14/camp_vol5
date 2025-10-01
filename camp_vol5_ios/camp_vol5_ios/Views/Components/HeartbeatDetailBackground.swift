@@ -9,6 +9,7 @@ struct HeartbeatDetailBackground: View {
     let backgroundColor: Color
     let imageOffset: CGSize
     let imageScale: CGFloat
+    let imageRotation: Double
 
     var body: some View {
         ZStack {
@@ -26,6 +27,7 @@ struct HeartbeatDetailBackground: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .scaleEffect(imageScale)
+                    .rotationEffect(.degrees(imageRotation))
                     .offset(imageOffset)
                     .ignoresSafeArea()
             }
@@ -38,6 +40,7 @@ struct HeartbeatDetailBackground: View {
         backgroundImage: nil,
         backgroundColor: .clear,
         imageOffset: .zero,
-        imageScale: 1.0
+        imageScale: 1.0,
+        imageRotation: 0.0
     )
 }

@@ -5,12 +5,15 @@ struct ImageEditView: View {
     @Binding var image: UIImage?
     @Binding var imageOffset: CGSize
     @Binding var imageScale: CGFloat
+    @Binding var imageRotation: Double
     let onApply: () -> Void
     let userId: String
     @State private var tempOffset = CGSize.zero
     @State private var lastOffset = CGSize.zero
     @State private var tempScale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
+    @State private var tempRotation: Double = 0.0
+    @State private var lastRotation: Double = 0.0
     @State private var heartOffset = CGSize.zero
     @State private var lastHeartOffset = CGSize.zero
     @State private var heartSize: CGFloat = 105.0
@@ -39,37 +42,16 @@ struct ImageEditView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .scaleEffect(tempScale)
+                        .rotationEffect(.degrees(tempRotation))
                         .offset(tempOffset)
                         .ignoresSafeArea()
                         .gesture(
                             SimultaneousGesture(
-                                // ドラッグジェスチャー
-                                DragGesture()
-                                    .onChanged { value in
-                                        tempOffset = CGSize(
-                                            width: lastOffset.width + value.translation.width,
-                                            height: lastOffset.height + value.translation.height
-                                        )
-                                    }
-                                    .onEnded { _ in
-                                        lastOffset = tempOffset
-                                    },
-                                // ズームジェスチャー
-                                MagnificationGesture()
-                                    .onChanged { value in
-                                        tempScale = lastScale * value
-                                    }
-                                    .onEnded { _ in
-                                        lastScale = tempScale
-                                        // 最小・最大スケールの制限
-                                        if tempScale < 0.5 {
-                                            tempScale = 0.5
-                                            lastScale = 0.5
-                                        } else if tempScale > 5.0 {
-                                            tempScale = 5.0
-                                            lastScale = 5.0
-                                        }
-                                    }
+                                SimultaneousGesture(
+                                    dragGesture,
+                                    magnificationGesture
+                                ),
+                                rotationGesture
                             )
                         )
                 } else {
@@ -145,7 +127,8 @@ struct ImageEditView: View {
                                     Slider(value: $heartSize, in: 60...200, step: 5)
                                         .accentColor(.white)
                                         .onChange(of: heartSize) { newSize in
-                                            persistenceManager.saveHeartSize(newSize, userId: userId)
+                                            persistenceManager.saveHeartSize(
+                                                newSize, userId: userId)
                                         }
 
                                     Text("大")
@@ -204,13 +187,15 @@ struct ImageEditView: View {
                         // 編集内容を適用
                         imageOffset = tempOffset
                         imageScale = tempScale
+                        imageRotation = tempRotation
 
                         // ハートの位置を保存
                         persistenceManager.saveHeartPosition(heartOffset, userId: userId)
 
-                        // 画像の変形情報を直接保存
+                        // 画像の変形情報を直接保存（回転も含む）
                         persistenceManager.saveImageTransform(
-                            offset: tempOffset, scale: tempScale, userId: userId
+                            offset: tempOffset, scale: tempScale, rotation: tempRotation,
+                            userId: userId
                         )
 
                         persistenceManager.saveBackgroundColor(tempColor, userId: userId)
@@ -235,23 +220,35 @@ struct ImageEditView: View {
             // 背景色を読み込み
             selectedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userId)
 
-            // 永続化されたデータを再読み込み（画像がある場合のみ）
-            if image != nil {
+            // Bindingから渡された値を優先し、無ければ永続化データから読み込み
+            if imageOffset != .zero || imageScale != 1.0 || imageRotation != 0.0 {
+                // HeartbeatDetailViewから渡された値を使用
+                tempOffset = imageOffset
+                lastOffset = imageOffset
+                tempScale = imageScale
+                lastScale = imageScale
+                tempRotation = imageRotation
+                lastRotation = imageRotation
+            } else if image != nil {
+                // 永続化されたデータを再読み込み
                 let transform = persistenceManager.loadImageTransform(userId: userId)
                 imageOffset = transform.offset
                 imageScale = transform.scale
+                imageRotation = transform.rotation
 
                 // 現在の状態を編集画面に反映
                 tempOffset = transform.offset
                 lastOffset = transform.offset
                 tempScale = transform.scale
                 lastScale = transform.scale
-
-                // ハートの位置を読み込み
-                let heartPosition = persistenceManager.loadHeartPosition(userId: userId)
-                heartOffset = heartPosition
-                lastHeartOffset = heartPosition
+                tempRotation = transform.rotation
+                lastRotation = transform.rotation
             }
+
+            // ハートの位置を読み込み
+            let heartPosition = persistenceManager.loadHeartPosition(userId: userId)
+            heartOffset = heartPosition
+            lastHeartOffset = heartPosition
         }
         .onChange(of: selectedBackgroundColor) { _, newColor in
             // 背景色が変更されたときに仮保存
@@ -406,10 +403,53 @@ struct ImageEditView: View {
             lastOffset = .zero
             tempScale = 1.0
             lastScale = 1.0
+            tempRotation = 0.0
+            lastRotation = 0.0
             heartOffset = .zero
             lastHeartOffset = .zero
         }
     }
+
+    private var dragGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                tempOffset = CGSize(
+                    width: lastOffset.width + value.translation.width,
+                    height: lastOffset.height + value.translation.height
+                )
+            }
+            .onEnded { _ in
+                lastOffset = tempOffset
+            }
+    }
+
+    private var magnificationGesture: some Gesture {
+        MagnificationGesture()
+            .onChanged { value in
+                tempScale = lastScale * value
+            }
+            .onEnded { _ in
+                lastScale = tempScale
+                if tempScale < 0.5 {
+                    tempScale = 0.5
+                    lastScale = 0.5
+                } else if tempScale > 5.0 {
+                    tempScale = 5.0
+                    lastScale = 5.0
+                }
+            }
+    }
+
+    private var rotationGesture: some Gesture {
+        RotationGesture()
+            .onChanged { value in
+                tempRotation = lastRotation + value.degrees
+            }
+            .onEnded { _ in
+                lastRotation = tempRotation
+            }
+    }
+
 }
 
 // MARK: - Color Palette View
@@ -488,6 +528,7 @@ struct ColorPaletteView: View {
         image: .constant(UIImage(systemName: "photo")),
         imageOffset: .constant(CGSize.zero),
         imageScale: .constant(1.0),
+        imageRotation: .constant(0.0),
         onApply: {},
         userId: "preview_user"
     )

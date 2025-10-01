@@ -9,17 +9,20 @@ import UIKit
 struct ImageTransform: Codable {
     var scale: CGFloat = 1.0
     var normalizedOffset: CGPoint = .zero
+    var rotation: Double = 0.0
     var backgroundColor: UIColor? = nil
 
     enum CodingKeys: String, CodingKey {
         case scale
         case normalizedOffset
+        case rotation
         case backgroundColor
     }
 
-    init(scale: CGFloat = 1.0, normalizedOffset: CGPoint = .zero, backgroundColor: UIColor? = nil) {
+    init(scale: CGFloat = 1.0, normalizedOffset: CGPoint = .zero, rotation: Double = 0.0, backgroundColor: UIColor? = nil) {
         self.scale = scale
         self.normalizedOffset = normalizedOffset
+        self.rotation = rotation
         self.backgroundColor = backgroundColor
     }
 
@@ -27,6 +30,7 @@ struct ImageTransform: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         scale = try container.decode(CGFloat.self, forKey: .scale)
         normalizedOffset = try container.decode(CGPoint.self, forKey: .normalizedOffset)
+        rotation = try container.decodeIfPresent(Double.self, forKey: .rotation) ?? 0.0
         if let colorData = try container.decodeIfPresent(Data.self, forKey: .backgroundColor) {
             backgroundColor = try NSKeyedUnarchiver.unarchivedObject(
                 ofClass: UIColor.self, from: colorData)
@@ -39,6 +43,7 @@ struct ImageTransform: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(scale, forKey: .scale)
         try container.encode(normalizedOffset, forKey: .normalizedOffset)
+        try container.encode(rotation, forKey: .rotation)
         if let backgroundColor = backgroundColor {
             let colorData = try NSKeyedArchiver.archivedData(
                 withRootObject: backgroundColor, requiringSecureCoding: false)
@@ -95,6 +100,14 @@ class ImageProcessingService {
             let offsetX = transform.normalizedOffset.x * outputSize.width / 2
             let offsetY = transform.normalizedOffset.y * outputSize.height / 2
 
+            // コンテキストの状態を保存
+            cgContext.saveGState()
+
+            // 回転の適用（中心点を基準に回転）
+            cgContext.translateBy(x: centerX + offsetX, y: centerY + offsetY)
+            cgContext.rotate(by: CGFloat(transform.rotation * .pi / 180))
+            cgContext.translateBy(x: -(centerX + offsetX), y: -(centerY + offsetY))
+
             // 最終的な描画矩形を計算
             let drawRect = CGRect(
                 x: centerX - (imageSize.width * transform.scale) / 2 + offsetX,
@@ -104,6 +117,9 @@ class ImageProcessingService {
             )
 
             originalImage.draw(in: drawRect)
+
+            // コンテキストの状態を復元
+            cgContext.restoreGState()
         }
     }
 

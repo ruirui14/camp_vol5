@@ -17,6 +17,7 @@ class PersistenceManager {
     private let imageOffsetXKey = "imageOffsetX"
     private let imageOffsetYKey = "imageOffsetY"
     private let imageScaleKey = "imageScale"
+    private let imageRotationKey = "imageRotation"
     private let heartOffsetXKey = "heartOffsetX"
     private let heartOffsetYKey = "heartOffsetY"
     private let heartSizeKey = "heartSize"
@@ -95,29 +96,34 @@ class PersistenceManager {
     }
 
     // 画像の位置とスケール情報を保存（ユーザーID別）
-    func saveImageTransform(offset: CGSize, scale: CGFloat, userId: String) {
+    func saveImageTransform(offset: CGSize, scale: CGFloat, rotation: Double = 0.0, userId: String) {
         let offsetXKey = userSpecificKey(imageOffsetXKey, userId: userId)
         let offsetYKey = userSpecificKey(imageOffsetYKey, userId: userId)
         let scaleKey = userSpecificKey(imageScaleKey, userId: userId)
+        let rotationKey = userSpecificKey(imageRotationKey, userId: userId)
 
         userDefaults.set(offset.width, forKey: offsetXKey)
         userDefaults.set(offset.height, forKey: offsetYKey)
         userDefaults.set(scale, forKey: scaleKey)
+        userDefaults.set(rotation, forKey: rotationKey)
     }
 
     // 保存された画像の位置とスケール情報を読み込み（ユーザーID別）
-    func loadImageTransform(userId: String) -> (offset: CGSize, scale: CGFloat) {
+    func loadImageTransform(userId: String) -> (offset: CGSize, scale: CGFloat, rotation: Double) {
         let offsetXKey = userSpecificKey(imageOffsetXKey, userId: userId)
         let offsetYKey = userSpecificKey(imageOffsetYKey, userId: userId)
         let scaleKey = userSpecificKey(imageScaleKey, userId: userId)
+        let rotationKey = userSpecificKey(imageRotationKey, userId: userId)
 
         let offsetX = userDefaults.double(forKey: offsetXKey)
         let offsetY = userDefaults.double(forKey: offsetYKey)
         let scale = userDefaults.double(forKey: scaleKey)
+        let rotation = userDefaults.double(forKey: rotationKey)
 
         return (
             offset: CGSize(width: offsetX, height: offsetY),
-            scale: scale == 0 ? 1.0 : scale
+            scale: scale == 0 ? 1.0 : scale,
+            rotation: rotation
         )
     }
 
@@ -135,6 +141,7 @@ class PersistenceManager {
         userDefaults.removeObject(forKey: imageOffsetXKey)
         userDefaults.removeObject(forKey: imageOffsetYKey)
         userDefaults.removeObject(forKey: imageScaleKey)
+        userDefaults.removeObject(forKey: imageRotationKey)
         userDefaults.removeObject(forKey: heartOffsetXKey)
         userDefaults.removeObject(forKey: heartOffsetYKey)
         userDefaults.removeObject(forKey: heartSizeKey)

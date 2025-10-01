@@ -29,6 +29,7 @@ struct HeartbeatDetailView: View {
     @State private var showingCardBackgroundEditSheet = false
     @State private var imageOffset = CGSize.zero
     @State private var imageScale: CGFloat = 1.0
+    @State private var imageRotation: Double = 0.0
     @State private var heartOffset = CGSize.zero
     @State private var heartSize: CGFloat = 105.0
     @State private var savedBackgroundColor: Color = .clear
@@ -69,7 +70,8 @@ struct HeartbeatDetailView: View {
                     backgroundImage: editedImage ?? selectedImage,
                     backgroundColor: savedBackgroundColor,
                     imageOffset: imageOffset,
-                    imageScale: imageScale
+                    imageScale: imageScale,
+                    imageRotation: imageRotation
                 )
 
                 // メインコンテンツ
@@ -177,6 +179,7 @@ struct HeartbeatDetailView: View {
                 image: $selectedImage,
                 imageOffset: $imageOffset,
                 imageScale: $imageScale,
+                imageRotation: $imageRotation,
                 onApply: {
                     applyImageChanges()
                 },
@@ -216,6 +219,7 @@ struct HeartbeatDetailView: View {
                 image: $selectedImage,
                 imageOffset: $imageOffset,
                 imageScale: $imageScale,
+                imageRotation: $imageRotation,
                 onApply: {
                     print("=== HeartbeatDetailView onApply ===")
                     print("Current user: \(viewModel.user?.name ?? "nil") (ID: \(userIdParams))")
@@ -231,7 +235,7 @@ struct HeartbeatDetailView: View {
                     }
 
                     print("Saving image transform for user: \(userIdParams)")
-                    persistenceManager.saveImageTransform(offset: imageOffset, scale: imageScale, userId: userIdParams)
+                    persistenceManager.saveImageTransform(offset: imageOffset, scale: imageScale, rotation: imageRotation, userId: userIdParams)
 
                     showingImageEditor = false
                     print("=== End HeartbeatDetailView onApply ===")
@@ -279,6 +283,7 @@ struct HeartbeatDetailView: View {
         let transform = persistenceManager.loadImageTransform(userId: userIdParams)
         imageOffset = transform.offset
         imageScale = transform.scale
+        imageRotation = transform.rotation
 
         // ハートの位置を読み込み
         let heartPosition = persistenceManager.loadHeartPosition(userId: userIdParams)
@@ -286,7 +291,7 @@ struct HeartbeatDetailView: View {
 
         // ハートのサイズを読み込み
         heartSize = persistenceManager.loadHeartSize(userId: userIdParams)
-        print("Loaded data - offset: \(transform.offset), scale: \(transform.scale), heartOffset: \(heartPosition), heartSize: \(heartSize)")
+        print("Loaded data - offset: \(transform.offset), scale: \(transform.scale), rotation: \(transform.rotation), heartOffset: \(heartPosition), heartSize: \(heartSize)")
         print("=== End loadPersistedData ===")
     }
 
