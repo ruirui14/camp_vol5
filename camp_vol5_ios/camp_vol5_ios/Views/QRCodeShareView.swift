@@ -127,7 +127,7 @@ struct QRCodeShareView: View {
                                 Image(systemName: "link")
                                     .foregroundColor(.text)
                                     .font(.title3)
-                                Text("リンクをコピー")
+                                Text("IDをコピー")
                                     .font(.caption.weight(.semibold))
                                     .foregroundColor(.text)
                             }
