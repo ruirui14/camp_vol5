@@ -280,6 +280,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "camp-vol5-ios-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "狂愛";
 				INFOPLIST_KEY_NSCameraUsageDescription = "カメラを使います";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "QRコードを写真に保存するために使用します";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "背景画像を設定するために写真ライブラリへのアクセスが必要です";
@@ -313,6 +314,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "camp-vol5-ios-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "狂愛";
 				INFOPLIST_KEY_NSCameraUsageDescription = "カメラを使います";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "QRコードを写真に保存するために使用します";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "背景画像を設定するために写真ライブラリへのアクセスが必要です";
