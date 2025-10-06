@@ -1,6 +1,6 @@
 // Views/SplashView.swift
 // アプリ起動時に表示されるスプラッシュ画面
-// kyouai画像を中央に配置し、初期化完了後にメイン画面に遷移
+// Resource/splash-logoを画像を中央に配置し、初期化完了後にメイン画面に遷移
 
 import RiveRuntime
 import SwiftUI
@@ -33,7 +33,7 @@ struct SplashView: View {
             // 端末の触覚フィードバック
             startHapticFeedback()
 
-            // 1.5秒後にメイン画面に遷移
+            // 3.5秒後にメイン画面に遷移
             DispatchQueue.main.asyncAfter(deadline: .now() + transition) {
                 withAnimation(.easeOut(duration: 0.3)) {
                     isActive = false
