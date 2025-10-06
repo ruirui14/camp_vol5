@@ -13,7 +13,13 @@ struct ContentView: View {
                         "🔥 ContentView - isLoading: \(authenticationManager.isLoading), needsUserNameInput: \(authenticationManager.needsUserNameInput), isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
                     )
 
-                    if authenticationManager.isAuthenticated && authenticationManager.currentUser != nil
+                    if authenticationManager.needsUserNameInput {
+                        // ユーザー名入力が必要な場合
+                        let _ = print("🔥 Showing UserNameInputView")
+                        UserNameInputView(
+                            selectedAuthMethod: mapAuthMethod(authenticationManager.selectedAuthMethod)
+                        )
+                    } else if authenticationManager.isAuthenticated && authenticationManager.currentUser != nil
                     {
                         // ログイン済みかつユーザー情報がある場合
                         let _ = print("🔥 Showing ListHeartBeatsView")
@@ -26,24 +32,6 @@ struct ContentView: View {
                         AuthView(onStartWithoutAuth: {
                             // このクロージャは現在使用されていない（匿名サインインに置き換えられた）
                         })
-                    }
-                }
-                .navigationDestination(for: String.self) { destination in
-                    if destination == "userNameInput" {
-                        let _ = print("🔥 Showing UserNameInputView via navigation")
-                        UserNameInputView(
-                            selectedAuthMethod: mapAuthMethod(authenticationManager.selectedAuthMethod)
-                        )
-                    }
-                }
-            }
-            .onChange(of: authenticationManager.needsUserNameInput) { needsInput in
-                if needsInput {
-                    navigationPath.append("userNameInput")
-                } else {
-                    // 名前入力完了時はパスをクリア
-                    if !navigationPath.isEmpty {
-                        navigationPath.removeLast()
                     }
                 }
             }
