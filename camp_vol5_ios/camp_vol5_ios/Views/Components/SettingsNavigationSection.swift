@@ -44,7 +44,7 @@ struct SettingsNavigationSection: View {
 
             NavigationLink(destination: TermsOfServiceView()) {
                 SettingRow(
-                    icon: "doc.text.circle",
+                    icon: "doc.text",
                     title: "利用規約",
                     subtitle: "アプリの利用規約を確認"
                 )
