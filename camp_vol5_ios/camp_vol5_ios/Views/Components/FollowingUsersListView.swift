@@ -16,7 +16,8 @@ struct FollowingUsersListView: View {
                 ForEach(users, id: \.user.id) { userWithHeartbeat in
                     UserHeartbeatCard(
                         userWithHeartbeat: userWithHeartbeat,
-                        customBackgroundImage: backgroundImageCoordinator.backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage
+                        customBackgroundImage: backgroundImageCoordinator.backgroundImageManagers[
+                            userWithHeartbeat.user.id]?.currentEditedImage
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
