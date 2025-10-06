@@ -15,7 +15,7 @@ struct camp_vol5_iosApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ListHeartBeatsView()
         }
     }
 }
