@@ -10,7 +10,7 @@ struct SplashView: View {
     @State private var opacity: Double = 0
     @State private var offset: CGFloat = 0
     @State private var rotation: Double = 0
-    private let transition: Double = 3.5
+    private let transition: Double = 2.5
 
     var body: some View {
         ZStack {
@@ -33,7 +33,7 @@ struct SplashView: View {
             // 端末の触覚フィードバック
             startHapticFeedback()
 
-            // 3.5秒後にメイン画面に遷移
+            // 2.5秒後にメイン画面に遷移
             DispatchQueue.main.asyncAfter(deadline: .now() + transition) {
                 withAnimation(.easeOut(duration: 0.3)) {
                     isActive = false
