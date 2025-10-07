@@ -1,5 +1,50 @@
 import SwiftUI
 
+// MARK: - QRCodeShareButton
+/// QRコードをシェアするためのボタンコンポーネント
+/// Twitter投稿用の文言とQRコード画像を含むShareLinkを提供
+private struct QRCodeShareButton: View {
+    let qrCodeImage: UIImage
+    let inviteCode: String
+
+    private var shareMessage: String {
+        """
+        私の鼓動を聞いてみない？
+
+        ▼招待コード
+        \(inviteCode)
+
+        https://apps.apple.com/jp/app/id1234567890
+
+        #狂愛
+        #推し活
+        """
+    }
+
+    var body: some View {
+        ShareLink(
+            item: Image(uiImage: qrCodeImage),
+            subject: Text("私の鼓動を聞いてみない？"),
+            message: Text(shareMessage),
+            preview: SharePreview(
+                "QRコード",
+                image: Image(uiImage: qrCodeImage)
+            )
+        ) {
+            VStack(spacing: 8) {
+                Image(systemName: "square.and.arrow.up")
+                    .foregroundColor(.text)
+                    .font(.title3)
+                Text("シェア")
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.text)
+            }
+            .frame(minWidth: 60)
+        }
+    }
+}
+
+// MARK: - QRCodeShareView
 struct QRCodeShareView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel: QRCodeShareViewModel
@@ -135,17 +180,11 @@ struct QRCodeShareView: View {
                         }
 
                         // シェア
-                        ShareLink(item: URL(string: "https://developer.apple.com/xcode/swiftui/")!)
-                        {
-                            VStack(spacing: 8) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .foregroundColor(.text)
-                                    .font(.title3)
-                                Text("シェア")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(.text)
-                            }
-                            .frame(minWidth: 60)
+                        if let qrCodeImage = viewModel.qrCodeImage {
+                            QRCodeShareButton(
+                                qrCodeImage: qrCodeImage,
+                                inviteCode: inviteCode
+                            )
                         }
 
                         // 保存
