@@ -6,7 +6,7 @@ import Firebase
 import FirebaseFirestore
 import Foundation
 
-struct User: Codable, Identifiable {
+struct User: Codable, Identifiable, Equatable {
     let id: String
     let name: String
     let inviteCode: String  // UUIDv4

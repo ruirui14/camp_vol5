@@ -9,7 +9,6 @@ import Foundation
 class QRCodeScannerViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var scannedUser: User?
-    @Published var inviteCode: String = ""
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     @Published var successMessage: String?
@@ -63,7 +62,6 @@ class QRCodeScannerViewModel: ObservableObject {
 
         guard validateInviteCode(code) else { return }
 
-        inviteCode = code
         isLoading = true
         scannedUser = nil
 
@@ -136,7 +134,6 @@ class QRCodeScannerViewModel: ObservableObject {
 
     func clearInput() {
         print("🧹 [QRCodeScannerViewModel] clearInput: 開始")
-        inviteCode = ""
         scannedUser = nil
         isFollowingUser = false
         shouldDismiss = false

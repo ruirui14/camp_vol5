@@ -7,6 +7,7 @@ struct QRCodeScannerView: View {
     @State private var showingFollowConfirmation = false
     @State private var showingAuthRequired = false
     @State private var showingQRCodeShare = false
+    @State private var inputText: String = ""
     @Environment(\.presentationMode) var presentationMode
 
     init() {
@@ -64,6 +65,11 @@ struct QRCodeScannerView: View {
             .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
                 if shouldDismiss {
                     presentationMode.wrappedValue.dismiss()
+                }
+            }
+            .onChange(of: viewModel.scannedUser) { _, user in
+                if user != nil {
+                    inputText = ""
                 }
             }
             .sheet(isPresented: $showingQRScanner) {
@@ -159,23 +165,39 @@ struct QRCodeScannerView: View {
                 .font(.headline)
                 .foregroundColor(Color.text)
 
-            HStack {
-                TextField(
-                    "招待コードを入力してください",
-                    text: $viewModel.inviteCode
-                )
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
+            HStack(spacing: 8) {
+                HStack {
+                    TextField(
+                        "招待コードを入力してください",
+                        text: $inputText
+                    )
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+
+                    // クリアボタン（入力がある場合のみ表示）
+                    if !inputText.isEmpty {
+                        Button(action: {
+                            inputText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
 
                 Button("検索") {
-                    viewModel.searchUserByInviteCode(viewModel.inviteCode)
+                    viewModel.searchUserByInviteCode(inputText)
                 }
                 .buttonStyle(.bordered)
                 // 入力されているかつローディング状態でない場合のみ表示させる
-                .disabled(viewModel.inviteCode.isEmpty)
+                .disabled(inputText.isEmpty)
 
-                // .disabled(viewModel.inviteCode.isEmpty || viewModel.isLoading)
+                // .disabled(inputText.isEmpty || viewModel.isLoading)
             }
         }
     }
