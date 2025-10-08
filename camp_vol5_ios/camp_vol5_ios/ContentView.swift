@@ -17,9 +17,11 @@ struct ContentView: View {
                         // ユーザー名入力が必要な場合
                         let _ = print("🔥 Showing UserNameInputView")
                         UserNameInputView(
-                            selectedAuthMethod: mapAuthMethod(authenticationManager.selectedAuthMethod)
+                            selectedAuthMethod: mapAuthMethod(
+                                authenticationManager.selectedAuthMethod)
                         )
-                    } else if authenticationManager.isAuthenticated && authenticationManager.currentUser != nil
+                    } else if authenticationManager.isAuthenticated
+                        && authenticationManager.currentUser != nil
                     {
                         // ログイン済みかつユーザー情報がある場合
                         let _ = print("🔥 Showing ListHeartBeatsView")
