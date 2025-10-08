@@ -19,6 +19,7 @@ class QRCodeShareViewModel: ObservableObject {
 
     private let context = CIContext()
     private let filter = CIFilter.qrCodeGenerator()
+    private let cardGenerator = QRCodeCardGenerator()
 
     private var authenticationManager: AuthenticationManager
     private var cancellables = Set<AnyCancellable>()
@@ -119,10 +120,6 @@ class QRCodeShareViewModel: ObservableObject {
                 .receive(on: DispatchQueue.main)
                 .sink { [weak self] heartbeat in
                     self?.currentBPM = heartbeat?.bpm
-                    // 心拍数が変わったらQRコードを再生成
-                    if let inviteCode = self?.inviteCode {
-                        self?.qrCodeImage = self?.generateStyledQRCode(from: inviteCode)
-                    }
                 }
                 .store(in: &cancellables)
         }
@@ -183,203 +180,9 @@ class QRCodeShareViewModel: ObservableObject {
     }
 
     /// カスタムデザインのQRコード画像を生成
-    /// - 中央にkyouaiアイコンを配置
-    /// - 下部に心拍数とユーザー名を表示
-    /// - ピンクのグラデーション背景にハートの装飾
+    /// QRCodeCardGeneratorを使用してQRコードカード全体を生成
     func generateStyledQRCode(from string: String) -> UIImage {
-        // 基本的なQRコードを生成
-        filter.message = Data(string.utf8)
-        filter.correctionLevel = "H"  // 高い誤り訂正レベルで中央にアイコンを配置可能に
-
-        guard let outputImage = filter.outputImage else {
-            return UIImage(systemName: "xmark.circle") ?? UIImage()
-        }
-
-        // QRコードを高解像度にスケーリング
-        let transform = CGAffineTransform(scaleX: 20, y: 20)
-        let scaledQRImage = outputImage.transformed(by: transform)
-
-        guard let qrCGImage = context.createCGImage(scaledQRImage, from: scaledQRImage.extent)
-        else {
-            return UIImage(systemName: "xmark.circle") ?? UIImage()
-        }
-
-        let qrUIImage = UIImage(cgImage: qrCGImage)
-
-        // キャンバスサイズを計算（QR + 余白）
-        let qrSize: CGFloat = qrUIImage.size.width
-        let verticalPadding: CGFloat = 580  // ピンク背景の上下に追加の余白
-        let horizontalPadding: CGFloat = 120  // ピンク背景の左右に追加の余白
-        let canvasSize = CGSize(
-            width: qrSize + horizontalPadding,
-            height: qrSize + verticalPadding
-        )
-
-        // 内部の余白を計算
-        let innerHorizontalPadding = horizontalPadding / 2
-        let textAreaHeight: CGFloat = 100
-
-        // 描画開始
-        UIGraphicsBeginImageContextWithOptions(canvasSize, false, 0)
-        guard let ctx = UIGraphicsGetCurrentContext() else {
-            return UIImage(systemName: "xmark.circle") ?? UIImage()
-        }
-
-        // 背景グラデーション（ピンク系）
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let pinkStart = UIColor(red: 1.0, green: 0.8, blue: 0.9, alpha: 1.0).cgColor
-        let pinkEnd = UIColor(red: 1.0, green: 0.9, blue: 0.95, alpha: 1.0).cgColor
-        let gradient = CGGradient(
-            colorsSpace: colorSpace,
-            colors: [pinkStart, pinkEnd] as CFArray,
-            locations: [0.0, 1.0]
-        )!
-
-        ctx.drawLinearGradient(
-            gradient,
-            start: CGPoint(x: 0, y: 0),
-            end: CGPoint(x: canvasSize.width, y: canvasSize.height),
-            options: []
-        )
-
-        // ハートの装飾を描画（背景に複数配置）
-        drawHeartDecorations(in: ctx, canvasSize: canvasSize)
-
-        // 白い背景のカードを描画（QRコードとテキストエリアを含む高さ）
-        let cardHeight = qrSize + textAreaHeight + 40  // 40はQRとテキスト間の余白
-        let cardRect = CGRect(
-            x: innerHorizontalPadding / 2,
-            y: (canvasSize.height - cardHeight) / 2,  // 上下中央に配置
-            width: canvasSize.width - innerHorizontalPadding,
-            height: cardHeight
-        )
-        ctx.setFillColor(UIColor.white.cgColor)
-        let cardPath = UIBezierPath(roundedRect: cardRect, cornerRadius: 20)
-        cardPath.fill()
-
-        // QRコードを描画（カード内の上部に配置）
-        let qrRect = CGRect(
-            x: innerHorizontalPadding,
-            y: cardRect.minY + 20,  // カードの上端から20pxの余白
-            width: qrSize,
-            height: qrSize
-        )
-        qrUIImage.draw(in: qrRect)
-
-        // 中央にkyouaiアイコンを配置
-        if let kyouaiIcon = UIImage(named: "kyouai") {
-            let iconSize: CGFloat = qrSize * 0.25
-            let iconRect = CGRect(
-                x: innerHorizontalPadding + (qrSize - iconSize) / 2,
-                y: qrRect.minY + (qrSize - iconSize) / 2,
-                width: iconSize,
-                height: iconSize
-            )
-
-            kyouaiIcon.draw(in: iconRect)
-        }
-
-        // テキストエリア（心拍数とユーザー名）
-        let textY = qrRect.maxY + 20
-
-        // 心拍数の表示
-        if let bpm = currentBPM {
-            let heartText = "❤️ \(bpm)bpm" as NSString
-            let heartAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: 28),
-                .foregroundColor: UIColor(red: 1.0, green: 0.4, blue: 0.5, alpha: 1.0),
-            ]
-            let heartSize = heartText.size(withAttributes: heartAttributes)
-            let heartRect = CGRect(
-                x: (canvasSize.width - heartSize.width) / 2,
-                y: textY,
-                width: heartSize.width,
-                height: heartSize.height
-            )
-            heartText.draw(in: heartRect, withAttributes: heartAttributes)
-        }
-
-        // ユーザー名の表示
-        if let name = userName {
-            let nameText = "❤️ \(name)" as NSString
-            let nameAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 22, weight: .semibold),
-                .foregroundColor: UIColor.darkGray,
-            ]
-            let nameSize = nameText.size(withAttributes: nameAttributes)
-            let nameRect = CGRect(
-                x: (canvasSize.width - nameSize.width) / 2,
-                y: textY + 40,
-                width: nameSize.width,
-                height: nameSize.height
-            )
-            nameText.draw(in: nameRect, withAttributes: nameAttributes)
-        }
-
-        let finalImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-
-        return finalImage ?? UIImage(systemName: "xmark.circle") ?? UIImage()
-    }
-
-    /// ハートの装飾を描画
-    private func drawHeartDecorations(in context: CGContext, canvasSize: CGSize) {
-        let hearts: [(CGPoint, CGFloat)] = [
-            (CGPoint(x: 50, y: 50), 30),
-            (CGPoint(x: canvasSize.width - 60, y: 80), 25),
-            (CGPoint(x: 70, y: canvasSize.height - 100), 35),
-            (CGPoint(x: canvasSize.width - 70, y: canvasSize.height - 120), 28),
-            (CGPoint(x: canvasSize.width / 2 - 100, y: 100), 22),
-            (CGPoint(x: canvasSize.width / 2 + 100, y: canvasSize.height - 80), 26),
-        ]
-
-        for (center, size) in hearts {
-            drawHeart(in: context, center: center, size: size)
-        }
-    }
-
-    /// 単一のハートを描画
-    private func drawHeart(in context: CGContext, center: CGPoint, size: CGFloat) {
-        context.saveGState()
-
-        let heartPath = UIBezierPath()
-        let topY = center.y - size / 4
-        let bottomY = center.y + size / 2
-
-        heartPath.move(to: CGPoint(x: center.x, y: bottomY))
-
-        heartPath.addCurve(
-            to: CGPoint(x: center.x - size / 2, y: topY),
-            controlPoint1: CGPoint(x: center.x - size / 2, y: center.y + size / 4),
-            controlPoint2: CGPoint(x: center.x - size / 2, y: topY + size / 8)
-        )
-
-        heartPath.addArc(
-            withCenter: CGPoint(x: center.x - size / 4, y: topY),
-            radius: size / 4,
-            startAngle: .pi,
-            endAngle: 0,
-            clockwise: true
-        )
-
-        heartPath.addArc(
-            withCenter: CGPoint(x: center.x + size / 4, y: topY),
-            radius: size / 4,
-            startAngle: .pi,
-            endAngle: 0,
-            clockwise: true
-        )
-
-        heartPath.addCurve(
-            to: CGPoint(x: center.x, y: bottomY),
-            controlPoint1: CGPoint(x: center.x + size / 2, y: topY + size / 8),
-            controlPoint2: CGPoint(x: center.x + size / 2, y: center.y + size / 4)
-        )
-
-        context.setFillColor(UIColor(red: 1.0, green: 0.6, blue: 0.7, alpha: 0.3).cgColor)
-        heartPath.fill()
-
-        context.restoreGState()
+        return cardGenerator.generateStyledQRCode(from: string, userName: userName)
     }
 
     func saveQRCodeToPhotos() {
