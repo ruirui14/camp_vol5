@@ -320,7 +320,6 @@ class QRCodeScannerViewModel: ObservableObject {
         print("✅ [QRCodeScannerViewModel] フォロー成功")
         isFollowingUser = true
         successMessage = "\(targetUserName)さんをフォローしました"
-        scheduleAutoClose()
     }
 
     private func handleUnfollowSuccess(targetUserName: String) {
@@ -332,12 +331,6 @@ class QRCodeScannerViewModel: ObservableObject {
     private func updateCurrentUserAfterFollow() {
         if let currentUserId = authenticationManager.currentUserId {
             authenticationManager.loadCurrentUser(uid: currentUserId)
-        }
-    }
-
-    private func scheduleAutoClose() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            self.shouldDismiss = true
         }
     }
 }

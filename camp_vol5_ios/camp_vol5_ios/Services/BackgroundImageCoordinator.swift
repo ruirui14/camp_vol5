@@ -8,7 +8,6 @@ import SwiftUI
 @MainActor
 class BackgroundImageCoordinator: ObservableObject {
     @Published var backgroundImageManagers: [String: BackgroundImageManager] = [:]
-    @Published var uiUpdateTrigger = false
 
     private var isLoadingBackgroundImages = false
     private var lastLoadTime: Date = .distantPast
@@ -98,15 +97,6 @@ class BackgroundImageCoordinator: ObservableObject {
 
     private func finalizeLoading() async {
         print("=== BACKGROUND IMAGES LOADED ===")
-
-        // 実際に新しい画像が読み込まれた場合のみUI更新をトリガー
-        let hasNewImages = backgroundImageManagers.values.contains { manager in
-            manager.currentEditedImage != nil
-        }
-
-        if hasNewImages {
-            uiUpdateTrigger.toggle()
-        }
 
         // 読み込み完了フラグをリセット
         isLoadingBackgroundImages = false
