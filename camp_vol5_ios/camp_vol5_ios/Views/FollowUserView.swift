@@ -68,11 +68,6 @@ struct FollowUserView: View {
                     presentationMode.wrappedValue.dismiss()
                 }
             }
-            .onChange(of: viewModel.scannedUser) { _, user in
-                if user != nil {
-                    inputText = ""
-                }
-            }
             .sheet(isPresented: $showingQRScanner) {
                 QRScannerSheet { code in
                     viewModel.handleQRCodeScan(code)
