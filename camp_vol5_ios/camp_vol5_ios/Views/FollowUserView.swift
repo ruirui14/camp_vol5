@@ -175,6 +175,9 @@ struct FollowUserView: View {
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
                     .focused($isInputFocused)
+                    .onChange(of: inputText) { _, _ in
+                        viewModel.clearError()
+                    }
 
                     // クリアボタン（入力がある場合のみ表示）
                     if !inputText.isEmpty {
