@@ -21,17 +21,14 @@ class QRCodeScannerViewModel: ObservableObject {
 
     // MARK: - Dependencies
     private let userService: UserService
-    private let localFollowService: LocalFollowService
 
     // MARK: - Computed Properties
     var canFollowUser: Bool {
         guard let user = scannedUser else { return false }
         guard !isFollowingUser else { return false }
 
-        // 認証済みの場合は自分自身をフォローできない
-        if authenticationManager.isAuthenticated,
-            let currentUserId = authenticationManager.currentUserId
-        {
+        // 自分自身をフォローできない
+        if let currentUserId = authenticationManager.currentUserId {
             return user.id != currentUserId
         }
 
@@ -41,12 +38,10 @@ class QRCodeScannerViewModel: ObservableObject {
     // MARK: - Initialization
     init(
         authenticationManager: AuthenticationManager,
-        userService: UserService = UserService.shared,
-        localFollowService: LocalFollowService = LocalFollowService.shared
+        userService: UserService = UserService.shared
     ) {
         self.authenticationManager = authenticationManager
         self.userService = userService
-        self.localFollowService = localFollowService
     }
 
     func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
@@ -102,13 +97,12 @@ class QRCodeScannerViewModel: ObservableObject {
             return
         }
 
-        if authenticationManager.isAuthenticated,
-            let currentUser = authenticationManager.currentUser
-        {
-            followUserWithFirebase(currentUser: currentUser, targetUser: user)
-        } else {
-            followUserLocally(user: user)
+        guard let currentUser = authenticationManager.currentUser else {
+            handleError("ユーザー情報が取得できません")
+            return
         }
+
+        followUserWithFirebase(currentUser: currentUser, targetUser: user)
 
         print("💖 [QRCodeScannerViewModel] followUser: 完了")
     }
@@ -121,13 +115,12 @@ class QRCodeScannerViewModel: ObservableObject {
             return
         }
 
-        if authenticationManager.isAuthenticated,
-            let currentUser = authenticationManager.currentUser
-        {
-            unfollowUserWithFirebase(currentUser: currentUser, targetUser: user)
-        } else {
-            unfollowUserLocally(user: user)
+        guard let currentUser = authenticationManager.currentUser else {
+            handleError("ユーザー情報が取得できません")
+            return
         }
+
+        unfollowUserWithFirebase(currentUser: currentUser, targetUser: user)
 
         print("💔 [QRCodeScannerViewModel] unfollowUser: 完了")
     }
@@ -195,13 +188,13 @@ class QRCodeScannerViewModel: ObservableObject {
     private func checkIfAlreadyFollowing(_ user: User) {
         print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 開始 - user: \(user.name)")
 
-        if authenticationManager.isAuthenticated,
-            let currentUserId = authenticationManager.currentUserId
-        {
-            checkFollowingStatusWithFirebase(userId: currentUserId, targetUserId: user.id)
-        } else {
-            checkFollowingStatusLocally(targetUserId: user.id)
+        guard let currentUserId = authenticationManager.currentUserId else {
+            print("⚠️ [QRCodeScannerViewModel] checkIfAlreadyFollowing: currentUserIdがnil")
+            isFollowingUser = false
+            return
         }
+
+        checkFollowingStatusWithFirebase(userId: currentUserId, targetUserId: user.id)
     }
 
     private func checkFollowingStatusWithFirebase(userId: String, targetUserId: String) {
@@ -230,15 +223,6 @@ class QRCodeScannerViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    private func checkFollowingStatusLocally(targetUserId: String) {
-        let isFollowing = localFollowService.isFollowing(targetUserId)
-        isFollowingUser = isFollowing
-        print(
-            "✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: ローカル確認完了 - isFollowing: \(isFollowing)"
-        )
-        print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 完了")
-    }
-
     private func followUserWithFirebase(currentUser: User, targetUser: User) {
         print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 開始 - target: \(targetUser.name)")
         isLoading = true
@@ -252,13 +236,6 @@ class QRCodeScannerViewModel: ObservableObject {
                 receiveValue: { _ in }
             )
             .store(in: &cancellables)
-    }
-
-    private func followUserLocally(user: User) {
-        print("📱 [QRCodeScannerViewModel] followUserLocally: 開始 - user: \(user.name)")
-        localFollowService.followUser(user.id)
-        handleFollowSuccess(targetUserName: user.name)
-        print("📱 [QRCodeScannerViewModel] followUserLocally: 完了")
     }
 
     private func unfollowUserWithFirebase(currentUser: User, targetUser: User) {
@@ -275,13 +252,6 @@ class QRCodeScannerViewModel: ObservableObject {
                 receiveValue: { _ in }
             )
             .store(in: &cancellables)
-    }
-
-    private func unfollowUserLocally(user: User) {
-        print("📱 [QRCodeScannerViewModel] unfollowUserLocally: 開始 - user: \(user.name)")
-        localFollowService.unfollowUser(user.id)
-        handleUnfollowSuccess(targetUserName: user.name)
-        print("📱 [QRCodeScannerViewModel] unfollowUserLocally: 完了")
     }
 
     private func handleFollowCompletion(
