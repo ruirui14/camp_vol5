@@ -61,8 +61,39 @@ class ListHeartBeatsViewModel: ObservableObject {
     }
 
     func refreshData() {
+        print("🔄 [ListHeartBeatsViewModel] refreshData: 開始")
         clearError()
-        loadFollowingUsersWithHeartbeats()
+
+        guard let currentUserId = authenticationManager.currentUserId else {
+            print("⚠️ [ListHeartBeatsViewModel] refreshData: currentUserIdがnil")
+            return
+        }
+
+        isLoading = true
+
+        // 最新のユーザー情報をFirestoreから取得してからフォローユーザーリストを更新
+        userService.getUser(uid: currentUserId)
+            .compactMap { $0 }
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    if case let .failure(error) = completion {
+                        print(
+                            "❌ [ListHeartBeatsViewModel] refreshData: ユーザー情報取得エラー - \(error.localizedDescription)"
+                        )
+                        self?.errorMessage = "ユーザー情報の取得に失敗しました"
+                        self?.isLoading = false
+                    }
+                },
+                receiveValue: { [weak self] updatedUser in
+                    print("✅ [ListHeartBeatsViewModel] refreshData: ユーザー情報取得成功")
+                    // AuthenticationManagerのcurrentUserを更新
+                    self?.authenticationManager.currentUser = updatedUser
+                    // フォローユーザーリストを再読み込み
+                    self?.loadFollowingUsersWithHeartbeats()
+                }
+            )
+            .store(in: &cancellables)
     }
 
     func changeSortOption(_ sortOption: SortOption) {
@@ -72,6 +103,47 @@ class ListHeartBeatsViewModel: ObservableObject {
 
     func clearError() {
         errorMessage = nil
+    }
+
+    func unfollowUser(userId: String) {
+        print("📤 [ListHeartBeatsViewModel] unfollowUser: 開始 - userId: \(userId)")
+
+        guard let currentUser = authenticationManager.currentUser else {
+            print("⚠️ [ListHeartBeatsViewModel] unfollowUser: currentUserがnil")
+            errorMessage = "ユーザー情報が取得できません"
+            return
+        }
+
+        userService.unfollowUser(currentUser: currentUser, targetUserId: userId)
+            .flatMap { [weak self] _ -> AnyPublisher<User, Error> in
+                // フォロー解除成功後、最新のユーザー情報を取得
+                guard let self = self else {
+                    return Fail(error: NSError(domain: "", code: -1, userInfo: nil))
+                        .eraseToAnyPublisher()
+                }
+                return self.userService.getUser(uid: currentUser.id)
+                    .compactMap { $0 }
+                    .eraseToAnyPublisher()
+            }
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    if case let .failure(error) = completion {
+                        print(
+                            "❌ [ListHeartBeatsViewModel] unfollowUser: エラー - \(error.localizedDescription)"
+                        )
+                        self?.errorMessage = "フォロー解除に失敗しました: \(error.localizedDescription)"
+                    }
+                },
+                receiveValue: { [weak self] updatedUser in
+                    print("✅ [ListHeartBeatsViewModel] unfollowUser: 成功")
+                    // AuthenticationManagerのcurrentUserを更新
+                    self?.authenticationManager.currentUser = updatedUser
+                    // ローカルのリストから削除
+                    self?.followingUsersWithHeartbeats.removeAll { $0.user.id == userId }
+                }
+            )
+            .store(in: &cancellables)
     }
 
     // MARK: - Private Methods

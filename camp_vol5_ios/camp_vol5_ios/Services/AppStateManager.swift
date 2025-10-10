@@ -8,7 +8,7 @@ import SwiftUI
 /// アプリケーションの状態を定義
 enum AppState {
     case splash  // スプラッシュ画面
-    case main    // メイン画面
+    case main  // メイン画面
 }
 
 /// アプリケーション状態を管理するマネージャー

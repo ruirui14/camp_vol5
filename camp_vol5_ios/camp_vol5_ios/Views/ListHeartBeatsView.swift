@@ -29,6 +29,7 @@ struct ListHeartBeatsView: View {
     @State private var isStatusBarHidden = false
     @State private var persistentSystemOverlaysVisibility: Visibility = .automatic
     @State private var hasAppearedOnce = false
+    @State private var isEditMode = false
 
     init() {
         // 初期化時はダミーの AuthenticationManager を使用
@@ -70,6 +71,7 @@ struct ListHeartBeatsView: View {
                         FollowingUsersListView(
                             users: viewModel.followingUsersWithHeartbeats,
                             backgroundImageCoordinator: backgroundImageCoordinator,
+                            isEditMode: isEditMode,
                             onUserTapped: { userWithHeartbeat in
                                 navigationPath.append(
                                     NavigationDestination.heartbeatDetail(userWithHeartbeat.user.id)
@@ -79,6 +81,9 @@ struct ListHeartBeatsView: View {
                                 viewModel.refreshData()
                                 backgroundImageCoordinator.loadBackgroundImages(
                                     for: viewModel.followingUsersWithHeartbeats)
+                            },
+                            onUnfollow: { userId in
+                                viewModel.unfollowUser(userId: userId)
                             }
                         )
                     }
@@ -137,6 +142,15 @@ struct ListHeartBeatsView: View {
                 }
 
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isEditMode.toggle()
+                        }
+                    } label: {
+                        Image(systemName: isEditMode ? "checkmark" : "pencil")
+                            .foregroundColor(.main)
+                    }
+
                     Menu {
                         ForEach(SortOption.allCases, id: \.self) { option in
                             Button {
