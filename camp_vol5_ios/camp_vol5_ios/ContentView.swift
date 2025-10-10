@@ -3,45 +3,36 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @State private var navigationPath = NavigationPath()
-    @State private var showSplash = true
 
     var body: some View {
-        ZStack {
-            NavigationStack(path: $navigationPath) {
-                Group {
-                    let _ = print(
-                        "🔥 ContentView - isLoading: \(authenticationManager.isLoading), needsUserNameInput: \(authenticationManager.needsUserNameInput), isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
+        NavigationStack(path: $navigationPath) {
+            Group {
+                let _ = print(
+                    "🔥 ContentView - isLoading: \(authenticationManager.isLoading), needsUserNameInput: \(authenticationManager.needsUserNameInput), isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
+                )
+
+                if authenticationManager.needsUserNameInput {
+                    // ユーザー名入力が必要な場合
+                    let _ = print("🔥 Showing UserNameInputView")
+                    UserNameInputView(
+                        selectedAuthMethod: mapAuthMethod(
+                            authenticationManager.selectedAuthMethod)
                     )
-
-                    if authenticationManager.needsUserNameInput {
-                        // ユーザー名入力が必要な場合
-                        let _ = print("🔥 Showing UserNameInputView")
-                        UserNameInputView(
-                            selectedAuthMethod: mapAuthMethod(
-                                authenticationManager.selectedAuthMethod)
-                        )
-                    } else if authenticationManager.isAuthenticated
-                        && authenticationManager.currentUser != nil
-                    {
-                        // ログイン済みかつユーザー情報がある場合
-                        let _ = print("🔥 Showing ListHeartBeatsView")
-                        ListHeartBeatsView()
-                    } else {
-                        // 認証されていない場合、またはユーザー情報がない場合は認証画面を表示
-                        let _ = print(
-                            "🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
-                        )
-                        AuthView(onStartWithoutAuth: {
-                            // このクロージャは現在使用されていない（匿名サインインに置き換えられた）
-                        })
-                    }
+                } else if authenticationManager.isAuthenticated
+                    && authenticationManager.currentUser != nil
+                {
+                    // ログイン済みかつユーザー情報がある場合
+                    let _ = print("🔥 Showing ListHeartBeatsView")
+                    ListHeartBeatsView()
+                } else {
+                    // 認証されていない場合、またはユーザー情報がない場合は認証画面を表示
+                    let _ = print(
+                        "🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
+                    )
+                    AuthView(onStartWithoutAuth: {
+                        // このクロージャは現在使用されていない（匿名サインインに置き換えられた）
+                    })
                 }
-            }
-
-            if showSplash {
-                SplashView(isActive: $showSplash)
-                    .transition(.opacity)
-                    .zIndex(1)
             }
         }
     }

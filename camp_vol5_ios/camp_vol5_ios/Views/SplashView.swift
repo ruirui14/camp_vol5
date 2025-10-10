@@ -6,11 +6,8 @@ import RiveRuntime
 import SwiftUI
 
 struct SplashView: View {
-    @Binding var isActive: Bool
-    @State private var opacity: Double = 0
     @State private var offset: CGFloat = 0
     @State private var rotation: Double = 0
-    private let transition: Double = 2.5
 
     var body: some View {
         ZStack {
@@ -22,23 +19,11 @@ struct SplashView: View {
 
         }
         .onAppear {
-            // フェードインアニメーション
-            withAnimation(.easeIn(duration: 0.5)) {
-                opacity = 1.0
-            }
-
             // 振動アニメーション
             startVibration()
 
             // 端末の触覚フィードバック
             startHapticFeedback()
-
-            // 2.5秒後にメイン画面に遷移
-            DispatchQueue.main.asyncAfter(deadline: .now() + transition) {
-                withAnimation(.easeOut(duration: 0.3)) {
-                    isActive = false
-                }
-            }
         }
     }
 
@@ -51,12 +36,13 @@ struct SplashView: View {
     }
 
     private func startHapticFeedback() {
+        let duration: Double = 2.5
         let interval: Double = 0.5
 
         let impactStrong = UIImpactFeedbackGenerator(style: .heavy)
         impactStrong.prepare()
 
-        for i in 0...Int(transition / interval) {
+        for i in 0...Int(duration / interval) {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * interval) {
                 impactStrong.impactOccurred(intensity: 1.0)
             }
@@ -65,5 +51,5 @@ struct SplashView: View {
 }
 
 #Preview {
-    SplashView(isActive: .constant(false))
+    SplashView()
 }

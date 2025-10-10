@@ -7,16 +7,24 @@ struct camp_vol5_iosApp: App {
     // AppDelegate を追加
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
+    // アプリケーション状態管理
+    @StateObject private var appStateManager = AppStateManager()
+
     // AuthenticationManager をStateObjectとして管理
     @StateObject private var authenticationManager = AuthenticationManager()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(authenticationManager)
-                .onOpenURL { url in
-                    GIDSignIn.sharedInstance.handle(url)
-                }
+            switch appStateManager.currentState {
+            case .splash:
+                SplashView()
+            case .main:
+                ContentView()
+                    .environmentObject(authenticationManager)
+                    .onOpenURL { url in
+                        GIDSignIn.sharedInstance.handle(url)
+                    }
+            }
         }
     }
 }
