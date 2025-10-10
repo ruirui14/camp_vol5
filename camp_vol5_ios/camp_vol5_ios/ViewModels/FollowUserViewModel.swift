@@ -1,12 +1,12 @@
-// ViewModels/QRCodeScannerViewModel.swift
-// QRコードスキャナー画面のビューモデル - MVVM設計パターンに従いビジネスロジックを集約
+// ViewModels/FollowUserViewModel.swift
+// フォローユーザー画面のビューモデル - MVVM設計パターンに従いビジネスロジックを集約
 // ユーザー検索、フォロー処理、認証状態管理を責務として持つ
 
 import Combine
 import Foundation
 
 @MainActor
-class QRCodeScannerViewModel: ObservableObject {
+class FollowUserViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var scannedUser: User?
     @Published var isLoading: Bool = false
@@ -45,15 +45,15 @@ class QRCodeScannerViewModel: ObservableObject {
     }
 
     func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
-        print("🔧 [QRCodeScannerViewModel] updateAuthenticationManager: 開始")
+        print("🔧 [FollowUserViewModel] updateAuthenticationManager: 開始")
         self.authenticationManager = authenticationManager
-        print("🔧 [QRCodeScannerViewModel] updateAuthenticationManager: 完了")
+        print("🔧 [FollowUserViewModel] updateAuthenticationManager: 完了")
     }
 
     // MARK: - Public Methods
 
     func searchUserByInviteCode(_ code: String) {
-        print("🔍 [QRCodeScannerViewModel] searchUserByInviteCode: 開始 - code: \(code)")
+        print("🔍 [FollowUserViewModel] searchUserByInviteCode: 開始 - code: \(code)")
 
         guard validateInviteCode(code) else { return }
 
@@ -74,14 +74,14 @@ class QRCodeScannerViewModel: ObservableObject {
     }
 
     func handleQRCodeScan(_ code: String) {
-        print("📷 [QRCodeScannerViewModel] handleQRCodeScan: 開始 - code: \(code)")
+        print("📷 [FollowUserViewModel] handleQRCodeScan: 開始 - code: \(code)")
         clearError()
         searchUserByInviteCode(code)
-        print("📷 [QRCodeScannerViewModel] handleQRCodeScan: 完了")
+        print("📷 [FollowUserViewModel] handleQRCodeScan: 完了")
     }
 
     func followUser() {
-        print("💖 [QRCodeScannerViewModel] followUser: 開始")
+        print("💖 [FollowUserViewModel] followUser: 開始")
 
         guard let user = scannedUser else {
             handleError("ユーザー情報が取得できません")
@@ -104,11 +104,11 @@ class QRCodeScannerViewModel: ObservableObject {
 
         followUserWithFirebase(currentUser: currentUser, targetUser: user)
 
-        print("💖 [QRCodeScannerViewModel] followUser: 完了")
+        print("💖 [FollowUserViewModel] followUser: 完了")
     }
 
     func unfollowUser() {
-        print("💔 [QRCodeScannerViewModel] unfollowUser: 開始")
+        print("💔 [FollowUserViewModel] unfollowUser: 開始")
 
         guard let user = scannedUser else {
             handleError("ユーザー情報が取得できません")
@@ -122,26 +122,26 @@ class QRCodeScannerViewModel: ObservableObject {
 
         unfollowUserWithFirebase(currentUser: currentUser, targetUser: user)
 
-        print("💔 [QRCodeScannerViewModel] unfollowUser: 完了")
+        print("💔 [FollowUserViewModel] unfollowUser: 完了")
     }
 
     func clearInput() {
-        print("🧹 [QRCodeScannerViewModel] clearInput: 開始")
+        print("🧹 [FollowUserViewModel] clearInput: 開始")
         scannedUser = nil
         isFollowingUser = false
         shouldDismiss = false
         clearError()
         clearSuccessMessage()
-        print("🧹 [QRCodeScannerViewModel] clearInput: 完了")
+        print("🧹 [FollowUserViewModel] clearInput: 完了")
     }
 
     func clearError() {
-        print("🧹 [QRCodeScannerViewModel] clearError: 実行")
+        print("🧹 [FollowUserViewModel] clearError: 実行")
         errorMessage = nil
     }
 
     func clearSuccessMessage() {
-        print("🧹 [QRCodeScannerViewModel] clearSuccessMessage: 実行")
+        print("🧹 [FollowUserViewModel] clearSuccessMessage: 実行")
         successMessage = nil
     }
 
@@ -159,37 +159,37 @@ class QRCodeScannerViewModel: ObservableObject {
         isLoading = false
         if case let .failure(error) = completion {
             print(
-                "❌ [QRCodeScannerViewModel] searchUserByInviteCode: エラー - \(error.localizedDescription)"
+                "❌ [FollowUserViewModel] searchUserByInviteCode: エラー - \(error.localizedDescription)"
             )
             handleError(error.localizedDescription)
         }
-        print("🔍 [QRCodeScannerViewModel] searchUserByInviteCode: 完了")
+        print("🔍 [FollowUserViewModel] searchUserByInviteCode: 完了")
     }
 
     private func handleSearchResult(_ user: User?) {
         if let user = user {
-            print("✅ [QRCodeScannerViewModel] searchUserByInviteCode: ユーザー発見 - \(user.name)")
+            print("✅ [FollowUserViewModel] searchUserByInviteCode: ユーザー発見 - \(user.name)")
             // 少し遅延を入れてからユーザー情報を設定
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 self.scannedUser = user
                 self.checkIfAlreadyFollowing(user)
             }
         } else {
-            print("❌ [QRCodeScannerViewModel] searchUserByInviteCode: ユーザーが見つからない")
+            print("❌ [FollowUserViewModel] searchUserByInviteCode: ユーザーが見つからない")
             handleError("ユーザーが見つかりません")
         }
     }
 
     private func handleError(_ message: String) {
-        print("❌ [QRCodeScannerViewModel] エラー: \(message)")
+        print("❌ [FollowUserViewModel] エラー: \(message)")
         errorMessage = message
     }
 
     private func checkIfAlreadyFollowing(_ user: User) {
-        print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 開始 - user: \(user.name)")
+        print("👤 [FollowUserViewModel] checkIfAlreadyFollowing: 開始 - user: \(user.name)")
 
         guard let currentUserId = authenticationManager.currentUserId else {
-            print("⚠️ [QRCodeScannerViewModel] checkIfAlreadyFollowing: currentUserIdがnil")
+            print("⚠️ [FollowUserViewModel] checkIfAlreadyFollowing: currentUserIdがnil")
             isFollowingUser = false
             return
         }
@@ -211,20 +211,20 @@ class QRCodeScannerViewModel: ObservableObject {
                         let isFollowing = currentUser.followingUserIds.contains(targetUserId)
                         self?.isFollowingUser = isFollowing
                         print(
-                            "✅ [QRCodeScannerViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)"
+                            "✅ [FollowUserViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)"
                         )
                     } else {
                         self?.isFollowingUser = false
-                        print("⚠️ [QRCodeScannerViewModel] checkIfAlreadyFollowing: currentUserがnil")
+                        print("⚠️ [FollowUserViewModel] checkIfAlreadyFollowing: currentUserがnil")
                     }
-                    print("👤 [QRCodeScannerViewModel] checkIfAlreadyFollowing: 完了")
+                    print("👤 [FollowUserViewModel] checkIfAlreadyFollowing: 完了")
                 }
             )
             .store(in: &cancellables)
     }
 
     private func followUserWithFirebase(currentUser: User, targetUser: User) {
-        print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 開始 - target: \(targetUser.name)")
+        print("🔥 [FollowUserViewModel] followUserWithFirebase: 開始 - target: \(targetUser.name)")
         isLoading = true
 
         userService.followUser(currentUser: currentUser, targetUserId: targetUser.id)
@@ -240,7 +240,7 @@ class QRCodeScannerViewModel: ObservableObject {
 
     private func unfollowUserWithFirebase(currentUser: User, targetUser: User) {
         print(
-            "🔥 [QRCodeScannerViewModel] unfollowUserWithFirebase: 開始 - target: \(targetUser.name)")
+            "🔥 [FollowUserViewModel] unfollowUserWithFirebase: 開始 - target: \(targetUser.name)")
         isLoading = true
 
         userService.unfollowUser(currentUser: currentUser, targetUserId: targetUser.id)
@@ -260,14 +260,14 @@ class QRCodeScannerViewModel: ObservableObject {
         isLoading = false
         if case let .failure(error) = completion {
             print(
-                "❌ [QRCodeScannerViewModel] followUserWithFirebase: エラー - \(error.localizedDescription)"
+                "❌ [FollowUserViewModel] followUserWithFirebase: エラー - \(error.localizedDescription)"
             )
             handleError(error.localizedDescription)
         } else {
             handleFollowSuccess(targetUserName: targetUserName)
             updateCurrentUserAfterFollow()
         }
-        print("🔥 [QRCodeScannerViewModel] followUserWithFirebase: 完了")
+        print("🔥 [FollowUserViewModel] followUserWithFirebase: 完了")
     }
 
     private func handleUnfollowCompletion(
@@ -276,24 +276,24 @@ class QRCodeScannerViewModel: ObservableObject {
         isLoading = false
         if case let .failure(error) = completion {
             print(
-                "❌ [QRCodeScannerViewModel] unfollowUserWithFirebase: エラー - \(error.localizedDescription)"
+                "❌ [FollowUserViewModel] unfollowUserWithFirebase: エラー - \(error.localizedDescription)"
             )
             handleError(error.localizedDescription)
         } else {
             handleUnfollowSuccess(targetUserName: targetUserName)
             updateCurrentUserAfterFollow()
         }
-        print("🔥 [QRCodeScannerViewModel] unfollowUserWithFirebase: 完了")
+        print("🔥 [FollowUserViewModel] unfollowUserWithFirebase: 完了")
     }
 
     private func handleFollowSuccess(targetUserName: String) {
-        print("✅ [QRCodeScannerViewModel] フォロー成功")
+        print("✅ [FollowUserViewModel] フォロー成功")
         isFollowingUser = true
         successMessage = "\(targetUserName)さんをフォローしました"
     }
 
     private func handleUnfollowSuccess(targetUserName: String) {
-        print("✅ [QRCodeScannerViewModel] フォロー解除成功")
+        print("✅ [FollowUserViewModel] フォロー解除成功")
         isFollowingUser = false
         successMessage = "\(targetUserName)さんのフォローを解除しました"
     }

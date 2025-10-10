@@ -1,8 +1,8 @@
 import SwiftUI
 
-struct QRCodeScannerView: View {
+struct FollowUserView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @StateObject private var viewModel: QRCodeScannerViewModel
+    @StateObject private var viewModel: FollowUserViewModel
     @State private var showingQRScanner = false
     @State private var showingFollowConfirmation = false
     @State private var showingAuthRequired = false
@@ -12,7 +12,7 @@ struct QRCodeScannerView: View {
 
     init() {
         _viewModel = StateObject(
-            wrappedValue: QRCodeScannerViewModel(
+            wrappedValue: FollowUserViewModel(
                 authenticationManager: AuthenticationManager()
             )
         )
@@ -159,7 +159,7 @@ struct QRCodeScannerView: View {
         .padding(.horizontal)
     }
 
-    private func manualInputSection(viewModel: QRCodeScannerViewModel) -> some View {
+    private func manualInputSection(viewModel: FollowUserViewModel) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("招待コードを入力")
                 .font(.headline)
@@ -371,9 +371,9 @@ struct QRCodeScannerView: View {
 
 // MARK: - Preview
 
-struct QRCodeScannerView_Previews: PreviewProvider {
+struct FollowUserView_Previews: PreviewProvider {
     static var previews: some View {
-        QRCodeScannerView()
+        FollowUserView()
             .environmentObject(AuthenticationManager())
     }
 }

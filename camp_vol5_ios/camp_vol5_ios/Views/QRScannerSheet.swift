@@ -1,6 +1,5 @@
 // Views/QRScannerSheet.swift
 // QRコードスキャナーのシートビュー
-// QRScannerViewControllerをSwiftUIでラップして表示
 
 import AVFoundation
 import SwiftUI
@@ -15,7 +14,7 @@ struct QRScannerSheet: View {
         NavigationStack {
             ZStack {
                 // QRコードスキャナー部分
-                QRScannerViewController_Wrapper(onQRCodeScanned: onQRCodeScanned)
+                CameraQRScannerView(onCodeScanned: onQRCodeScanned)
                     .ignoresSafeArea()
 
                 // オーバーレイ UI
@@ -96,37 +95,6 @@ struct QRScannerSheet: View {
                         print("📱 [QRScannerSheet] QRCodeShareView navigationから戻った")
                     }
             }
-        }
-    }
-}
-
-struct QRScannerViewController_Wrapper: UIViewControllerRepresentable {
-    let onQRCodeScanned: (String) -> Void
-
-    func makeUIViewController(context: Context) -> QRScannerViewController {
-        let controller = QRScannerViewController()
-        controller.delegate = context.coordinator
-        return controller
-    }
-
-    func updateUIViewController(
-        _: QRScannerViewController,
-        context _: Context
-    ) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onQRCodeScanned: onQRCodeScanned)
-    }
-
-    class Coordinator: NSObject, QRScannerDelegate {
-        let onQRCodeScanned: (String) -> Void
-
-        init(onQRCodeScanned: @escaping (String) -> Void) {
-            self.onQRCodeScanned = onQRCodeScanned
-        }
-
-        func didScanQRCode(_ code: String) {
-            onQRCodeScanned(code)
         }
     }
 }

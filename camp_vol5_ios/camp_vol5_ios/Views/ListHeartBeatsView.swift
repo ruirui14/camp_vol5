@@ -168,7 +168,7 @@ struct ListHeartBeatsView: View {
                 case .settings:
                     SettingsView().environmentObject(authenticationManager)
                 case .qrScanner:
-                    QRCodeScannerView().environmentObject(authenticationManager)
+                    FollowUserView().environmentObject(authenticationManager)
                 case let .heartbeatDetail(userId):
                     HeartbeatDetailView(
                         userId: userId,
