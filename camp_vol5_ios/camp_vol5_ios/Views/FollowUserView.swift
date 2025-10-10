@@ -8,6 +8,7 @@ struct FollowUserView: View {
     @State private var showingAuthRequired = false
     @State private var showingQRCodeShare = false
     @State private var inputText: String = ""
+    @FocusState private var isInputFocused: Bool
     @Environment(\.presentationMode) var presentationMode
 
     init() {
@@ -173,6 +174,7 @@ struct FollowUserView: View {
                     )
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
+                    .focused($isInputFocused)
 
                     // クリアボタン（入力がある場合のみ表示）
                     if !inputText.isEmpty {
