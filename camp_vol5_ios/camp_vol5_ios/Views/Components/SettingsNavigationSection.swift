@@ -5,7 +5,7 @@
 import SwiftUI
 
 struct SettingsNavigationSection: View {
-    let viewModel: SettingsViewModel
+    @ObservedObject var viewModel: SettingsViewModel
     let autoLockManager: AutoLockManager
 
     var body: some View {
@@ -41,7 +41,7 @@ struct SettingsNavigationSection: View {
                     subtitle: "画面オフ設定の管理"
                 )
             }
-
+            
             NavigationLink(destination: TermsOfServiceView()) {
                 SettingRow(
                     icon: "doc.text",

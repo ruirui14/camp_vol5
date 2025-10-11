@@ -22,13 +22,13 @@ struct AutoLockSettingsView: View {
         }
         .navigationTitle("自動ロック")
         .navigationBarTitleDisplayMode(.inline)
-        .onChange(of: autoLockManager.autoLockDisabled) { isDisabled in
+        .onChange(of: autoLockManager.autoLockDisabled) { _, isDisabled in
             autoLockManager.updateSettings(
                 autoLockDisabled: isDisabled,
                 duration: autoLockManager.autoLockDuration
             )
         }
-        .onChange(of: autoLockManager.autoLockDuration) { duration in
+        .onChange(of: autoLockManager.autoLockDuration) { _, duration in
             autoLockManager.updateSettings(
                 autoLockDisabled: autoLockManager.autoLockDisabled,
                 duration: duration

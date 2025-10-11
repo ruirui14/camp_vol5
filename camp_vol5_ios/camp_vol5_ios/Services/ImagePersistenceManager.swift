@@ -346,9 +346,6 @@ class UserDefaultsImageService {
 
 // MARK: - 必要なExtension
 
-extension CGPoint: Codable {}
-extension CGSize: Codable {}
-
 extension FileManager {
     static var documentsDirectory: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]

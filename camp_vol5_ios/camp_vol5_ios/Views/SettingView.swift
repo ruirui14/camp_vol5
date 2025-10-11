@@ -76,7 +76,7 @@ struct SettingsView: View {
                     Text(successMessage)
                 }
             }
-            .onChange(of: authenticationManager.isAuthenticated) { isAuthenticated in
+            .onChange(of: authenticationManager.isAuthenticated) { _, isAuthenticated in
                 // 認証状態が失われた場合（アカウント削除など）は設定画面を閉じる
                 if !isAuthenticated {
                     presentationMode.wrappedValue.dismiss()

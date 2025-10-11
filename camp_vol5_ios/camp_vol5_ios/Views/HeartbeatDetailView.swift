@@ -166,7 +166,7 @@ struct HeartbeatDetailView: View {
         .onDisappear {
             teardownView()
         }
-        .onChange(of: viewModel.isSleepMode) { _ in
+        .onChange(of: viewModel.isSleepMode) {
             updateSystemUIVisibility()
         }
         .fullScreenCover(

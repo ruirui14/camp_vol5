@@ -136,7 +136,7 @@ class SettingsViewModel: ObservableObject {
 
     // 新しい招待コードを生成
     func generateNewInviteCode() {
-        guard let userId = authenticationManager.currentUserId else {
+        guard authenticationManager.currentUserId != nil else {
             errorMessage = "認証が必要です"
             return
         }
@@ -170,7 +170,7 @@ class SettingsViewModel: ObservableObject {
 
     // QR登録許可設定を切り替え
     func toggleQRRegistration() {
-        guard let userId = authenticationManager.currentUserId else {
+        guard authenticationManager.currentUserId != nil else {
             errorMessage = "認証が必要です"
             return
         }
@@ -208,7 +208,7 @@ class SettingsViewModel: ObservableObject {
 
     // 心拍データを手動更新
     func refreshHeartbeat() {
-        guard let userId = authenticationManager.currentUserId else {
+        guard authenticationManager.currentUserId != nil else {
             errorMessage = "認証が必要です"
             return
         }

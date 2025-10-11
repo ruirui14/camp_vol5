@@ -70,8 +70,16 @@ class HeartAnimationViewModel: ObservableObject {
         // 高精度タイマーでスケジュール
         beatTimer = Timer.scheduledTimer(withTimeInterval: actualInterval, repeats: false) {
             [weak self] _ in
-            self?.triggerHeartbeat()
-            self?.scheduleNextBeat()  // 再帰的に次をスケジュール
+            self?.timerFired()
+        }
+    }
+
+    /// タイマー発火時の処理（nonisolated）
+    private nonisolated func timerFired() {
+        Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            self.triggerHeartbeat()
+            self.scheduleNextBeat()  // 再帰的に次をスケジュール
         }
     }
 

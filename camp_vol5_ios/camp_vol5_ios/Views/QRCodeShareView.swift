@@ -166,7 +166,7 @@ struct QRCodeShareView: View {
 
                         Toggle("", isOn: $viewModel.allowQRRegistration)
                             .labelsHidden()
-                            .onChange(of: viewModel.allowQRRegistration) { _ in
+                            .onChange(of: viewModel.allowQRRegistration) {
                                 viewModel.toggleQRRegistration()
                             }
                     }

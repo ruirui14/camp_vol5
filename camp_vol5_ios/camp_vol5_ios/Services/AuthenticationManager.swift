@@ -102,7 +102,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     /// 認証状態の更新
     /// - Parameter firebaseUser: Firebaseユーザー
     private func updateAuthenticationState(with firebaseUser: FirebaseAuth.User?) {
-        print("🔥 updateAuthenticationState called with user: \(firebaseUser)")
+        print("🔥 updateAuthenticationState called with user: \(firebaseUser?.uid ?? "nil")")
         user = firebaseUser
         isAuthenticated = firebaseUser != nil
         print("🔥 isAuthenticated set to: \(isAuthenticated)")
@@ -157,10 +157,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         UserService.shared.getUser(uid: uid)
             .receive(on: DispatchQueue.main)
             .sink(
-                receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case let .failure(error) = completion {
-                        // エラーメッセージは設定しない（新規ユーザーの場合は正常）
-                    }
+                receiveCompletion: { _ in
+                    // エラーメッセージは設定しない（新規ユーザーの場合は正常）
                 },
                 receiveValue: { [weak self] (user: User?) in
                     self?.currentUser = user

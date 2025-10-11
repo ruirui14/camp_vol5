@@ -65,7 +65,7 @@ struct AccountDeletionView: View {
                 Text(errorMessage)
             }
         }
-        .onChange(of: authenticationManager.isAuthenticated) { isAuthenticated in
+        .onChange(of: authenticationManager.isAuthenticated) { _, isAuthenticated in
             // アカウント削除が成功した場合（認証状態がfalseになった場合）
             // ContentViewが自動的にログイン画面に切り替えるため、何もする必要なし
             if !isAuthenticated && isDeleting {

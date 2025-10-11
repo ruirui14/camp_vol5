@@ -124,7 +124,7 @@ struct ListHeartBeatsView: View {
                     backgroundImageCoordinator.loadBackgroundImages(for: usersWithHeartbeats)
                 }
             }
-            .onChange(of: viewModel.isLoading) { isLoading in
+            .onChange(of: viewModel.isLoading) { _, isLoading in
                 // データ読み込み完了時に背景画像を更新
                 if !isLoading && !viewModel.followingUsersWithHeartbeats.isEmpty {
                     backgroundImageCoordinator.loadBackgroundImages(

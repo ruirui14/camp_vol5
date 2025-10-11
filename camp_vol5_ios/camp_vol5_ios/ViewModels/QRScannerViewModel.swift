@@ -65,9 +65,10 @@ class QRScannerViewModel: NSObject, ObservableObject {
         guard !captureSession.isRunning else { return }
 
         Task.detached { [weak self] in
-            self?.captureSession.startRunning()
+            guard let self = self else { return }
+            await self.captureSession.startRunning()
 
-            await MainActor.run {
+            await MainActor.run { [weak self] in
                 self?.isScanning = true
             }
         }
@@ -78,9 +79,10 @@ class QRScannerViewModel: NSObject, ObservableObject {
         guard captureSession.isRunning else { return }
 
         Task.detached { [weak self] in
-            self?.captureSession.stopRunning()
+            guard let self = self else { return }
+            await self.captureSession.stopRunning()
 
-            await MainActor.run {
+            await MainActor.run { [weak self] in
                 self?.isScanning = false
             }
         }

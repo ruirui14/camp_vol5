@@ -61,10 +61,10 @@ struct CardBackgroundEditView: View {
         .onAppear {
             viewModel.onAppear()
         }
-        .onChange(of: viewModel.isLoading) { isLoading in
+        .onChange(of: viewModel.isLoading) { _, isLoading in
             viewModel.onLoadingChanged(isLoading: isLoading)
         }
-        .onChange(of: viewModel.selectedImage) { newImage in
+        .onChange(of: viewModel.selectedImage) { _, newImage in
             viewModel.onSelectedImageChanged(newImage: newImage)
         }
     }

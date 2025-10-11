@@ -126,7 +126,7 @@ struct ImageEditView: View {
 
                                     Slider(value: $heartSize, in: 60...200, step: 5)
                                         .accentColor(.white)
-                                        .onChange(of: heartSize) { newSize in
+                                        .onChange(of: heartSize) { _, newSize in
                                             persistenceManager.saveHeartSize(
                                                 newSize, userId: userId)
                                         }
@@ -179,7 +179,7 @@ struct ImageEditView: View {
                 }
 
                 ToolbarItem(placement: .principal) {
-                    WhiteCapsuleTitle(title: "画像を編集中" ?? "読み込み中...")
+                    WhiteCapsuleTitle(title: "画像を編集中")
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {

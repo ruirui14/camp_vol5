@@ -61,9 +61,7 @@ class HeartbeatService {
         let subject = PassthroughSubject<Heartbeat?, Never>()
         let ref = database.reference().child("live_heartbeats").child(userId)
 
-        ref.observe(.value) { [weak self] snapshot in
-            guard let self = self else { return }
-
+        ref.observe(.value) { snapshot in
             if let data = snapshot.value as? [String: Any] {
                 if let heartbeat = Heartbeat(from: data, userId: userId) {
                     // テスト用に5分チェック無効化

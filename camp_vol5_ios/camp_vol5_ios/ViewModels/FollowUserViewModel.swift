@@ -202,7 +202,7 @@ class FollowUserViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    if case let .failure(_) = completion {
+                    if case .failure = completion {
                         self?.isFollowingUser = false
                     }
                 },
