@@ -147,6 +147,37 @@ struct QRCodeShareView: View {
                         y: 4
                     )
 
+                    // QR登録許可トグル
+                    HStack(spacing: 12) {
+                        Image(systemName: "person.badge.plus")
+                            .foregroundColor(.blue)
+                            .font(.title3)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("友達追加を許可")
+                                .font(.body.weight(.medium))
+                                .foregroundColor(.text)
+                            Text("QRコードでの友達追加を許可します")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+
+                        Spacer()
+
+                        Toggle("", isOn: $viewModel.allowQRRegistration)
+                            .labelsHidden()
+                            .onChange(of: viewModel.allowQRRegistration) { _ in
+                                viewModel.toggleQRRegistration()
+                            }
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemBackground))
+                            .shadow(color: .gray.opacity(0.2), radius: 4, x: 0, y: 2)
+                    )
+                    .padding(.horizontal)
+
                     // ボタンたち
 
                     HStack(alignment: .top, spacing: 20) {

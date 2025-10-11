@@ -11,6 +11,7 @@ class QRCodeShareViewModel: ObservableObject {
     @Published var qrCodeImage: UIImage?
     @Published var currentBPM: Int?
     @Published var userName: String?
+    @Published var allowQRRegistration: Bool = true
 
     @Published var showingSaveAlert = false
     @Published var saveAlertTitle = ""
@@ -34,6 +35,7 @@ class QRCodeShareViewModel: ObservableObject {
         {
             inviteCode = currentUser.inviteCode
             userName = currentUser.name
+            allowQRRegistration = currentUser.allowQRRegistration
             qrCodeImage = generateStyledQRCode(from: currentUser.inviteCode)
         } else if authenticationManager.isAuthenticated {
             authenticationManager.refreshCurrentUser()
@@ -60,6 +62,7 @@ class QRCodeShareViewModel: ObservableObject {
         {
             inviteCode = currentUser.inviteCode
             userName = currentUser.name
+            allowQRRegistration = currentUser.allowQRRegistration
             qrCodeImage = generateStyledQRCode(from: currentUser.inviteCode)
         } else if authenticationManager.isAuthenticated {
             authenticationManager.refreshCurrentUser()
@@ -114,6 +117,16 @@ class QRCodeShareViewModel: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // allowQRRegistrationの監視
+        authenticationManager.$currentUser
+            .compactMap { $0?.allowQRRegistration }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] allowQRRegistration in
+                self?.allowQRRegistration = allowQRRegistration
+            }
+            .store(in: &cancellables)
+
         // 心拍数の監視
         if let userId = authenticationManager.currentUserId {
             HeartbeatService.shared.subscribeToHeartbeat(userId: userId)
@@ -157,6 +170,42 @@ class QRCodeShareViewModel: ObservableObject {
                     // 循環参照を防ぐため、authenticationManager.refreshCurrentUser()は呼ばない
                     // UserServiceがFirebaseを更新するので、setupBindingsで自動的に反映される
                 }
+            )
+            .store(in: &cancellables)
+    }
+
+    // QR登録許可設定を切り替え
+    func toggleQRRegistration() {
+        guard authenticationManager.currentUserId != nil else {
+            errorMessage = "認証が必要です"
+            return
+        }
+
+        // 現在のallowQRRegistrationの値を使用
+        let newValue = allowQRRegistration
+        isLoading = true
+
+        guard let currentUser = authenticationManager.currentUser else {
+            errorMessage = "Current user not found"
+            isLoading = false
+            return
+        }
+
+        UserService.shared.updateQRRegistrationSetting(for: currentUser, allow: newValue)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    self?.isLoading = false
+                    if case let .failure(error) = completion {
+                        // エラーの場合、トグルを元に戻す
+                        self?.allowQRRegistration = !newValue
+                        self?.errorMessage = error.localizedDescription
+                    } else {
+                        // AuthServiceの現在のユーザー情報を更新
+                        self?.authenticationManager.refreshCurrentUser()
+                    }
+                },
+                receiveValue: { _ in }
             )
             .store(in: &cancellables)
     }
