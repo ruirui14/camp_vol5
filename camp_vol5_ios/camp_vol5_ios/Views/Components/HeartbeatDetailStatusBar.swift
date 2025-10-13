@@ -77,7 +77,25 @@ struct HeartbeatDetailStatusBar: View {
     }
 }
 
-#Preview {
+// ダミーデータ生成
+extension HeartbeatDetailStatusBar {
+    /// 80〜100の範囲でランダムな心拍データを生成
+    static func generateMockHeartbeat() -> Heartbeat {
+        let randomBpm = Int.random(in: 80...100)
+        return Heartbeat(userId: "mock_user", bpm: randomBpm, timestamp: Date())
+    }
+
+    /// 複数のダミー心拍データを生成
+    static func generateMockHeartbeats(count: Int = 10) -> [Heartbeat] {
+        return (0..<count).map { index in
+            let randomBpm = Int.random(in: 80...100)
+            let timestamp = Date().addingTimeInterval(TimeInterval(-index * 5)) // 5秒間隔
+            return Heartbeat(userId: "mock_user", bpm: randomBpm, timestamp: timestamp)
+        }
+    }
+}
+
+#Preview("アクティブ状態") {
     HeartbeatDetailStatusBar(
         isVibrationEnabled: true,
         isVibrating: true,
@@ -85,7 +103,7 @@ struct HeartbeatDetailStatusBar: View {
         autoLockDisabled: true,
         remainingTime: 300,
         isSleepMode: false,
-        heartbeat: Heartbeat(userId: "test", bpm: 75, timestamp: Date())
+        heartbeat: HeartbeatDetailStatusBar.generateMockHeartbeat()
     )
     .background(Color.black)
 }
