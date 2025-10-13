@@ -2,6 +2,7 @@ import Firebase
 import FirebaseAppCheck
 import FirebaseCore
 import FirebaseCrashlytics
+import FirebasePerformance
 import GoogleSignIn
 import SwiftUI
 
@@ -38,6 +39,10 @@ struct camp_vol5_iosApp: App {
         // Crashlytics を初期化
         // 自動クラッシュレポート収集を有効化
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+
+        // Performance Monitoring を有効化（自動的に開始）
+        Performance.sharedInstance().isDataCollectionEnabled = true
+        print("🎯 Firebase Performance Monitoring enabled")
 
         let authManager = AuthenticationManager()
         _authenticationManager = StateObject(wrappedValue: authManager)
