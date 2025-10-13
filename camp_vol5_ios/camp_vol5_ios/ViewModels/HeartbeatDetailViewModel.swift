@@ -20,10 +20,6 @@ class HeartbeatDetailViewModel: ObservableObject {
     private let userId: String
     private var cancellables = Set<AnyCancellable>()
     private var heartbeatSubscription: AnyCancellable?
-    private var mockDataTimer: Timer?
-
-    // Mock Mode
-    var useMockData: Bool = true // ダミーデータを使用するかどうか
 
     // MARK: - Dependencies
     private let userService: UserServiceProtocol
@@ -55,20 +51,14 @@ class HeartbeatDetailViewModel: ObservableObject {
     // MARK: - Public Methods
 
     func startMonitoring() {
-        if useMockData {
-            startMockDataGeneration()
-        } else {
-            startContinuousMonitoring()
-        }
+        startContinuousMonitoring()
+
         enableVibrationIfNeeded()
     }
 
     func stopMonitoring() {
-        if useMockData {
-            stopMockDataGeneration()
-        } else {
-            stopContinuousMonitoring()
-        }
+        stopContinuousMonitoring()
+
         disableVibration()
     }
 
@@ -178,59 +168,6 @@ class HeartbeatDetailViewModel: ObservableObject {
 
     func clearError() {
         errorMessage = nil
-    }
-
-    // MARK: - Mock Data Generation
-
-    /// ダミーデータの生成を開始（80〜100のランダムな心拍数を1秒ごとに更新）
-    private func startMockDataGeneration() {
-        guard !isMonitoring else { return }
-
-        isMonitoring = true
-        clearError()
-
-        // 初回データを即座に生成
-        generateMockHeartbeat()
-
-        // 2秒ごとに新しいダミーデータを生成
-        mockDataTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.generateMockHeartbeat()
-            }
-        }
-    }
-
-    /// ダミーデータの生成を停止
-    private func stopMockDataGeneration() {
-        isMonitoring = false
-        mockDataTimer?.invalidate()
-        mockDataTimer = nil
-    }
-
-    /// 重み付けされたランダムな心拍データを生成
-    /// - 75~85: 80% (8割)
-    /// - 86~90: 15% (1.5割)
-    /// - 91~95: 5% (0.5割)
-    private func generateMockHeartbeat() {
-        let randomBpm = generateWeightedRandomBPM()
-        let mockHeartbeat = Heartbeat(userId: userId, bpm: randomBpm, timestamp: Date())
-        handleHeartbeatUpdate(mockHeartbeat)
-    }
-
-    /// 重み付けされたランダムなBPM値を生成
-    private func generateWeightedRandomBPM() -> Int {
-        let random = Double.random(in: 0..<1.0)
-
-        if random < 0.80 {
-            // 80%の確率で75~85
-            return Int.random(in: 75...85)
-        } else if random < 0.95 {
-            // 15%の確率で86~90
-            return Int.random(in: 86...90)
-        } else {
-            // 5%の確率で91~95
-            return Int.random(in: 91...95)
-        }
     }
 
     // MARK: - Lifecycle
