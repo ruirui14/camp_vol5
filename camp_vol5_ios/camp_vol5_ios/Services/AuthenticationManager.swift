@@ -486,6 +486,52 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         }
     }
 
+    /// パスワードリセットメールを送信
+    /// - Parameter email: リセットするメールアドレス
+    func sendPasswordResetEmail(email: String) {
+        guard !email.isEmpty else {
+            errorMessage = "メールアドレスを入力してください"
+            return
+        }
+
+        // 基本的なメールバリデーション
+        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        guard emailPredicate.evaluate(with: email) else {
+            errorMessage = "有効なメールアドレスを入力してください"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        Auth.auth().sendPasswordReset(withEmail: email) { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    let nsError = error as NSError
+                    let errorCode = nsError.code
+
+                    // Firebase Authのエラーコードに応じたメッセージ
+                    switch errorCode {
+                    case 17011: // FIRAuthErrorCodeUserNotFound
+                        self?.errorMessage = "このメールアドレスは登録されていません"
+                    case 17008: // FIRAuthErrorCodeInvalidEmail
+                        self?.errorMessage = "無効なメールアドレスです"
+                    default:
+                        self?.errorMessage = "パスワードリセットメールの送信に失敗しました: \(error.localizedDescription)"
+                    }
+
+                    print("❌ Password reset email failed: \(error.localizedDescription), code: \(errorCode)")
+                } else {
+                    print("✅ Password reset email sent successfully to \(email)")
+                    // 成功時は特別なフラグを設定（ViewModelで処理）
+                }
+            }
+        }
+    }
+
     /// メール・パスワードでサインイン
     /// - Parameters:
     ///   - email: メールアドレス

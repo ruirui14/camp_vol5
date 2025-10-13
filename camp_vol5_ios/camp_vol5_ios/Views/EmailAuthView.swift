@@ -78,6 +78,9 @@ struct EmailAuthView: View {
                 )
             )
         }
+        .sheet(isPresented: $viewModel.showPasswordReset) {
+            PasswordResetView(viewModel: viewModel)
+        }
     }
 
     // MARK: - Email Verification View
@@ -370,6 +373,19 @@ struct EmailAuthView: View {
                         .foregroundColor(.blue)
                         .underline()
                 }
+
+                // パスワードを忘れた場合のリンク（サインインモードのみ表示）
+                if !viewModel.isSignUp {
+                    Button(action: {
+                        viewModel.showPasswordResetSheet()
+                    }) {
+                        Text("パスワードをお忘れですか？")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .underline()
+                    }
+                    .padding(.top, 4)
+                }
             }
 
             // エラーメッセージ
@@ -397,6 +413,243 @@ struct EmailAuthView: View {
         }
     }
 
+}
+
+// MARK: - Password Reset View
+
+struct PasswordResetView: View {
+    @ObservedObject var viewModel: EmailAuthViewModel
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    // 成功メッセージまたはフォーム
+                    if viewModel.passwordResetSent {
+                        passwordResetSuccessView
+                    } else {
+                        passwordResetFormView
+                    }
+
+                    Spacer(minLength: 20)
+                }
+                .padding(.horizontal, 24)
+            }
+            .navigationTitle("パスワードリセット")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("閉じる") {
+                        viewModel.dismissPasswordReset()
+                        dismiss()
+                    }
+                }
+            }
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color(.systemBackground),
+                        Color(.systemGray6).opacity(0.1),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+        }
+    }
+
+    // MARK: - Password Reset Form View
+
+    private var passwordResetFormView: some View {
+        VStack(spacing: 24) {
+            // アイコン
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.orange.opacity(0.2), Color.orange.opacity(0.1),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 100, height: 100)
+
+                Image(systemName: "key.fill")
+                    .font(.system(size: 48, weight: .medium))
+                    .foregroundColor(.orange)
+            }
+            .padding(.top, 40)
+
+            // タイトルとメッセージ
+            VStack(spacing: 12) {
+                Text("パスワードをリセット")
+                    .font(.title2)
+                    .fontWeight(.bold)
+
+                Text("登録したメールアドレスを入力してください。\nパスワードリセット用のリンクを送信します。")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
+
+            // メールアドレス入力欄
+            VStack(alignment: .leading, spacing: 8) {
+                Text("メールアドレス")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+
+                TextField("メールアドレスを入力", text: $viewModel.resetEmail)
+                    .textFieldStyle(ModernTextFieldStyle())
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+            }
+            .padding(.horizontal, 8)
+
+            // 送信ボタン
+            Button(action: {
+                viewModel.sendPasswordResetEmail()
+            }) {
+                HStack {
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(.white)
+                    } else {
+                        Image(systemName: "envelope.fill")
+                            .font(.title3)
+                    }
+
+                    Text(viewModel.isLoading ? "送信中..." : "リセットメールを送信")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        colors: [Color.orange, Color.orange.opacity(0.8)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+            .disabled(viewModel.isLoading || viewModel.resetEmail.isEmpty)
+            .opacity((viewModel.resetEmail.isEmpty || viewModel.isLoading) ? 0.6 : 1.0)
+
+            // エラーメッセージ
+            if let errorMessage = viewModel.errorMessage {
+                VStack(spacing: 8) {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                        Text(errorMessage)
+                            .foregroundColor(.red)
+                            .font(.callout)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding()
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(8)
+
+                    Button("エラーを閉じる") {
+                        viewModel.clearError()
+                    }
+                    .font(.caption)
+                    .foregroundColor(.blue)
+                }
+            }
+        }
+    }
+
+    // MARK: - Password Reset Success View
+
+    private var passwordResetSuccessView: some View {
+        VStack(spacing: 24) {
+            // 成功アイコン
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.green.opacity(0.2), Color.green.opacity(0.1),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 100, height: 100)
+
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 60, weight: .medium))
+                    .foregroundColor(.green)
+            }
+            .padding(.top, 60)
+
+            // タイトルとメッセージ
+            VStack(spacing: 12) {
+                Text("メールを送信しました")
+                    .font(.title2)
+                    .fontWeight(.bold)
+
+                Text("パスワードリセット用のリンクを\n\(viewModel.resetEmail)\nに送信しました。")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+            }
+
+            // 注意事項
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "info.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                    Text("メールが届かない場合")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("• 迷惑メールフォルダを確認してください")
+                    Text("• メールアドレスが正しいか確認してください")
+                    Text("• 数分待ってから再度お試しください")
+                }
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding()
+            .background(Color.blue.opacity(0.1))
+            .cornerRadius(12)
+            .padding(.horizontal, 8)
+
+            // 完了ボタン
+            Button(action: {
+                viewModel.dismissPasswordReset()
+                dismiss()
+            }) {
+                Text("完了")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+            }
+            .padding(.top, 20)
+        }
+    }
 }
 
 struct EmailAuthView_Previews: PreviewProvider {

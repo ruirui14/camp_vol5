@@ -20,6 +20,11 @@ class EmailAuthViewModel: BaseViewModel {
     @Published var needsEmailVerification: Bool = false
     @Published var isEmailVerified: Bool = false
 
+    // パスワードリセット関連
+    @Published var showPasswordReset: Bool = false
+    @Published var resetEmail: String = ""
+    @Published var passwordResetSent: Bool = false
+
     // MARK: - Dependencies
     private var authenticationManager: AuthenticationManager
 
@@ -62,6 +67,32 @@ class EmailAuthViewModel: BaseViewModel {
 
     func checkEmailVerification() {
         authenticationManager.reloadUserAndCheckVerification()
+    }
+
+    // MARK: - Password Reset
+
+    func showPasswordResetSheet() {
+        // 現在入力されているメールアドレスをリセットフォームに設定
+        resetEmail = email
+        passwordResetSent = false
+        showPasswordReset = true
+    }
+
+    func sendPasswordResetEmail() {
+        authenticationManager.sendPasswordResetEmail(email: resetEmail)
+
+        // 成功時の処理（エラーがなければ成功とみなす）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            if self?.authenticationManager.errorMessage == nil {
+                self?.passwordResetSent = true
+            }
+        }
+    }
+
+    func dismissPasswordReset() {
+        showPasswordReset = false
+        passwordResetSent = false
+        resetEmail = ""
     }
 
     // MARK: - Actions
