@@ -16,6 +16,10 @@ class EmailAuthViewModel: BaseViewModel {
     @Published var showPassword: Bool = false
     @Published var animateForm: Bool = false
 
+    // メール確認状態（リアクティブに更新するため@Publishedで管理）
+    @Published var needsEmailVerification: Bool = false
+    @Published var isEmailVerified: Bool = false
+
     // MARK: - Dependencies
     private var authenticationManager: AuthenticationManager
 
@@ -37,6 +41,27 @@ class EmailAuthViewModel: BaseViewModel {
             .receive(on: DispatchQueue.main)
             .assign(to: \.errorMessage, on: self)
             .store(in: &cancellables)
+
+        // メール確認状態をバインディング
+        authenticationManager.$needsEmailVerification
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.needsEmailVerification, on: self)
+            .store(in: &cancellables)
+
+        authenticationManager.$isEmailVerified
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isEmailVerified, on: self)
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Email Verification
+
+    func sendVerificationEmail() {
+        authenticationManager.sendVerificationEmail()
+    }
+
+    func checkEmailVerification() {
+        authenticationManager.reloadUserAndCheckVerification()
     }
 
     // MARK: - Actions

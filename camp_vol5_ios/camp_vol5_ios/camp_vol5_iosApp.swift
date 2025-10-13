@@ -24,6 +24,8 @@ struct camp_vol5_iosApp: App {
         #if DEBUG
             // デバッグビルドの場合はDebugProviderを使用
             let providerFactory = AppCheckDebugProviderFactory()
+            // デバッグトークンをコンソールに出力
+            print("🔐 App Check Debug Mode - Check console for debug token")
         #else
             // リリースビルドの場合はApp Attestを使用
             let providerFactory = AppAttestProviderFactory()

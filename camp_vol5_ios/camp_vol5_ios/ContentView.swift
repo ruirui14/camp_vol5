@@ -9,7 +9,7 @@ struct ContentView: View {
         NavigationStack(path: $navigationPath) {
             Group {
                 let _ = print(
-                    "🔥 ContentView - isLoading: \(authenticationManager.isLoading), needsUserNameInput: \(authenticationManager.needsUserNameInput), isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
+                    "🔥 ContentView - isLoading: \(authenticationManager.isLoading), needsUserNameInput: \(authenticationManager.needsUserNameInput), isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil), needsEmailVerification: \(authenticationManager.needsEmailVerification)"
                 )
 
                 if authenticationManager.needsUserNameInput {
@@ -28,8 +28,9 @@ struct ContentView: View {
                     ListHeartBeatsView()
                 } else {
                     // 認証されていない場合、またはユーザー情報がない場合は認証画面を表示
+                    // メール確認待ち状態も含む
                     let _ = print(
-                        "🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
+                        "🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil), needsEmailVerification: \(authenticationManager.needsEmailVerification)"
                     )
                     AuthView(
                         onStartWithoutAuth: {
@@ -40,7 +41,9 @@ struct ContentView: View {
                 }
             }
         }
-        .id(authenticationManager.isAuthenticated)
+        .id(
+            "\(authenticationManager.needsUserNameInput)-\(authenticationManager.currentUser?.id ?? "none")"
+        )
         .onChange(of: authenticationManager.isAuthenticated) { _, isAuthenticated in
             // 認証状態が失われた場合（アカウント削除やサインアウト）、NavigationStackをクリア
             if !isAuthenticated {

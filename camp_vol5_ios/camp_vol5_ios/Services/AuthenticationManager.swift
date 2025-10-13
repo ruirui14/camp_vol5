@@ -59,6 +59,12 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     /// 選択された認証方式
     @Published var selectedAuthMethod: String = "anonymous"
 
+    /// メールアドレスが確認済みかどうか
+    @Published var isEmailVerified: Bool = false
+
+    /// メール確認待ち状態
+    @Published var needsEmailVerification: Bool = false
+
     // MARK: - Private Properties
 
     // Firebase Service削除に伴い、直接Modelを使用
@@ -131,9 +137,23 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         if firebaseUser.isAnonymous {
             handleAnonymousUser(firebaseUser)
         } else {
-            // Google認証またはメール認証ユーザーの場合、まず既存ユーザーをチェック
+            // メール認証ユーザーの場合、メール確認状態をチェック
+            let isEmailProvider = firebaseUser.providerData.contains { $0.providerID == "password" }
+
+            if isEmailProvider && !firebaseUser.isEmailVerified {
+                // メール未確認の場合、メール確認画面を表示
+                print("⚠️ Email not verified for user: \(firebaseUser.uid)")
+                isEmailVerified = false
+                needsEmailVerification = true
+                needsUserNameInput = false
+                return
+            }
+
+            // Google認証またはメール確認済みユーザーの場合、既存ユーザーをチェック
             print("🔥 Checking existing user for authenticated user: \(firebaseUser.uid)")
-            checkExistingUserOrRequireNameInput(uid: firebaseUser.uid)
+            isEmailVerified = firebaseUser.isEmailVerified
+            needsEmailVerification = false
+            checkExistingUserOrRequireNameInput(uid: firebaseUser.uid, firebaseUser: firebaseUser)
         }
     }
 
@@ -168,8 +188,20 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     }
 
     /// 既存ユーザーをチェックし、存在しない場合はユーザー名入力を要求
-    /// - Parameter uid: ユーザーID
-    private func checkExistingUserOrRequireNameInput(uid: String) {
+    /// - Parameters:
+    ///   - uid: ユーザーID
+    ///   - firebaseUser: Firebaseユーザー
+    private func checkExistingUserOrRequireNameInput(uid: String, firebaseUser: FirebaseAuth.User) {
+        // メール認証ユーザーの場合、メール確認状態を再チェック
+        let isEmailProvider = firebaseUser.providerData.contains { $0.providerID == "password" }
+        if isEmailProvider && !firebaseUser.isEmailVerified {
+            print("⚠️ Email not verified, showing verification screen")
+            isEmailVerified = false
+            needsEmailVerification = true
+            needsUserNameInput = false
+            return
+        }
+
         UserService.shared.getUser(uid: uid)
             .receive(on: DispatchQueue.main)
             .sink(
@@ -180,7 +212,10 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                         self?.needsUserNameInput = true
                         // 認証方式を設定（既に AuthView で設定済みだが、念のため）
                         if self?.selectedAuthMethod.isEmpty == true {
-                            self?.selectedAuthMethod = "google"  // デフォルトでgoogleを設定
+                            let isEmail = firebaseUser.providerData.contains {
+                                $0.providerID == "password"
+                            }
+                            self?.selectedAuthMethod = isEmail ? "email" : "google"
                         }
                     }
                 },
@@ -196,7 +231,10 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                         self?.needsUserNameInput = true
                         // 認証方式を設定（既に AuthView で設定済みだが、念のため）
                         if self?.selectedAuthMethod.isEmpty == true {
-                            self?.selectedAuthMethod = "google"  // デフォルトでgoogleを設定
+                            let isEmail = firebaseUser.providerData.contains {
+                                $0.providerID == "password"
+                            }
+                            self?.selectedAuthMethod = isEmail ? "email" : "google"
                         }
                     }
                 }
@@ -385,6 +423,69 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         objectWillChange.send()
     }
 
+    /// メール確認メールを送信
+    func sendVerificationEmail() {
+        guard let firebaseUser = user else {
+            errorMessage = "ユーザー情報が取得できませんでした"
+            return
+        }
+
+        if firebaseUser.isEmailVerified {
+            errorMessage = "メールアドレスは既に確認済みです"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        firebaseUser.sendEmailVerification { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    self?.errorMessage = "確認メールの送信に失敗しました: \(error.localizedDescription)"
+                } else {
+                    // 成功メッセージを表示（エラーメッセージフィールドを一時的に使用）
+                    print("✉️ 確認メールを送信しました")
+                }
+            }
+        }
+    }
+
+    /// メール確認状態を更新
+    func reloadUserAndCheckVerification() {
+        guard let firebaseUser = user else { return }
+
+        isLoading = true
+
+        firebaseUser.reload { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    self?.errorMessage = "ユーザー情報の更新に失敗しました: \(error.localizedDescription)"
+                    return
+                }
+
+                // メール確認状態を更新
+                self?.isEmailVerified = firebaseUser.isEmailVerified
+
+                if firebaseUser.isEmailVerified {
+                    // メール確認完了
+                    self?.needsEmailVerification = false
+                    print("✅ メールアドレスが確認されました")
+
+                    // 既存ユーザーをチェック
+                    self?.checkExistingUserOrRequireNameInput(
+                        uid: firebaseUser.uid, firebaseUser: firebaseUser)
+                } else {
+                    // まだ確認されていない場合
+                    self?.errorMessage = "メールアドレスがまだ確認されていません。メール内のリンクをクリックしてください。"
+                }
+            }
+        }
+    }
+
     /// メール・パスワードでサインイン
     /// - Parameters:
     ///   - email: メールアドレス
@@ -412,8 +513,19 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     return
                 }
 
-                // メール認証成功 - handleAuthenticatedUserで処理される
-                print("メール認証成功: \(firebaseUser.uid)")
+                // メール確認状態をチェック
+                self?.isEmailVerified = firebaseUser.isEmailVerified
+
+                if !firebaseUser.isEmailVerified {
+                    // メール未確認の場合、確認待ち画面に遷移
+                    print("⚠️ メールアドレスが未確認です")
+                    self?.needsEmailVerification = true
+                    self?.needsUserNameInput = false
+                } else {
+                    // メール認証成功 - handleAuthenticatedUserで処理される
+                    print("✅ メール認証成功: \(firebaseUser.uid)")
+                    self?.needsEmailVerification = false
+                }
             }
         }
     }
@@ -493,9 +605,22 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     return
                 }
 
-                // メール新規登録成功後、ユーザー名入力画面に遷移
-                print("🔥 Email signup success, will show name input: \(firebaseUser.uid)")
-                self?.needsUserNameInput = true
+                // メール新規登録成功後、確認メールを送信
+                print("🔥 Email signup success: \(firebaseUser.uid)")
+                self?.needsEmailVerification = true
+                self?.isEmailVerified = false
+                self?.needsUserNameInput = false
+
+                // 確認メールを送信
+                firebaseUser.sendEmailVerification { error in
+                    DispatchQueue.main.async {
+                        if let error = error {
+                            self?.errorMessage = "確認メールの送信に失敗しました: \(error.localizedDescription)"
+                        } else {
+                            print("✉️ 確認メールを送信しました")
+                        }
+                    }
+                }
             }
         }
     }
