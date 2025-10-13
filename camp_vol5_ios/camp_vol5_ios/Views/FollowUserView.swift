@@ -4,6 +4,7 @@ struct FollowUserView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel = FollowUserViewModel()
     @State private var showingQRScanner = false
+    @State private var showingCameraConfirmation = false
     @State private var showingFollowConfirmation = false
     @State private var showingAuthRequired = false
     @State private var showingQRCodeShare = false
@@ -90,6 +91,14 @@ struct FollowUserView: View {
                 }
             } message: {
                 Text("この機能を利用するにはGoogle認証が必要です")
+            }
+            .alert("カメラの起動", isPresented: $showingCameraConfirmation) {
+                Button("キャンセル", role: .cancel) {}
+                Button("はい") {
+                    showingQRScanner = true
+                }
+            } message: {
+                Text("QRコード読み取りのためにカメラが起動しますが、よろしいですか？")
             }
         }
     }
@@ -204,7 +213,7 @@ struct FollowUserView: View {
 
             // QRコード読み取りボタン
             Button(action: {
-                showingQRScanner = true
+                showingCameraConfirmation = true
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "qrcode.viewfinder")
