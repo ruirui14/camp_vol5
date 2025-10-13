@@ -1,45 +1,53 @@
+// Models/User.swift
+// ユーザー情報を表す純粋なデータモデル
+// データ変換ロジックはRepositoryレイヤーに移動
+
 import Foundation
 
-// MARK: - Data Models
-struct User: Identifiable, Equatable, Codable {
+/// ユーザー情報を表すドメインモデル
+/// ビジネスロジックやデータ変換を含まない純粋なデータ構造
+struct User: Codable, Identifiable, Equatable {
     let id: String
-    var name: String
-    var inviteCode: String
-    var allowQRRegistration: Bool
-    
-    init(id: String, name: String, inviteCode: String, allowQRRegistration: Bool) {
+    let name: String
+    let inviteCode: String
+    let allowQRRegistration: Bool
+    let followingUserIds: [String]
+    let createdAt: Date?
+    let updatedAt: Date?
+
+    // MARK: - Initialization
+
+    /// 標準イニシャライザ
+    init(
+        id: String,
+        name: String,
+        inviteCode: String,
+        allowQRRegistration: Bool,
+        followingUserIds: [String],
+        createdAt: Date? = nil,
+        updatedAt: Date? = nil
+    ) {
         self.id = id
         self.name = name
         self.inviteCode = inviteCode
         self.allowQRRegistration = allowQRRegistration
+        self.followingUserIds = followingUserIds
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
-    
-    init?(id: String, data: [String: Any]) {
-        guard let name = data["name"] as? String else {
-            return nil
-        }
-        self.id = id
-        self.name = name
-        self.inviteCode = data["inviteCode"] as? String ?? ""
-        self.allowQRRegistration = data["allowQRRegistration"] as? Bool ?? false
-    }
-    
-    var dictionaryRepresentation: [String: Any] {
-        return [
-            "id": id, // AuthのUIDも保存しておく
-            "name": name,
-            "inviteCode": inviteCode,
-            "allowQRRegistration": allowQRRegistration
-        ]
-    }
-    
-    // 空のユーザーインスタンスを提供
-    static var empty: User {
-        return User(
-            id: "",
-            name: "",
-            inviteCode: "",
-            allowQRRegistration: false
+
+    // MARK: - Convenience Initializers
+
+    /// 新規ユーザー作成用のコンビニエンスイニシャライザ
+    init(id: String, name: String) {
+        self.init(
+            id: id,
+            name: name,
+            inviteCode: UUID().uuidString,
+            allowQRRegistration: false,
+            followingUserIds: [],
+            createdAt: Date(),
+            updatedAt: Date()
         )
     }
 }

@@ -1,0 +1,5 @@
+{
+    "extensions.ignoreRecommendations": false,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "sweetpad.sweetpad",
+}
