@@ -66,6 +66,26 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
         ref.removeAllObservers()
     }
 
+    func saveHeartRate(userId: String, bpm: Int) {
+        let ref = database.reference().child("live_heartbeats").child(userId)
+
+        // タイムスタンプをミリ秒単位に変換
+        let timestampMillis = Date().timeIntervalSince1970 * 1000
+
+        let data: [String: Any] = [
+            "bpm": bpm,
+            "timestamp": timestampMillis,
+        ]
+
+        ref.setValue(data) { error, _ in
+            if let error = error {
+                print("❌ Firebase保存エラー: \(error.localizedDescription)")
+            } else {
+                print("✅ 心拍数をFirebaseに保存: \(bpm) bpm, userId: \(userId)")
+            }
+        }
+    }
+
     // MARK: - Private: Data Transformation
 
     /// Realtime DatabaseデータをHeartbeatに変換
