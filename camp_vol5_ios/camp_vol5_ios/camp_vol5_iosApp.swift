@@ -1,9 +1,9 @@
 import Firebase
 import FirebaseAppCheck
+import FirebaseCore
 import FirebaseCrashlytics
 import GoogleSignIn
 import SwiftUI
-import FirebaseCore
 
 @main
 struct camp_vol5_iosApp: App {
@@ -22,11 +22,11 @@ struct camp_vol5_iosApp: App {
     init() {
         // App Check を最初に設定（Firebase.configure() の前に必須）
         #if DEBUG
-        // デバッグビルドの場合はDebugProviderを使用
-        let providerFactory = AppCheckDebugProviderFactory()
+            // デバッグビルドの場合はDebugProviderを使用
+            let providerFactory = AppCheckDebugProviderFactory()
         #else
-        // リリースビルドの場合はApp Attestを使用
-        let providerFactory = AppAttestProviderFactory()
+            // リリースビルドの場合はApp Attestを使用
+            let providerFactory = AppAttestProviderFactory()
         #endif
         AppCheck.setAppCheckProviderFactory(providerFactory)
 

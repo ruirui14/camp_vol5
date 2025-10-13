@@ -3,7 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject private var watchManager = WatchHeartRateManager.shared
     @State private var isBeating: Bool = false
-    
+
     var body: some View {
         ScrollView {
             VStack(spacing: 4) {
@@ -15,7 +15,7 @@ struct ContentView: View {
                         .font(.system(size: 120))
                         .scaleEffect(isBeating ? 1.25 : 1.0)
                         .opacity(isBeating ? 0.0 : 1.0)
-                    
+
                     // 鼓動時のハート（大きい・明るい）
                     Image("heart")
                         .renderingMode(.original)
@@ -23,7 +23,7 @@ struct ContentView: View {
                         .scaleEffect(isBeating ? 1.25 : 1.0)
                         .opacity(isBeating ? 1.0 : 0.0)
                         .shadow(color: .red, radius: 10, x: 0, y: 0)
-                    
+
                     // 中央の心拍数
                     if watchManager.currentHeartRate > 0 {
                         Text("\(watchManager.currentHeartRate)")
@@ -38,17 +38,18 @@ struct ContentView: View {
                 }
                 .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isBeating)
                 .frame(height: 100)
-                .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: isBeating) { _, isBeatingNow in
+                .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: isBeating) {
+                    _, isBeatingNow in
                     return isBeatingNow
                 }
-                
+
                 VStack(spacing: 2) {
                     Text("接続状態: \(watchManager.isConnected ? "接続中" : "未接続")")
                         .font(.caption2)
                         .foregroundColor(watchManager.isConnected ? .green : .red)
                 }
                 .padding(.vertical, 4)
-                
+
                 VStack {
                     Button(action: {
                         toggleSending()
@@ -61,11 +62,11 @@ struct ContentView: View {
                                     .font(.caption)
                             }
                             .opacity(watchManager.isSending && !watchManager.isStarting ? 1 : 0)
-                            
+
                             ProgressView()
                                 .scaleEffect(0.8)
                                 .opacity(watchManager.isStarting ? 1 : 0)
-                            
+
                             HStack {
                                 Image(systemName: "play.fill")
                                     .font(.caption)
@@ -78,7 +79,8 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 32)
                         .background(
-                            watchManager.isStarting ? Color.gray : (watchManager.isSending ? Color.red : Color.green)
+                            watchManager.isStarting
+                                ? Color.gray : (watchManager.isSending ? Color.red : Color.green)
                         )
                         .cornerRadius(16)
                     }
@@ -99,7 +101,7 @@ struct ContentView: View {
             triggerHeartbeat()
         }
     }
-    
+
     private func toggleSending() {
         if watchManager.isSending {
             watchManager.stopSending()
@@ -107,14 +109,14 @@ struct ContentView: View {
             watchManager.startSending()
         }
     }
-    
+
     private func triggerHeartbeat() {
         isBeating = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             self.isBeating = false
         }
     }
-    
+
     private func requestHealthKitPermission() {
         watchManager.setup()
     }

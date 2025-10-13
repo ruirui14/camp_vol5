@@ -7,8 +7,8 @@
 // UI に公開するための ObservableObject として機能する
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 import WatchConnectivity
 
 class WatchHeartRateService: ObservableObject {
@@ -68,7 +68,7 @@ class WatchHeartRateService: ObservableObject {
             "data": [
                 "userId": user.id,
                 "userName": user.name,
-            ]
+            ],
         ]
 
         if WCSession.default.isReachable {
