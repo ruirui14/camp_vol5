@@ -6,10 +6,8 @@ import Combine
 import Foundation
 
 @MainActor
-class AuthViewModel: ObservableObject {
+class AuthViewModel: BaseViewModel {
     // MARK: - Published Properties
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
     @Published var selectedAuthMethod: AuthMethod = .none
     @Published var showEmailAuth = false
     @Published var animateContent = false
@@ -22,18 +20,12 @@ class AuthViewModel: ObservableObject {
 
     // MARK: - Dependencies
     private var authenticationManager: AuthenticationManager
-    private var cancellables = Set<AnyCancellable>()
 
-    init(authenticationManager: AuthenticationManager) {
+    init(authenticationManager: AuthenticationManager = AuthenticationManager()) {
         self.authenticationManager = authenticationManager
+        super.init()
         setupBindings()
         startAnimation()
-    }
-
-    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
-        self.authenticationManager = authenticationManager
-        cancellables.removeAll()
-        setupBindings()
     }
 
     private func setupBindings() {
@@ -74,7 +66,7 @@ class AuthViewModel: ObservableObject {
         selectedAuthMethod = .none
     }
 
-    func clearError() {
+    override func clearError() {
         authenticationManager.clearError()
         selectedAuthMethod = .none
     }

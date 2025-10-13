@@ -2,16 +2,19 @@ import SwiftUI
 
 struct AuthView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @EnvironmentObject private var viewModelFactory: ViewModelFactory
     @StateObject private var viewModel: AuthViewModel
 
     let onStartWithoutAuth: () -> Void
 
-    init(onStartWithoutAuth: @escaping () -> Void) {
+    init(
+        onStartWithoutAuth: @escaping () -> Void,
+        factory: ViewModelFactory
+    ) {
         self.onStartWithoutAuth = onStartWithoutAuth
-        // 初期化時はダミーのAuthenticationManagerを使用
-        // 実際のAuthenticationManagerは@EnvironmentObjectで注入される
         self._viewModel = StateObject(
-            wrappedValue: AuthViewModel(authenticationManager: AuthenticationManager()))
+            wrappedValue: factory.makeAuthViewModel()
+        )
     }
 
     var body: some View {
@@ -83,14 +86,14 @@ struct AuthView: View {
                                     }
 
                                     VStack(spacing: 8) {
-                                        Text("Heart Beat Monitor")
+                                        Text("狂愛")
                                             .font(
                                                 .system(size: 32, weight: .bold, design: .rounded)
                                             )
                                             .multilineTextAlignment(.center)
                                             .opacity(viewModel.animateContent ? 1.0 : 0.7)
 
-                                        Text("リアルタイムで心拍を共有")
+                                        Text("推しの心拍数を感じよう")
                                             .font(.title3)
                                             .fontWeight(.medium)
                                             .foregroundColor(.secondary)
@@ -191,17 +194,15 @@ struct AuthView: View {
                 }
             }
         }
-        .onAppear {
-            viewModel.updateAuthenticationManager(authenticationManager)
-        }
         .sheet(
             isPresented: $viewModel.showEmailAuth,
             onDismiss: {
                 viewModel.dismissEmailAuth()
             }
         ) {
-            EmailAuthView()
+            EmailAuthView(factory: viewModelFactory)
                 .environmentObject(authenticationManager)
+                .environmentObject(viewModelFactory)
         }
     }
 }
@@ -334,7 +335,15 @@ struct ErrorCard: View {
 
 struct AuthView_Previews: PreviewProvider {
     static var previews: some View {
-        AuthView(onStartWithoutAuth: {})
-            .environmentObject(AuthenticationManager())
+        let authManager = AuthenticationManager()
+        let factory = ViewModelFactory(
+            authenticationManager: authManager,
+            userService: UserService.shared,
+            heartbeatService: HeartbeatService.shared,
+            vibrationService: VibrationService.shared
+        )
+        return AuthView(onStartWithoutAuth: {}, factory: factory)
+            .environmentObject(authManager)
+            .environmentObject(factory)
     }
 }

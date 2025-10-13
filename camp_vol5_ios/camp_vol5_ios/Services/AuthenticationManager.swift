@@ -639,7 +639,7 @@ final class MockAuthenticationManager: ObservableObject, AuthenticationProtocol 
 
     func signInAnonymously() {
         isAuthenticated = true
-        currentUser = User(id: "anonymous", name: "Guest User", imageName: nil)
+        currentUser = User(id: "anonymous", name: "Guest User")
     }
 
     func signOut() {

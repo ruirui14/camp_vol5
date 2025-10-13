@@ -8,13 +8,13 @@ struct UserNameInputView: View {
     @StateObject private var viewModel: UserNameInputViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init(selectedAuthMethod: SelectedAuthMethod = .anonymous) {
-        // 初期化時はダミーのAuthenticationManagerを使用
-        // 実際のAuthenticationManagerは@EnvironmentObjectで注入される
+    init(
+        selectedAuthMethod: SelectedAuthMethod = .anonymous,
+        factory: ViewModelFactory
+    ) {
         self._viewModel = StateObject(
-            wrappedValue: UserNameInputViewModel(
-                selectedAuthMethod: selectedAuthMethod,
-                authenticationManager: AuthenticationManager()
+            wrappedValue: factory.makeUserNameInputViewModel(
+                selectedAuthMethod: selectedAuthMethod
             )
         )
     }
@@ -137,14 +137,22 @@ struct UserNameInputView: View {
                 }
             }
         }
-        .onAppear {
-            viewModel.updateAuthenticationManager(authenticationManager)
-        }
     }
 
 }
 
 #Preview {
-    UserNameInputView(selectedAuthMethod: .anonymous)
-        .environmentObject(AuthenticationManager())
+    let authManager = AuthenticationManager()
+    let factory = ViewModelFactory(
+        authenticationManager: authManager,
+        userService: UserService.shared,
+        heartbeatService: HeartbeatService.shared,
+        vibrationService: VibrationService.shared
+    )
+    return UserNameInputView(
+        selectedAuthMethod: .anonymous,
+        factory: factory
+    )
+    .environmentObject(authManager)
+    .environmentObject(factory)
 }

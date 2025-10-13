@@ -4,10 +4,8 @@ import Foundation
 import Photos
 import SwiftUI
 
-class QRCodeShareViewModel: ObservableObject {
+class QRCodeShareViewModel: BaseViewModel {
     @Published var inviteCode: String?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
     @Published var qrCodeImage: UIImage?
     @Published var currentBPM: Int?
     @Published var userName: String?
@@ -23,40 +21,14 @@ class QRCodeShareViewModel: ObservableObject {
     private let cardGenerator = QRCodeCardGenerator()
 
     private var authenticationManager: AuthenticationManager
-    private var cancellables = Set<AnyCancellable>()
 
     init(authenticationManager: AuthenticationManager) {
         self.authenticationManager = authenticationManager
+        super.init()
         setupBindings()
+        print("🔥 QRCodeShareViewModel init started")
 
         // 初期化時に既存のinviteCodeがある場合は設定
-        if let currentUser = authenticationManager.currentUser,
-            !currentUser.inviteCode.isEmpty
-        {
-            inviteCode = currentUser.inviteCode
-            userName = currentUser.name
-            allowQRRegistration = currentUser.allowQRRegistration
-            qrCodeImage = generateStyledQRCode(from: currentUser.inviteCode)
-        } else if authenticationManager.isAuthenticated {
-            authenticationManager.refreshCurrentUser()
-
-            // 少し待ってからinviteCodeがない場合は新規生成
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                if let currentUser = self.authenticationManager.currentUser,
-                    currentUser.inviteCode.isEmpty
-                {
-                    self.generateNewInviteCode()
-                }
-            }
-        }
-    }
-
-    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
-        self.authenticationManager = authenticationManager
-        cancellables.removeAll()
-        setupBindings()
-
-        // 既存のinviteCodeがある場合は設定
         if let currentUser = authenticationManager.currentUser,
             !currentUser.inviteCode.isEmpty
         {

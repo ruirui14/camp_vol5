@@ -1,4 +1,5 @@
 import Firebase
+import FirebaseCrashlytics
 import GoogleSignIn
 import SwiftUI
 
@@ -13,6 +14,29 @@ struct camp_vol5_iosApp: App {
     // AuthenticationManager をStateObjectとして管理
     @StateObject private var authenticationManager = AuthenticationManager()
 
+    // ViewModelFactory をStateObjectとして管理
+    @StateObject private var viewModelFactory: ViewModelFactory
+
+    init() {
+        // Firebase を最初に設定（AuthenticationManager の初期化前に必須）
+        FirebaseApp.configure()
+
+        // Crashlytics を初期化
+        // 自動クラッシュレポート収集を有効化
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+
+        let authManager = AuthenticationManager()
+        _authenticationManager = StateObject(wrappedValue: authManager)
+        _viewModelFactory = StateObject(
+            wrappedValue: ViewModelFactory(
+                authenticationManager: authManager,
+                userService: UserService.shared,
+                heartbeatService: HeartbeatService.shared,
+                vibrationService: VibrationService.shared
+            )
+        )
+    }
+
     var body: some Scene {
         WindowGroup {
             switch appStateManager.currentState {
@@ -21,6 +45,7 @@ struct camp_vol5_iosApp: App {
             case .main:
                 ContentView()
                     .environmentObject(authenticationManager)
+                    .environmentObject(viewModelFactory)
                     .onOpenURL { url in
                         GIDSignIn.sharedInstance.handle(url)
                     }
@@ -36,8 +61,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions _: [UIApplication
             .LaunchOptionsKey: Any]?
     ) -> Bool {
-        // Firebase設定
-        FirebaseConfig.shared.configure()
+        // Firebase設定は App struct の init() で行うため、ここでは不要
         return true
     }
 

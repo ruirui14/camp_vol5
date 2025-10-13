@@ -13,28 +13,32 @@ enum SelectedAuthMethod {
 }
 
 @MainActor
-class UserNameInputViewModel: ObservableObject {
+class UserNameInputViewModel: BaseViewModel {
     // MARK: - Published Properties
+
     @Published var userName: String = ""
-    @Published var isLoading = false
-    @Published var errorMessage: String?
 
     // MARK: - Properties
+
     let selectedAuthMethod: SelectedAuthMethod
 
     // MARK: - Dependencies
-    private var authenticationManager: AuthenticationManager
-    private var cancellables = Set<AnyCancellable>()
 
-    init(selectedAuthMethod: SelectedAuthMethod, authenticationManager: AuthenticationManager) {
+    private var authenticationManager: AuthenticationManager
+    private let userService: UserServiceProtocol
+
+    // MARK: - Initialization
+
+    init(
+        selectedAuthMethod: SelectedAuthMethod,
+        authenticationManager: AuthenticationManager,
+        userService: UserServiceProtocol = UserService.shared
+    ) {
         self.selectedAuthMethod = selectedAuthMethod
         self.authenticationManager = authenticationManager
+        self.userService = userService
+        super.init()
         loadInitialUserName()
-    }
-
-    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
-        self.authenticationManager = authenticationManager
-        cancellables.removeAll()
     }
 
     // MARK: - Actions
@@ -43,8 +47,8 @@ class UserNameInputViewModel: ObservableObject {
         let trimmedName = userName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard validateUserName(trimmedName) else { return }
 
-        isLoading = true
-        errorMessage = nil
+        setLoading(true)
+        clearError()
 
         switch selectedAuthMethod {
         case .anonymous:
@@ -52,10 +56,6 @@ class UserNameInputViewModel: ObservableObject {
         case .google, .email:
             handleAuthenticatedUserSave(name: trimmedName)
         }
-    }
-
-    func clearError() {
-        errorMessage = nil
     }
 
     func goBackToAuth() {
@@ -78,12 +78,18 @@ class UserNameInputViewModel: ObservableObject {
 
     private func validateUserName(_ name: String) -> Bool {
         if name.isEmpty {
-            errorMessage = "表示名を入力してください"
+            handleError(
+                NSError(
+                    domain: "UserNameInputViewModel", code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "表示名を入力してください"]))
             return false
         }
 
         if name.count > 20 {
-            errorMessage = "表示名は20文字以内で入力してください"
+            handleError(
+                NSError(
+                    domain: "UserNameInputViewModel", code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "表示名は20文字以内で入力してください"]))
             return false
         }
 
@@ -101,19 +107,13 @@ class UserNameInputViewModel: ObservableObject {
                 // Firestoreから既存のユーザー情報を取得して表示名を設定
                 guard let uid = authenticationManager.user?.uid else { return }
 
-                UserService.shared.getUser(uid: uid)
-                    .receive(on: DispatchQueue.main)
-                    .sink(
-                        receiveCompletion: { _ in },
-                        receiveValue: { [weak self] existingUser in
-                            if let existingUser = existingUser,
-                                let self = self,
-                                self.userName.isEmpty
-                            {
-                                self.userName = existingUser.name
-                            }
-                        }
-                    )
+                userService.getUser(uid: uid)
+                    .handleErrors(on: self)
+                    .compactMap { $0 }
+                    .sink { [weak self] existingUser in
+                        guard let self = self, self.userName.isEmpty else { return }
+                        self.userName = existingUser.name
+                    }
                     .store(in: &cancellables)
             }
         }
@@ -121,68 +121,48 @@ class UserNameInputViewModel: ObservableObject {
 
     private func handleAnonymousUserSave(name: String) {
         guard let uid = authenticationManager.user?.uid else {
-            handleError("認証エラーが発生しました")
+            handleSaveError("認証エラーが発生しました")
             return
         }
 
         // 匿名ユーザーをFirestoreに保存
-        UserService.shared.createUser(uid: uid, name: name)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case let .failure(error) = completion {
-                        self?.handleError("保存に失敗しました: \(error.localizedDescription)")
-                    }
-                },
-                receiveValue: { [weak self] user in
-                    self?.handleUserSaveSuccess(user)
-                }
-            )
+        userService.createUser(uid: uid, name: name)
+            .handleErrors(on: self)
+            .compactMap { $0 }
+            .sink { [weak self] user in
+                self?.handleUserSaveSuccess(user)
+            }
             .store(in: &cancellables)
     }
 
     private func handleAuthenticatedUserSave(name: String) {
         guard let uid = authenticationManager.user?.uid else {
-            handleError("認証エラーが発生しました")
+            handleSaveError("認証エラーが発生しました")
             return
         }
 
         // 既存ユーザーをチェック
-        UserService.shared.getUser(uid: uid)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure(_) = completion {
-                        // 既存ユーザーが見つからない場合、新規作成
-                        self?.createNewUser(uid: uid, name: name)
-                    }
-                },
-                receiveValue: { [weak self] existingUser in
-                    if let existingUser = existingUser {
-                        // 既存ユーザーの名前を更新
-                        self?.updateExistingUser(existingUser, newName: name)
-                    } else {
-                        // 既存ユーザーが見つからない場合、新規作成
-                        self?.createNewUser(uid: uid, name: name)
-                    }
+        userService.getUser(uid: uid)
+            .handleErrors(on: self)
+            .sink { [weak self] existingUser in
+                if let existingUser = existingUser {
+                    // 既存ユーザーの名前を更新
+                    self?.updateExistingUser(existingUser, newName: name)
+                } else {
+                    // 既存ユーザーが見つからない場合、新規作成
+                    self?.createNewUser(uid: uid, name: name)
                 }
-            )
+            }
             .store(in: &cancellables)
     }
 
     private func createNewUser(uid: String, name: String) {
-        UserService.shared.createUser(uid: uid, name: name)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case let .failure(error) = completion {
-                        self?.handleError("保存に失敗しました: \(error.localizedDescription)")
-                    }
-                },
-                receiveValue: { [weak self] user in
-                    self?.handleUserSaveSuccess(user)
-                }
-            )
+        userService.createUser(uid: uid, name: name)
+            .handleErrors(on: self)
+            .compactMap { $0 }
+            .sink { [weak self] user in
+                self?.handleUserSaveSuccess(user)
+            }
             .store(in: &cancellables)
     }
 
@@ -192,34 +172,28 @@ class UserNameInputViewModel: ObservableObject {
             name: newName,
             inviteCode: existingUser.inviteCode,
             allowQRRegistration: existingUser.allowQRRegistration,
-            followingUserIds: existingUser.followingUserIds,
-            imageName: existingUser.imageName
+            followingUserIds: existingUser.followingUserIds
         )
 
-        UserService.shared.updateUser(updatedUser)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case let .failure(error) = completion {
-                        self?.handleError("更新に失敗しました: \(error.localizedDescription)")
-                    }
-                },
-                receiveValue: { [weak self] _ in
-                    self?.handleUserSaveSuccess(updatedUser)
-                }
-            )
+        userService.updateUser(updatedUser)
+            .handleErrors(on: self)
+            .sink { [weak self] _ in
+                self?.handleUserSaveSuccess(updatedUser)
+            }
             .store(in: &cancellables)
     }
 
     private func handleUserSaveSuccess(_ user: User) {
         authenticationManager.currentUser = user
         authenticationManager.completeUserNameInput()
-        isLoading = false
+        setLoading(false)
     }
 
-    private func handleError(_ message: String) {
-        errorMessage = message
-        isLoading = false
+    private func handleSaveError(_ message: String) {
+        handleError(
+            NSError(
+                domain: "UserNameInputViewModel", code: -1,
+                userInfo: [NSLocalizedDescriptionKey: message]))
     }
 
     // MARK: - Computed Properties

@@ -1,86 +1,53 @@
 // Models/User.swift
-// ユーザー情報を表すデータモデル
-// Firebase操作はUserServiceで実行される
+// ユーザー情報を表す純粋なデータモデル
+// データ変換ロジックはRepositoryレイヤーに移動
 
-import Firebase
-import FirebaseFirestore
 import Foundation
 
+/// ユーザー情報を表すドメインモデル
+/// ビジネスロジックやデータ変換を含まない純粋なデータ構造
 struct User: Codable, Identifiable, Equatable {
     let id: String
     let name: String
-    let inviteCode: String  // UUIDv4
+    let inviteCode: String
     let allowQRRegistration: Bool
     let followingUserIds: [String]
     let createdAt: Date?
     let updatedAt: Date?
-    let imageName: String?
 
-    // Firestore用の初期化
+    // MARK: - Initialization
+
+    /// 標準イニシャライザ
     init(
         id: String,
         name: String,
-        inviteCode: String = UUID().uuidString,
-        allowQRRegistration: Bool = false,
-        followingUserIds: [String] = [],
-        imageName: String? = nil
+        inviteCode: String,
+        allowQRRegistration: Bool,
+        followingUserIds: [String],
+        createdAt: Date? = nil,
+        updatedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
         self.inviteCode = inviteCode
         self.allowQRRegistration = allowQRRegistration
         self.followingUserIds = followingUserIds
-        createdAt = Date()
-        updatedAt = Date()
-        self.imageName = imageName
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
 
-    // Firestore データから初期化
-    init?(from data: [String: Any], id: String) {
-        guard let name = data["name"] as? String,
-            let inviteCode = data["inviteCode"] as? String,
-            let allowQRRegistration = data["allowQRRegistration"] as? Bool,
-            let followingUserIds = data["followingUserIds"] as? [String]
-        else {
-            return nil
-        }
+    // MARK: - Convenience Initializers
 
-        self.id = id
-        self.name = name
-        self.inviteCode = inviteCode
-        self.allowQRRegistration = allowQRRegistration
-        self.followingUserIds = followingUserIds
-        imageName = data["imageName"] as? String
-
-        if let createdAtTimestamp = data["createdAt"] as? Timestamp {
-            createdAt = createdAtTimestamp.dateValue()
-        } else {
-            createdAt = nil
-        }
-
-        if let updatedAtTimestamp = data["updatedAt"] as? Timestamp {
-            updatedAt = updatedAtTimestamp.dateValue()
-        } else {
-            updatedAt = nil
-        }
-    }
-
-    // Firestore保存用辞書に変換
-    func toDictionary() -> [String: Any] {
-        var dict: [String: Any] = [
-            "id": id,
-            "name": name,
-            "inviteCode": inviteCode,
-            "allowQRRegistration": allowQRRegistration,
-            "followingUserIds": followingUserIds,
-            "createdAt": Timestamp(date: createdAt ?? Date()),
-            "updatedAt": Timestamp(date: updatedAt ?? Date()),
-        ]
-
-        if let imageName = imageName {
-            dict["imageName"] = imageName
-        }
-
-        return dict
+    /// 新規ユーザー作成用のコンビニエンスイニシャライザ
+    init(id: String, name: String) {
+        self.init(
+            id: id,
+            name: name,
+            inviteCode: UUID().uuidString,
+            allowQRRegistration: false,
+            followingUserIds: [],
+            createdAt: Date(),
+            updatedAt: Date()
+        )
     }
 }

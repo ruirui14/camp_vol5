@@ -10,11 +10,10 @@ struct EmailAuthView: View {
     @StateObject private var viewModel: EmailAuthViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init() {
-        // 初期化時はダミーのAuthenticationManagerを使用
-        // 実際のAuthenticationManagerは@EnvironmentObjectで注入される
+    init(factory: ViewModelFactory) {
         self._viewModel = StateObject(
-            wrappedValue: EmailAuthViewModel(authenticationManager: AuthenticationManager()))
+            wrappedValue: factory.makeEmailAuthViewModel()
+        )
     }
 
     var body: some View {
@@ -225,9 +224,6 @@ struct EmailAuthView: View {
                     endPoint: .bottom
                 )
             )
-            .onAppear {
-                viewModel.updateAuthenticationManager(authenticationManager)
-            }
         }
     }
 
@@ -235,7 +231,15 @@ struct EmailAuthView: View {
 
 struct EmailAuthView_Previews: PreviewProvider {
     static var previews: some View {
-        EmailAuthView()
-            .environmentObject(AuthenticationManager())
+        let authManager = AuthenticationManager()
+        let factory = ViewModelFactory(
+            authenticationManager: authManager,
+            userService: UserService.shared,
+            heartbeatService: HeartbeatService.shared,
+            vibrationService: VibrationService.shared
+        )
+        return EmailAuthView(factory: factory)
+            .environmentObject(authManager)
+            .environmentObject(factory)
     }
 }

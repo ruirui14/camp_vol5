@@ -7,7 +7,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-class EmailAuthViewModel: ObservableObject {
+class EmailAuthViewModel: BaseViewModel {
     // MARK: - Published Properties
     @Published var email: String = ""
     @Published var password: String = ""
@@ -15,23 +15,15 @@ class EmailAuthViewModel: ObservableObject {
     @Published var isSignUp: Bool = false
     @Published var showPassword: Bool = false
     @Published var animateForm: Bool = false
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
 
     // MARK: - Dependencies
     private var authenticationManager: AuthenticationManager
-    private var cancellables = Set<AnyCancellable>()
 
-    init(authenticationManager: AuthenticationManager) {
+    init(authenticationManager: AuthenticationManager = AuthenticationManager()) {
         self.authenticationManager = authenticationManager
+        super.init()
         setupBindings()
         startAnimation()
-    }
-
-    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
-        self.authenticationManager = authenticationManager
-        cancellables.removeAll()
-        setupBindings()
     }
 
     private func setupBindings() {
@@ -71,7 +63,7 @@ class EmailAuthViewModel: ObservableObject {
         }
     }
 
-    func clearError() {
+    override func clearError() {
         authenticationManager.clearError()
     }
 

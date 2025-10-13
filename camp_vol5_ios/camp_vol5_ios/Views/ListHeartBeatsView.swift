@@ -23,23 +23,13 @@ enum NavigationDestination: Hashable {
 
 struct ListHeartBeatsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @StateObject private var viewModel: ListHeartBeatsViewModel
+    @StateObject private var viewModel = ListHeartBeatsViewModel()
     @StateObject private var backgroundImageCoordinator = BackgroundImageCoordinator()
     @State private var navigationPath = NavigationPath()
     @State private var isStatusBarHidden = false
     @State private var persistentSystemOverlaysVisibility: Visibility = .automatic
     @State private var hasAppearedOnce = false
     @State private var isEditMode = false
-
-    init() {
-        // 初期化時はダミーの AuthenticationManager を使用
-        // 実際の AuthenticationManager は @EnvironmentObject で注入される
-        _viewModel = StateObject(
-            wrappedValue: ListHeartBeatsViewModel(
-                authenticationManager: AuthenticationManager()
-            )
-        )
-    }
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -97,7 +87,6 @@ struct ListHeartBeatsView: View {
                 // 初回のみ実行
                 if !hasAppearedOnce {
                     hasAppearedOnce = true
-                    viewModel.updateAuthenticationManager(authenticationManager)
                     viewModel.loadFollowingUsersWithHeartbeats()
 
                     // データが既に存在する場合は背景画像を読み込み

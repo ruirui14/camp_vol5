@@ -1,27 +1,34 @@
 // ViewModels/SettingsViewModel.swift
+// 設定画面のビューモデル - ユーザー情報の取得、招待コード管理、QR登録設定を担当
+// BaseViewModelを継承し、プロトコルベースの依存性注入を使用
+
 import Combine
 import Foundation
 
-class SettingsViewModel: ObservableObject {
+@MainActor
+class SettingsViewModel: BaseViewModel {
+    // MARK: - Published Properties
     @Published var currentUser: User?
     @Published var currentHeartbeat: Heartbeat?
     @Published var inviteCode: String = ""
     @Published var allowQRRegistration: Bool = true
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var successMessage: String?
 
+    // MARK: - Private Properties
     private var authenticationManager: AuthenticationManager
-    private var cancellables = Set<AnyCancellable>()
+    private let userService: UserServiceProtocol
+    private let heartbeatService: HeartbeatServiceProtocol
 
-    init(authenticationManager: AuthenticationManager) {
-        self.authenticationManager = authenticationManager
-        setupBindings()
-    }
+    // MARK: - Initialization
 
-    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
+    init(
+        authenticationManager: AuthenticationManager = AuthenticationManager(),
+        userService: UserServiceProtocol = UserService.shared,
+        heartbeatService: HeartbeatServiceProtocol = HeartbeatService.shared
+    ) {
         self.authenticationManager = authenticationManager
-        cancellables.removeAll()
+        self.userService = userService
+        self.heartbeatService = heartbeatService
+        super.init()
         setupBindings()
     }
 
@@ -63,28 +70,26 @@ class SettingsViewModel: ObservableObject {
             return
         }
 
-        UserService.shared.getUser(uid: userId)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: {
-                    [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case let .failure(error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                        // エラーの場合も空のユーザーオブジェクトを設定してUIの読み込み状態を終了
-                        self?.currentUser = User(
-                            id: userId, name: "Unknown", inviteCode: "", allowQRRegistration: false
-                        )
-                    }
-                },
-                receiveValue: { [weak self] (user: User?) in
-                    self?.currentUser = user
-                    if let user = user {
-                        self?.inviteCode = user.inviteCode
-                        self?.allowQRRegistration = user.allowQRRegistration
-                        self?.loadCurrentHeartbeat()
-                    }
+        userService.getUser(uid: userId)
+            .handleErrors(on: self)
+            .sink { [weak self] user in
+                guard let self = self else { return }
+                self.currentUser = user
+                if let user = user {
+                    self.inviteCode = user.inviteCode
+                    self.allowQRRegistration = user.allowQRRegistration
+                    self.loadCurrentHeartbeat()
+                } else if self.errorMessage != nil {
+                    // エラーの場合も空のユーザーオブジェクトを設定してUIの読み込み状態を終了
+                    self.currentUser = User(
+                        id: userId,
+                        name: "Unknown",
+                        inviteCode: "",
+                        allowQRRegistration: false,
+                        followingUserIds: []
+                    )
                 }
-            )
+            }
             .store(in: &cancellables)
     }
 
@@ -94,24 +99,17 @@ class SettingsViewModel: ObservableObject {
             return
         }
 
-        UserService.shared.getUser(uid: userId)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: {
-                    [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case let .failure(error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                    }
-                },
-                receiveValue: { [weak self] (user: User?) in
-                    self?.currentUser = user
-                    if let user = user {
-                        self?.inviteCode = user.inviteCode
-                        self?.allowQRRegistration = user.allowQRRegistration
-                        self?.loadCurrentHeartbeat()
-                    }
+        userService.getUser(uid: userId)
+            .handleErrors(on: self)
+            .sink { [weak self] user in
+                guard let self = self else { return }
+                self.currentUser = user
+                if let user = user {
+                    self.inviteCode = user.inviteCode
+                    self.allowQRRegistration = user.allowQRRegistration
+                    self.loadCurrentHeartbeat()
                 }
-            )
+            }
             .store(in: &cancellables)
     }
 
@@ -119,18 +117,11 @@ class SettingsViewModel: ObservableObject {
     private func loadCurrentHeartbeat() {
         guard let userId = authenticationManager.currentUserId else { return }
 
-        HeartbeatService.shared.getHeartbeatOnce(userId: userId)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case let .failure(error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                    }
-                },
-                receiveValue: { [weak self] heartbeat in
-                    self?.currentHeartbeat = heartbeat
-                }
-            )
+        heartbeatService.getHeartbeatOnce(userId: userId)
+            .handleErrors(on: self)
+            .sink { [weak self] heartbeat in
+                self?.currentHeartbeat = heartbeat
+            }
             .store(in: &cancellables)
     }
 
@@ -141,30 +132,23 @@ class SettingsViewModel: ObservableObject {
             return
         }
 
-        isLoading = true
-
         guard let currentUser = authenticationManager.currentUser else {
             errorMessage = "Current user not found"
-            isLoading = false
             return
         }
 
-        UserService.shared.generateNewInviteCode(for: currentUser)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.isLoading = false
-                    if case let .failure(error) = completion {
-                        self?.errorMessage = error.localizedDescription
-                    }
-                },
-                receiveValue: { [weak self] newInviteCode in
-                    self?.inviteCode = newInviteCode
-                    self?.successMessage = "新しい招待コードを生成しました"
-                    // AuthServiceの現在のユーザー情報を更新
-                    self?.authenticationManager.refreshCurrentUser()
-                }
-            )
+        isLoading = true
+
+        userService.generateNewInviteCode(for: currentUser)
+            .handleErrors(on: self)
+            .sink { [weak self] newInviteCode in
+                guard let self = self else { return }
+                self.isLoading = false
+                self.inviteCode = newInviteCode
+                self.successMessage = "新しい招待コードを生成しました"
+                // AuthServiceの現在のユーザー情報を更新
+                self.authenticationManager.refreshCurrentUser()
+            }
             .store(in: &cancellables)
     }
 
@@ -175,30 +159,30 @@ class SettingsViewModel: ObservableObject {
             return
         }
 
-        // 現在のallowQRRegistrationの値を使用
-        let newValue = allowQRRegistration
-        isLoading = true
-
         guard let currentUser = authenticationManager.currentUser else {
             errorMessage = "Current user not found"
             return
         }
 
-        UserService.shared.updateQRRegistrationSetting(for: currentUser, allow: newValue)
-            .receive(on: DispatchQueue.main)
+        // 現在のallowQRRegistrationの値を使用
+        let newValue = allowQRRegistration
+        isLoading = true
+
+        userService.updateQRRegistrationSetting(for: currentUser, allow: newValue)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    self?.isLoading = false
+                    guard let self = self else { return }
+                    self.isLoading = false
                     if case let .failure(error) = completion {
                         // エラーの場合、トグルを元に戻す
-                        self?.allowQRRegistration = !newValue
-                        self?.errorMessage = error.localizedDescription
+                        self.allowQRRegistration = !newValue
+                        self.handleError(error)
                     } else {
                         // 成功メッセージを表示
-                        self?.successMessage =
+                        self.successMessage =
                             newValue ? "QR登録を許可しました" : "QR登録を無効にしました"
                         // AuthServiceの現在のユーザー情報を更新
-                        self?.authenticationManager.refreshCurrentUser()
+                        self.authenticationManager.refreshCurrentUser()
                     }
                 },
                 receiveValue: { _ in }
@@ -226,15 +210,5 @@ class SettingsViewModel: ObservableObject {
             // 未認証ユーザーの場合はアプリ状態をリセット
             authenticationManager.resetAppState()
         }
-    }
-
-    // エラーメッセージをクリア
-    func clearError() {
-        errorMessage = nil
-    }
-
-    // 成功メッセージをクリア
-    func clearSuccessMessage() {
-        successMessage = nil
     }
 }

@@ -19,7 +19,7 @@ class CardBackgroundEditViewModel: ObservableObject {
     private let backgroundImageManager: BackgroundImageManager
     private var cancellables = Set<AnyCancellable>()
 
-    init(userId: String, authenticationManager: AuthenticationManager) {
+    init(userId: String) {
         print("=== CardBackgroundEditViewModel.init for userId: \(userId) ===")
         self.backgroundImageManager = BackgroundImageManager(userId: userId)
 

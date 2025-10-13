@@ -89,11 +89,13 @@ struct QRScannerSheet: View {
             }
             .navigationBarHidden(true)
             .navigationDestination(isPresented: $navigateToQRShare) {
-                QRCodeShareView()
-                    .environmentObject(authenticationManager)
-                    .onDisappear {
-                        print("📱 [QRScannerSheet] QRCodeShareView navigationから戻った")
-                    }
+                QRCodeShareView(
+                    viewModel: QRCodeShareViewModel(authenticationManager: authenticationManager)
+                )
+                .environmentObject(authenticationManager)
+                .onDisappear {
+                    print("📱 [QRScannerSheet] QRCodeShareView navigationから戻った")
+                }
             }
         }
     }

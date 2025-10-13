@@ -6,17 +6,9 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @StateObject private var viewModel: SettingsViewModel
+    @StateObject private var viewModel = SettingsViewModel()
     @StateObject private var autoLockManager = AutoLockManager.shared
     @Environment(\.presentationMode) var presentationMode
-
-    init() {
-        _viewModel = StateObject(
-            wrappedValue: SettingsViewModel(
-                authenticationManager: AuthenticationManager()
-            )
-        )
-    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -45,7 +37,6 @@ struct SettingsView: View {
                 NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
             }
             .onAppear {
-                viewModel.updateAuthenticationManager(authenticationManager)
                 if authenticationManager.isAuthenticated {
                     viewModel.loadCurrentUser()
                 }

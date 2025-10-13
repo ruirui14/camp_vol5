@@ -2,7 +2,7 @@ import SwiftUI
 
 struct FollowUserView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @StateObject private var viewModel: FollowUserViewModel
+    @StateObject private var viewModel = FollowUserViewModel()
     @State private var showingQRScanner = false
     @State private var showingFollowConfirmation = false
     @State private var showingAuthRequired = false
@@ -10,14 +10,6 @@ struct FollowUserView: View {
     @State private var inputText: String = ""
     @FocusState private var isInputFocused: Bool
     @Environment(\.presentationMode) var presentationMode
-
-    init() {
-        _viewModel = StateObject(
-            wrappedValue: FollowUserViewModel(
-                authenticationManager: AuthenticationManager()
-            )
-        )
-    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -60,9 +52,6 @@ struct FollowUserView: View {
             .overlay(alignment: .top) {
                 NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
             }
-            .onAppear {
-                viewModel.updateAuthenticationManager(authenticationManager)
-            }
             .onChange(of: viewModel.shouldDismiss) { _, shouldDismiss in
                 if shouldDismiss {
                     presentationMode.wrappedValue.dismiss()
@@ -77,8 +66,11 @@ struct FollowUserView: View {
             }
             .sheet(isPresented: $showingQRCodeShare) {
                 NavigationStack {
-                    QRCodeShareView()
-                        .environmentObject(authenticationManager)
+                    QRCodeShareView(
+                        viewModel: QRCodeShareViewModel(
+                            authenticationManager: authenticationManager)
+                    )
+                    .environmentObject(authenticationManager)
                 }
             }
             .alert("フォロー確認", isPresented: $showingFollowConfirmation) {

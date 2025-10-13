@@ -6,7 +6,8 @@ import Combine
 import Foundation
 import UIKit
 
-class VibrationService: ObservableObject {
+@MainActor
+class VibrationService: ObservableObject, VibrationServiceProtocol {
     static let shared = VibrationService()
 
     @Published var isVibrating = false

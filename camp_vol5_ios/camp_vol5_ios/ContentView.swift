@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @EnvironmentObject private var viewModelFactory: ViewModelFactory
     @State private var navigationPath = NavigationPath()
 
     var body: some View {
@@ -16,7 +17,8 @@ struct ContentView: View {
                     let _ = print("🔥 Showing UserNameInputView")
                     UserNameInputView(
                         selectedAuthMethod: mapAuthMethod(
-                            authenticationManager.selectedAuthMethod)
+                            authenticationManager.selectedAuthMethod),
+                        factory: viewModelFactory
                     )
                 } else if authenticationManager.isAuthenticated
                     && authenticationManager.currentUser != nil
@@ -29,10 +31,20 @@ struct ContentView: View {
                     let _ = print(
                         "🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil)"
                     )
-                    AuthView(onStartWithoutAuth: {
-                        // このクロージャは現在使用されていない（匿名サインインに置き換えられた）
-                    })
+                    AuthView(
+                        onStartWithoutAuth: {
+                            // このクロージャは現在使用されていない（匿名サインインに置き換えられた）
+                        },
+                        factory: viewModelFactory
+                    )
                 }
+            }
+        }
+        .id(authenticationManager.isAuthenticated)
+        .onChange(of: authenticationManager.isAuthenticated) { _, isAuthenticated in
+            // 認証状態が失われた場合（アカウント削除やサインアウト）、NavigationStackをクリア
+            if !isAuthenticated {
+                navigationPath = NavigationPath()
             }
         }
     }

@@ -1,26 +1,21 @@
 // ViewModels/FollowUserViewModel.swift
 // フォローユーザー画面のビューモデル - MVVM設計パターンに従いビジネスロジックを集約
 // ユーザー検索、フォロー処理、認証状態管理を責務として持つ
+// BaseViewModelを継承し、プロトコルベースの依存性注入を使用
 
 import Combine
 import Foundation
 
 @MainActor
-class FollowUserViewModel: ObservableObject {
+class FollowUserViewModel: BaseViewModel {
     // MARK: - Published Properties
     @Published var scannedUser: User?
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var successMessage: String?
     @Published var isFollowingUser: Bool = false
     @Published var shouldDismiss: Bool = false
 
     // MARK: - Private Properties
     private var authenticationManager: AuthenticationManager
-    private var cancellables = Set<AnyCancellable>()
-
-    // MARK: - Dependencies
-    private let userService: UserService
+    private let userService: UserServiceProtocol
 
     // MARK: - Computed Properties
     var canFollowUser: Bool {
@@ -36,18 +31,14 @@ class FollowUserViewModel: ObservableObject {
     }
 
     // MARK: - Initialization
+
     init(
-        authenticationManager: AuthenticationManager,
-        userService: UserService = UserService.shared
+        authenticationManager: AuthenticationManager = AuthenticationManager(),
+        userService: UserServiceProtocol = UserService.shared
     ) {
         self.authenticationManager = authenticationManager
         self.userService = userService
-    }
-
-    func updateAuthenticationManager(_ authenticationManager: AuthenticationManager) {
-        print("🔧 [FollowUserViewModel] updateAuthenticationManager: 開始")
-        self.authenticationManager = authenticationManager
-        print("🔧 [FollowUserViewModel] updateAuthenticationManager: 完了")
+        super.init()
     }
 
     // MARK: - Public Methods
@@ -61,15 +52,13 @@ class FollowUserViewModel: ObservableObject {
         scannedUser = nil
 
         userService.findUserByInviteCode(code)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.handleSearchCompletion(completion)
-                },
-                receiveValue: { [weak self] user in
-                    self?.handleSearchResult(user)
-                }
-            )
+            .handleErrors(on: self)
+            .sink { [weak self] user in
+                guard let self = self else { return }
+                self.isLoading = false
+                self.handleSearchResult(user)
+                print("🔍 [FollowUserViewModel] searchUserByInviteCode: 完了")
+            }
             .store(in: &cancellables)
     }
 
@@ -84,21 +73,21 @@ class FollowUserViewModel: ObservableObject {
         print("💖 [FollowUserViewModel] followUser: 開始")
 
         guard let user = scannedUser else {
-            handleError("ユーザー情報が取得できません")
+            errorMessage = "ユーザー情報が取得できません"
             return
         }
 
         guard canFollowUser else {
             if isFollowingUser {
-                handleError("既にフォロー済みです")
+                errorMessage = "既にフォロー済みです"
             } else {
-                handleError("自分自身をフォローすることはできません")
+                errorMessage = "自分自身をフォローすることはできません"
             }
             return
         }
 
         guard let currentUser = authenticationManager.currentUser else {
-            handleError("ユーザー情報が取得できません")
+            errorMessage = "ユーザー情報が取得できません"
             return
         }
 
@@ -111,12 +100,12 @@ class FollowUserViewModel: ObservableObject {
         print("💔 [FollowUserViewModel] unfollowUser: 開始")
 
         guard let user = scannedUser else {
-            handleError("ユーザー情報が取得できません")
+            errorMessage = "ユーザー情報が取得できません"
             return
         }
 
         guard let currentUser = authenticationManager.currentUser else {
-            handleError("ユーザー情報が取得できません")
+            errorMessage = "ユーザー情報が取得できません"
             return
         }
 
@@ -135,35 +124,14 @@ class FollowUserViewModel: ObservableObject {
         print("🧹 [FollowUserViewModel] clearInput: 完了")
     }
 
-    func clearError() {
-        print("🧹 [FollowUserViewModel] clearError: 実行")
-        errorMessage = nil
-    }
-
-    func clearSuccessMessage() {
-        print("🧹 [FollowUserViewModel] clearSuccessMessage: 実行")
-        successMessage = nil
-    }
-
     // MARK: - Private Methods
 
     private func validateInviteCode(_ code: String) -> Bool {
         guard !code.isEmpty else {
-            handleError("招待コードを入力してください")
+            errorMessage = "招待コードを入力してください"
             return false
         }
         return true
-    }
-
-    private func handleSearchCompletion(_ completion: Subscribers.Completion<Error>) {
-        isLoading = false
-        if case let .failure(error) = completion {
-            print(
-                "❌ [FollowUserViewModel] searchUserByInviteCode: エラー - \(error.localizedDescription)"
-            )
-            handleError(error.localizedDescription)
-        }
-        print("🔍 [FollowUserViewModel] searchUserByInviteCode: 完了")
     }
 
     private func handleSearchResult(_ user: User?) {
@@ -176,13 +144,8 @@ class FollowUserViewModel: ObservableObject {
             }
         } else {
             print("❌ [FollowUserViewModel] searchUserByInviteCode: ユーザーが見つからない")
-            handleError("ユーザーが見つかりません")
+            errorMessage = "ユーザーが見つかりません"
         }
-    }
-
-    private func handleError(_ message: String) {
-        print("❌ [FollowUserViewModel] エラー: \(message)")
-        errorMessage = message
     }
 
     private func checkIfAlreadyFollowing(_ user: User) {
@@ -199,27 +162,21 @@ class FollowUserViewModel: ObservableObject {
 
     private func checkFollowingStatusWithFirebase(userId: String, targetUserId: String) {
         userService.getUser(uid: userId)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    if case .failure = completion {
-                        self?.isFollowingUser = false
-                    }
-                },
-                receiveValue: { [weak self] currentUser in
-                    if let currentUser = currentUser {
-                        let isFollowing = currentUser.followingUserIds.contains(targetUserId)
-                        self?.isFollowingUser = isFollowing
-                        print(
-                            "✅ [FollowUserViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)"
-                        )
-                    } else {
-                        self?.isFollowingUser = false
-                        print("⚠️ [FollowUserViewModel] checkIfAlreadyFollowing: currentUserがnil")
-                    }
-                    print("👤 [FollowUserViewModel] checkIfAlreadyFollowing: 完了")
+            .handleErrors(on: self, defaultValue: nil)
+            .sink { [weak self] currentUser in
+                guard let self = self else { return }
+                if let currentUser = currentUser {
+                    let isFollowing = currentUser.followingUserIds.contains(targetUserId)
+                    self.isFollowingUser = isFollowing
+                    print(
+                        "✅ [FollowUserViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)"
+                    )
+                } else {
+                    self.isFollowingUser = false
+                    print("⚠️ [FollowUserViewModel] checkIfAlreadyFollowing: currentUserがnil")
                 }
-            )
+                print("👤 [FollowUserViewModel] checkIfAlreadyFollowing: 完了")
+            }
             .store(in: &cancellables)
     }
 
@@ -228,7 +185,6 @@ class FollowUserViewModel: ObservableObject {
         isLoading = true
 
         userService.followUser(currentUser: currentUser, targetUserId: targetUser.id)
-            .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.handleFollowCompletion(completion, targetUserName: targetUser.name)
@@ -244,7 +200,6 @@ class FollowUserViewModel: ObservableObject {
         isLoading = true
 
         userService.unfollowUser(currentUser: currentUser, targetUserId: targetUser.id)
-            .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.handleUnfollowCompletion(completion, targetUserName: targetUser.name)
@@ -262,7 +217,7 @@ class FollowUserViewModel: ObservableObject {
             print(
                 "❌ [FollowUserViewModel] followUserWithFirebase: エラー - \(error.localizedDescription)"
             )
-            handleError(error.localizedDescription)
+            handleError(error)
         } else {
             handleFollowSuccess(targetUserName: targetUserName)
             updateCurrentUserAfterFollow()
@@ -278,7 +233,7 @@ class FollowUserViewModel: ObservableObject {
             print(
                 "❌ [FollowUserViewModel] unfollowUserWithFirebase: エラー - \(error.localizedDescription)"
             )
-            handleError(error.localizedDescription)
+            handleError(error)
         } else {
             handleUnfollowSuccess(targetUserName: targetUserName)
             updateCurrentUserAfterFollow()

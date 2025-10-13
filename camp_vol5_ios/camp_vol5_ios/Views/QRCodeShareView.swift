@@ -47,13 +47,11 @@ private struct QRCodeShareButton: View {
 // MARK: - QRCodeShareView
 struct QRCodeShareView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
-    @StateObject private var viewModel: QRCodeShareViewModel
+    @ObservedObject var viewModel: QRCodeShareViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init() {
-        // ダミーのAuthenticationManagerで初期化（@EnvironmentObjectで実際のものが注入される）
-        _viewModel = StateObject(
-            wrappedValue: QRCodeShareViewModel(authenticationManager: AuthenticationManager()))
+    init(viewModel: QRCodeShareViewModel) {
+        self.viewModel = viewModel
     }
 
     var body: some View {
@@ -87,10 +85,6 @@ struct QRCodeShareView: View {
             }
             .overlay(alignment: .top) {
                 NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
-            }
-            .onAppear {
-                // ViewModelに実際のAuthenticationManagerを設定
-                viewModel.updateAuthenticationManager(authenticationManager)
             }
             .alert(
                 viewModel.saveAlertTitle,
@@ -321,28 +315,15 @@ struct QRCodeShareView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             // 未認証状態（デフォルト）
-            QRCodeShareView()
-                .environmentObject(AuthenticationManager())
+            let authManager1 = AuthenticationManager()
+            QRCodeShareView(viewModel: QRCodeShareViewModel(authenticationManager: authManager1))
+                .environmentObject(authManager1)
                 .previewDisplayName("未認証状態")
 
             // 認証済み状態をシミュレーション
-            QRCodeShareView()
-                .environmentObject(
-                    {
-                        let mockUser = User(
-                            id: "preview_user_id",
-                            name: "プレビューユーザー",
-                            inviteCode: "PREVIEW-CODE-123",
-                            allowQRRegistration: true,
-                            followingUserIds: []
-                        )
-                        let mockAuth = MockAuthenticationManager(
-                            isAuthenticated: true,
-                            currentUser: mockUser
-                        )
-                        return unsafeBitCast(mockAuth, to: AuthenticationManager.self)
-                    }()
-                )
+            let authManager2 = AuthenticationManager()
+            QRCodeShareView(viewModel: QRCodeShareViewModel(authenticationManager: authManager2))
+                .environmentObject(authManager2)
                 .previewDisplayName("Google認証済み状態")
         }
     }

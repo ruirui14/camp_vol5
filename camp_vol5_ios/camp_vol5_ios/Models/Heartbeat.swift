@@ -1,9 +1,7 @@
 // Models/Heartbeat.swift
 // 心拍データを表すデータモデル
-// Firebase操作はHeartbeatServiceで実行される
+// 純粋なデータ構造のみ - データ変換ロジックはRepositoryで実行
 
-import Firebase
-import FirebaseDatabase
 import Foundation
 
 struct Heartbeat: Codable, Identifiable, Equatable {
@@ -16,19 +14,6 @@ struct Heartbeat: Codable, Identifiable, Equatable {
         self.userId = userId
         self.bpm = bpm
         self.timestamp = timestamp
-    }
-
-    // Realtime Database データから初期化
-    init?(from data: [String: Any], userId: String) {
-        guard let bpm = data["bpm"] as? Int,
-            let timestamp = data["timestamp"] as? TimeInterval
-        else {
-            return nil
-        }
-
-        self.userId = userId
-        self.bpm = bpm
-        self.timestamp = Date(timeIntervalSince1970: timestamp / 1000)
     }
 }
 

@@ -22,9 +22,9 @@ class HeartbeatDetailViewModel: ObservableObject {
     private var heartbeatSubscription: AnyCancellable?
 
     // MARK: - Dependencies
-    private let userService: UserService
-    private let heartbeatService: HeartbeatService
-    private let vibrationService: VibrationService
+    private let userService: UserServiceProtocol
+    private let heartbeatService: HeartbeatServiceProtocol
+    private let vibrationService: VibrationServiceProtocol
 
     // MARK: - Computed Properties
     var hasValidHeartbeat: Bool {
@@ -35,9 +35,9 @@ class HeartbeatDetailViewModel: ObservableObject {
     // MARK: - Initialization
     init(
         userId: String,
-        userService: UserService = UserService.shared,
-        heartbeatService: HeartbeatService = HeartbeatService.shared,
-        vibrationService: VibrationService = VibrationService.shared
+        userService: UserServiceProtocol = UserService.shared,
+        heartbeatService: HeartbeatServiceProtocol = HeartbeatService.shared,
+        vibrationService: VibrationServiceProtocol = VibrationService.shared
     ) {
         self.userId = userId
         self.userService = userService

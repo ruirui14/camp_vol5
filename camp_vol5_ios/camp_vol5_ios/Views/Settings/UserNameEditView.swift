@@ -116,8 +116,7 @@ struct UserNameEditView: View {
             name: trimmedName,
             inviteCode: currentUser.inviteCode,
             allowQRRegistration: currentUser.allowQRRegistration,
-            followingUserIds: currentUser.followingUserIds,
-            imageName: currentUser.imageName
+            followingUserIds: currentUser.followingUserIds
         )
 
         // UserServiceを使ってユーザー情報を更新

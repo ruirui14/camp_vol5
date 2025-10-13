@@ -17,8 +17,7 @@ struct CardBackgroundEditView: View {
     init(userId: String) {
         self.userId = userId
         self._viewModel = StateObject(
-            wrappedValue: CardBackgroundEditViewModel(
-                userId: userId, authenticationManager: AuthenticationManager()))
+            wrappedValue: CardBackgroundEditViewModel(userId: userId))
     }
 
     var body: some View {

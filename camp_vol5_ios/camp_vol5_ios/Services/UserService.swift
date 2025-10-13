@@ -1,13 +1,12 @@
 // Services/UserService.swift
-// Firestoreを使用したユーザー関連のCRUD操作を提供するサービス
-// ベストプラクティスに従いエラーハンドリングとログを改善
+// ユーザー関連のビジネスロジックを提供するサービス
+// データアクセスはRepositoryレイヤーに委譲
 
 import Combine
-import Firebase
-import FirebaseFirestore
 import Foundation
 
 // MARK: - UserService Protocol
+
 protocol UserServiceProtocol {
     func createUser(uid: String, name: String) -> AnyPublisher<User, Error>
     func getUser(uid: String) -> AnyPublisher<User?, Error>
@@ -16,13 +15,17 @@ protocol UserServiceProtocol {
     func getFollowingUsers(followingUserIds: [String]) -> AnyPublisher<[User], Error>
     func followUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error>
     func unfollowUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error>
+    func generateNewInviteCode(for user: User) -> AnyPublisher<String, Error>
+    func updateQRRegistrationSetting(for user: User, allow: Bool) -> AnyPublisher<Void, Error>
+    func deleteUser(userId: String) -> AnyPublisher<Void, Error>
 }
 
 // MARK: - UserService Errors
+
 enum UserServiceError: LocalizedError {
     case userNotFound
     case invalidInviteCode
-    case firestoreError(Error)
+    case repositoryError(Error)
     case serviceUnavailable
 
     var errorDescription: String? {
@@ -31,7 +34,7 @@ enum UserServiceError: LocalizedError {
             return "ユーザーが見つかりません"
         case .invalidInviteCode:
             return "無効な招待コードです"
-        case .firestoreError(let error):
+        case .repositoryError(let error):
             return "データベースエラー: \(error.localizedDescription)"
         case .serviceUnavailable:
             return "サービスが使用できません"
@@ -39,327 +42,139 @@ enum UserServiceError: LocalizedError {
     }
 }
 
+// MARK: - UserService Implementation
+
 class UserService: UserServiceProtocol {
     static let shared = UserService()
-    private let db: Firestore
+
+    private let repository: UserRepositoryProtocol
     private let logger = FirebaseLogger.shared
 
-    init(db: Firestore = Firestore.firestore()) {
-        self.db = db
+    init(repository: UserRepositoryProtocol = FirestoreUserRepository()) {
+        self.repository = repository
     }
 
     // MARK: - User Management
 
     func createUser(uid: String, name: String) -> AnyPublisher<User, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(.failure(UserServiceError.serviceUnavailable))
-                return
-            }
+        logger.log("Creating user: \(name) with ID: \(uid)")
 
-            let user = User(id: uid, name: name)
-            self.logger.log("Creating user: \(name) with ID: \(uid)")
-
-            self.db.collection("users").document(uid).setData(user.toDictionary()) { error in
-                if let error = error {
-                    self.logger.error("Failed to create user: \(error.localizedDescription)")
-                    promise(.failure(UserServiceError.firestoreError(error)))
-                } else {
-                    self.logger.log("Successfully created user: \(name)")
-                    promise(.success(user))
+        return repository.create(userId: uid, name: name)
+            .handleEvents(
+                receiveOutput: { [weak self] _ in
+                    self?.logger.log("Successfully created user: \(name)")
+                },
+                receiveCompletion: { [weak self] completion in
+                    if case let .failure(error) = completion {
+                        self?.logger.error("Failed to create user: \(error.localizedDescription)")
+                    }
                 }
-            }
-        }
-        .eraseToAnyPublisher()
+            )
+            .eraseToAnyPublisher()
     }
 
-    /// ユーザー情報を取得する
     func getUser(uid: String) -> AnyPublisher<User?, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
-
-            self.db.collection("users").document(uid).getDocument { snapshot, error in
-                if let error = error {
-                    promise(.failure(error))
-                } else if let data = snapshot?.data() {
-                    let user = User(from: data, id: uid)
-                    promise(.success(user))
-                } else {
-                    promise(.success(nil))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
+        return repository.fetch(userId: uid)
+            .eraseToAnyPublisher()
     }
 
-    /// ユーザー情報を更新する
     func updateUser(_ user: User) -> AnyPublisher<Void, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
-
-            let updateData: [String: Any] = [
-                "name": user.name,
-                "inviteCode": user.inviteCode,
-                "allowQRRegistration": user.allowQRRegistration,
-                "followingUserIds": user.followingUserIds,
-                "updatedAt": Timestamp(date: Date()),
-            ]
-
-            self.db.collection("users").document(user.id).updateData(updateData) { error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(()))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
+        return repository.update(user)
+            .eraseToAnyPublisher()
     }
 
     // MARK: - Invite Code Management
 
-    /// 招待コードでユーザーを検索する
     func findUserByInviteCode(_ inviteCode: String) -> AnyPublisher<User?, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
-
-            self.db.collection("users")
-                .whereField("inviteCode", isEqualTo: inviteCode)
-                .whereField("allowQRRegistration", isEqualTo: true)
-                .getDocuments { snapshot, error in
-                    if let error = error {
-                        promise(.failure(error))
-                    } else if let documents = snapshot?.documents, !documents.isEmpty {
-                        let data = documents.first!.data()
-                        let userId = documents.first!.documentID
-                        let user = User(from: data, id: userId)
-                        promise(.success(user))
-                    } else {
-                        promise(.success(nil))
-                    }
-                }
-        }
-        .eraseToAnyPublisher()
+        return repository.findByInviteCode(inviteCode)
+            .eraseToAnyPublisher()
     }
 
-    /// 新しい招待コードを生成する
     func generateNewInviteCode(for user: User) -> AnyPublisher<String, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
+        let newInviteCode = UUID().uuidString
 
-            let newInviteCode = UUID().uuidString
+        let updatedUser = User(
+            id: user.id,
+            name: user.name,
+            inviteCode: newInviteCode,
+            allowQRRegistration: user.allowQRRegistration,
+            followingUserIds: user.followingUserIds,
+            createdAt: user.createdAt,
+            updatedAt: Date()
+        )
 
-            let updateData: [String: Any] = [
-                "inviteCode": newInviteCode,
-                "updatedAt": Timestamp(date: Date()),
-            ]
-
-            self.db.collection("users").document(user.id).updateData(updateData) { error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(newInviteCode))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
+        return repository.update(updatedUser)
+            .map { newInviteCode }
+            .eraseToAnyPublisher()
     }
 
     // MARK: - Follow Management
 
-    /// ユーザーをフォローする
     func followUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
-
-            var updatedFollowingIds = currentUser.followingUserIds
-            if !updatedFollowingIds.contains(targetUserId) {
-                updatedFollowingIds.append(targetUserId)
-            }
-
-            let updateData: [String: Any] = [
-                "followingUserIds": updatedFollowingIds,
-                "updatedAt": Timestamp(date: Date()),
-            ]
-
-            self.db.collection("users").document(currentUser.id).updateData(updateData) { error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(()))
-                }
-            }
+        var updatedFollowingIds = currentUser.followingUserIds
+        if !updatedFollowingIds.contains(targetUserId) {
+            updatedFollowingIds.append(targetUserId)
         }
-        .eraseToAnyPublisher()
+
+        let updatedUser = User(
+            id: currentUser.id,
+            name: currentUser.name,
+            inviteCode: currentUser.inviteCode,
+            allowQRRegistration: currentUser.allowQRRegistration,
+            followingUserIds: updatedFollowingIds,
+            createdAt: currentUser.createdAt,
+            updatedAt: Date()
+        )
+
+        return repository.update(updatedUser)
+            .eraseToAnyPublisher()
     }
 
-    /// ユーザーのフォローを解除する
     func unfollowUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
+        let updatedFollowingIds = currentUser.followingUserIds.filter { $0 != targetUserId }
 
-            let updatedFollowingIds = currentUser.followingUserIds.filter { $0 != targetUserId }
+        let updatedUser = User(
+            id: currentUser.id,
+            name: currentUser.name,
+            inviteCode: currentUser.inviteCode,
+            allowQRRegistration: currentUser.allowQRRegistration,
+            followingUserIds: updatedFollowingIds,
+            createdAt: currentUser.createdAt,
+            updatedAt: Date()
+        )
 
-            let updateData: [String: Any] = [
-                "followingUserIds": updatedFollowingIds,
-                "updatedAt": Timestamp(date: Date()),
-            ]
-
-            self.db.collection("users").document(currentUser.id).updateData(updateData) { error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(()))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
+        return repository.update(updatedUser)
+            .eraseToAnyPublisher()
     }
 
-    /// フォロー中のユーザーリストを取得する
     func getFollowingUsers(followingUserIds: [String]) -> AnyPublisher<[User], Error> {
         guard !followingUserIds.isEmpty else {
             return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
-
-            self.db.collection("users")
-                .whereField("id", in: followingUserIds)
-                .getDocuments { snapshot, error in
-                    if let error = error {
-                        promise(.failure(error))
-                    } else if let documents = snapshot?.documents {
-                        let users = documents.compactMap { doc in
-                            User(from: doc.data(), id: doc.documentID)
-                        }
-                        promise(.success(users))
-                    } else {
-                        promise(.success([]))
-                    }
-                }
-        }
-        .eraseToAnyPublisher()
+        return repository.fetchMultiple(userIds: followingUserIds)
+            .eraseToAnyPublisher()
     }
 
     // MARK: - Settings
 
-    /// QR登録設定を更新する
     func updateQRRegistrationSetting(for user: User, allow: Bool) -> AnyPublisher<Void, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
+        let updatedUser = User(
+            id: user.id,
+            name: user.name,
+            inviteCode: user.inviteCode,
+            allowQRRegistration: allow,
+            followingUserIds: user.followingUserIds,
+            createdAt: user.createdAt,
+            updatedAt: Date()
+        )
 
-            let updateData: [String: Any] = [
-                "allowQRRegistration": allow,
-                "updatedAt": Timestamp(date: Date()),
-            ]
-
-            self.db.collection("users").document(user.id).updateData(updateData) { error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(()))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
+        return repository.update(updatedUser)
+            .eraseToAnyPublisher()
     }
 
-    /// ユーザーを削除する
     func deleteUser(userId: String) -> AnyPublisher<Void, Error> {
-        return Future { [weak self] promise in
-            guard let self = self else {
-                promise(
-                    .failure(
-                        NSError(
-                            domain: "UserService",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Service unavailable"]
-                        )))
-                return
-            }
-
-            self.db.collection("users").document(userId).delete { error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(()))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
+        return repository.delete(userId: userId)
+            .eraseToAnyPublisher()
     }
 }
