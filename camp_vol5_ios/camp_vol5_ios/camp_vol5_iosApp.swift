@@ -1,4 +1,5 @@
 import Firebase
+import FirebaseAppCheck
 import FirebaseCrashlytics
 import GoogleSignIn
 import SwiftUI
@@ -18,7 +19,17 @@ struct camp_vol5_iosApp: App {
     @StateObject private var viewModelFactory: ViewModelFactory
 
     init() {
-        // Firebase を最初に設定（AuthenticationManager の初期化前に必須）
+        // App Check を最初に設定（Firebase.configure() の前に必須）
+        #if DEBUG
+        // デバッグビルドの場合はDebugProviderを使用
+        let providerFactory = AppCheckDebugProviderFactory()
+        #else
+        // リリースビルドの場合はApp Attestを使用
+        let providerFactory = AppAttestProviderFactory()
+        #endif
+        AppCheck.setAppCheckProviderFactory(providerFactory)
+
+        // Firebase を設定
         FirebaseApp.configure()
 
         // Crashlytics を初期化
