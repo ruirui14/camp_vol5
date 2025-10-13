@@ -3,6 +3,7 @@ import FirebaseAppCheck
 import FirebaseCrashlytics
 import GoogleSignIn
 import SwiftUI
+import FirebaseCore
 
 @main
 struct camp_vol5_iosApp: App {
