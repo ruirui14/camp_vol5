@@ -515,15 +515,17 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
                     // Firebase Authのエラーコードに応じたメッセージ
                     switch errorCode {
-                    case 17011: // FIRAuthErrorCodeUserNotFound
+                    case 17011:  // FIRAuthErrorCodeUserNotFound
                         self?.errorMessage = "このメールアドレスは登録されていません"
-                    case 17008: // FIRAuthErrorCodeInvalidEmail
+                    case 17008:  // FIRAuthErrorCodeInvalidEmail
                         self?.errorMessage = "無効なメールアドレスです"
                     default:
                         self?.errorMessage = "パスワードリセットメールの送信に失敗しました: \(error.localizedDescription)"
                     }
 
-                    print("❌ Password reset email failed: \(error.localizedDescription), code: \(errorCode)")
+                    print(
+                        "❌ Password reset email failed: \(error.localizedDescription), code: \(errorCode)"
+                    )
                 } else {
                     print("✅ Password reset email sent successfully to \(email)")
                     // 成功時は特別なフラグを設定（ViewModelで処理）
