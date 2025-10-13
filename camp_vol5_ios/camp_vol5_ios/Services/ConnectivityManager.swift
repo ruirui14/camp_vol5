@@ -1,4 +1,5 @@
 import Combine
+import FirebaseAuth
 import FirebaseDatabase
 import Foundation
 import UIKit
@@ -40,9 +41,14 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
 
         // バックグラウンドでのデータ処理タイマーを開始
         startBackgroundProcessingTimer()
-
-        // ★ 心拍数タイムアウト監視を開始
+        
+        // 心拍数タイムアウト監視を開始
         startHeartRateTimeoutMonitoring()
+        
+        // 初期化完了を待ってユーザー情報を送信
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.sendCurrentUserToWatch()
+        }
     }
 
     // MARK: - Heart Rate Timeout Management
@@ -203,6 +209,11 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             // ★ 接続が切れた場合は心拍数をリセット
             if activationState != .activated {
                 self.resetHeartRate()
+            } else {
+                // アクティブになったらユーザー情報を送信
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self.sendCurrentUserToWatch()
+                }
             }
         }
     }
@@ -252,8 +263,8 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             }
         }
     }
-
-    // ★ リアルタイムメッセージ受信も追加
+    
+    // リアルタイムメッセージ受信も追加
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         // 停止メッセージの処理
         if let type = message["type"] as? String {
@@ -295,8 +306,8 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             }
             return
         }
-
-        // ★ bpm = 0 の場合も停止として扱う
+        
+        // bpm = 0 の場合も停止として扱う
         if bpm <= 0 {
             DispatchQueue.main.async {
                 self.resetHeartRate()
@@ -354,18 +365,13 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
 
         // Firebase用のデータ構造
         let heartRateData: [String: Any] = [
-            // タイムスタンプはどれがいい...
-            "heartNum": heartNum,
-            "timestamp": timestamp,  // Watch側からのタイムスタンプ
-            "serverTimestamp": ServerValue.timestamp(),  // サーバー側のタイムスタンプ
-            "isoTimestamp": isoTimestamp,  // ISO8601形式のタイムスタンプ
-            "userId": userId,
-            "lastUpdated": ServerValue.timestamp(),  // 最終更新時刻
+            "bpm": heartNum,
+            "timestamp": timestamp,  // Watch側からのタイムスタンプ（ミリ秒単位）
         ]
-
-        // データベースパス: /{userId}（常に同じ場所を更新）
-        let heartRateRef = database.child(userId)
-
+        
+        // データベースパス: /live_heartbeats/{userId}（FirebaseHeartbeatRepositoryと同じパス）
+        let heartRateRef = database.child("live_heartbeats").child(userId)
+        
         heartRateRef.setValue(heartRateData) { [weak self] error, _ in
             DispatchQueue.main.async {
                 if let error = error {
@@ -377,7 +383,42 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             }
         }
     }
-
+    
+    
+    private func sendCurrentUserToWatch() {
+        // FirebaseAuthから現在のユーザーを取得
+        guard let currentUser = Auth.auth().currentUser else {
+            return
+        }
+        
+        let userId = currentUser.uid
+        let userName = currentUser.displayName ?? "Unknown User"
+        
+        let userInfo: [String: Any] = [
+            "type": "userInfo",
+            "data": [
+                "userId": userId,
+                "userName": userName,
+            ],
+        ]
+        
+        session.transferUserInfo(userInfo)
+        
+        // リーチャブルな場合は即座にも送信
+        if session.isReachable {
+            session.sendMessage(userInfo, replyHandler: nil) { error in
+            }
+        }
+    }
+    
+    // WCSessionがアクティブになったときに呼び出す
+    func sendUserToWatchIfNeeded() {
+        guard session.activationState == .activated else {
+            return
+        }
+        sendCurrentUserToWatch()
+    }
+    
     deinit {
         // タイマーをクリーンアップ
         processingTimer?.invalidate()

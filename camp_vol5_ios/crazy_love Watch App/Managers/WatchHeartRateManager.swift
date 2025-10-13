@@ -401,12 +401,8 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
         _ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
-
         DispatchQueue.main.async {
             self.isConnected = (activationState == .activated)
-            //            if activationState == .activated {
-            //                print("WCSession is now active and connected")
-            //            }
         }
     }
 
@@ -430,7 +426,53 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
             }
         }
     }
-
+    
+    // iPhone側からのリアルタイムメッセージを受信
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        guard let type = message["type"] as? String else {
+            return
+        }
+        
+        switch type {
+        case "startHeartRate":
+            DispatchQueue.main.async {
+                self.startSending()
+            }
+        case "stopHeartRate":
+            DispatchQueue.main.async {
+                self.stopSending()
+            }
+        default:
+            print("Unknown message type: \(type)")
+        }
+    }
+    
+    // iPhone側からのリアルタイムメッセージを受信
+    func session(
+        _ session: WCSession, didReceiveMessage message: [String: Any],
+        replyHandler: @escaping ([String: Any]) -> Void
+    ) {
+        guard let type = message["type"] as? String else {
+            replyHandler(["status": "error", "message": "Invalid message type"])
+            return
+        }
+        
+        switch type {
+        case "startHeartRate":
+            DispatchQueue.main.async {
+                self.startSending()
+                replyHandler(["status": "success", "message": "Heart rate monitoring started"])
+            }
+        case "stopHeartRate":
+            DispatchQueue.main.async {
+                self.stopSending()
+                replyHandler(["status": "success", "message": "Heart rate monitoring stopped"])
+            }
+        default:
+            replyHandler(["status": "error", "message": "Unknown message type: \(type)"])
+        }
+    }
+    
     private func handleUserSelection(_ userData: [String: Any]) {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: userData)
