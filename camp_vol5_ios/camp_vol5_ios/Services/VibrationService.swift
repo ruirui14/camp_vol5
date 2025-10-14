@@ -43,7 +43,9 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
 
         vibrationTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) {
             [weak self] _ in
-            self?.triggerHeartbeatPattern()
+            Task { @MainActor in
+                self?.triggerHeartbeatPattern()
+            }
         }
 
         // 初回の振動を即座に実行

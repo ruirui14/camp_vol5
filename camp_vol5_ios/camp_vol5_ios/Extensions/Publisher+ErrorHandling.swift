@@ -50,7 +50,7 @@ extension Publisher {
     func logErrors(context: String = "") -> Publishers.HandleEvents<Self> {
         handleEvents(receiveCompletion: { completion in
             if case let .failure(error) = completion {
-                print("❌ Error in \(context): \(error.localizedDescription)")
+                _ = print("❌ Error in \(context): \(error.localizedDescription)")
             }
         })
     }

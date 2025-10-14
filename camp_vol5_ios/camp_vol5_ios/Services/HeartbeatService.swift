@@ -19,8 +19,8 @@ class HeartbeatService: HeartbeatServiceProtocol {
     /// 心拍データを一度だけ取得する（リスト画面用）
     func getHeartbeatOnce(userId: String) -> AnyPublisher<Heartbeat?, Error> {
         return repository.fetchOnce(userId: userId)
-            .map { [weak self] heartbeat in
-                guard let self = self, let heartbeat = heartbeat else {
+            .map { heartbeat in
+                guard let heartbeat = heartbeat else {
                     return nil
                 }
 
@@ -39,8 +39,8 @@ class HeartbeatService: HeartbeatServiceProtocol {
     /// 心拍データの継続監視を開始する（詳細画面用）
     func subscribeToHeartbeat(userId: String) -> AnyPublisher<Heartbeat?, Never> {
         return repository.subscribe(userId: userId)
-            .map { [weak self] heartbeat in
-                guard let self = self, let heartbeat = heartbeat else {
+            .map { heartbeat in
+                guard let heartbeat = heartbeat else {
                     return nil
                 }
 

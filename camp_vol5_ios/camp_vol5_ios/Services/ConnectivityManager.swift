@@ -283,7 +283,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             type == "heartRate",
             let data = userInfo["data"] as? [String: Any],
             let bpm = data["heartNum"] as? Int,
-            let userId = data["userId"] as? String
+            let _ = data["userId"] as? String
         else {
             return
         }
@@ -368,7 +368,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
 
         heartRateRef.setValue(heartRateData) { [weak self] error, _ in
             DispatchQueue.main.async {
-                if let error = error {
+                if error != nil {
                     print("Firebase更新エラー")
                 } else {
                     self?.lastSavedTimestamp = now

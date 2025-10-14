@@ -10,35 +10,28 @@ struct SettingsNavigationSection: View {
     @Environment(\.openURL) private var openURL
     @State private var showEmailConfirmation = false
     @State private var showSecondConfirmation = false
-    @State private var shouldNavigateToUserInfo = false
+    @State private var navigateToUserInfo = false
 
     var body: some View {
         Section {
-            HStack {
-                SettingRow(
-                    icon: "person.circle",
-                    title: "ユーザー情報",
-                    subtitle: "名前、招待コードの管理"
-                )
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color(.tertiaryLabel))
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
+            Button {
                 showEmailConfirmation = true
-            }
-            .overlay(
-                NavigationLink(
-                    destination: UserInfoSettingsView(viewModel: viewModel),
-                    isActive: $shouldNavigateToUserInfo
-                ) {
-                    EmptyView()
+            } label: {
+                HStack {
+                    SettingRow(
+                        icon: "person.circle",
+                        title: "ユーザー情報",
+                        subtitle: "名前、招待コードの管理"
+                    )
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(.tertiaryLabel))
                 }
-                .frame(width: 0, height: 0)
-                .opacity(0)
-            )
+            }
+            .navigationDestination(isPresented: $navigateToUserInfo) {
+                UserInfoSettingsView(viewModel: viewModel)
+            }
             .alert("確認", isPresented: $showEmailConfirmation) {
                 Button("キャンセル", role: .cancel) {}
                 Button("はい") {
@@ -50,7 +43,7 @@ struct SettingsNavigationSection: View {
             .alert("最終確認", isPresented: $showSecondConfirmation) {
                 Button("キャンセル", role: .cancel) {}
                 Button("はい") {
-                    shouldNavigateToUserInfo = true
+                    navigateToUserInfo = true
                 }
             } message: {
                 Text("本当によろしいですか？")

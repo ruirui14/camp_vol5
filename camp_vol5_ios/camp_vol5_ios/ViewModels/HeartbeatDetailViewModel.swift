@@ -24,7 +24,7 @@ class HeartbeatDetailViewModel: ObservableObject {
     // MARK: - Dependencies
     private let userService: UserServiceProtocol
     private let heartbeatService: HeartbeatServiceProtocol
-    private let vibrationService: VibrationServiceProtocol
+    private let vibrationService: any VibrationServiceProtocol
 
     // MARK: - Computed Properties
     var hasValidHeartbeat: Bool {
@@ -37,12 +37,12 @@ class HeartbeatDetailViewModel: ObservableObject {
         userId: String,
         userService: UserServiceProtocol = UserService.shared,
         heartbeatService: HeartbeatServiceProtocol = HeartbeatService.shared,
-        vibrationService: VibrationServiceProtocol = VibrationService.shared
+        vibrationService: (any VibrationServiceProtocol)? = nil
     ) {
         self.userId = userId
         self.userService = userService
         self.heartbeatService = heartbeatService
-        self.vibrationService = vibrationService
+        self.vibrationService = vibrationService ?? VibrationService.shared
 
         print("HeartbeatDetailViewModel init with userId: \(userId)")
         loadUserInfo()

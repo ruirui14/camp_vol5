@@ -13,7 +13,7 @@ class ViewModelFactory: ObservableObject {
     private let authenticationManager: AuthenticationManager
     private let userService: UserServiceProtocol
     private let heartbeatService: HeartbeatServiceProtocol
-    private let vibrationService: VibrationServiceProtocol
+    private let vibrationService: any VibrationServiceProtocol
 
     // MARK: - Initialization
 
@@ -21,7 +21,7 @@ class ViewModelFactory: ObservableObject {
         authenticationManager: AuthenticationManager,
         userService: UserServiceProtocol,
         heartbeatService: HeartbeatServiceProtocol,
-        vibrationService: VibrationServiceProtocol
+        vibrationService: any VibrationServiceProtocol
     ) {
         self.authenticationManager = authenticationManager
         self.userService = userService
