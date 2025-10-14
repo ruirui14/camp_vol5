@@ -77,7 +77,7 @@ struct QRCodeShareView: View {
                 }
 
                 ToolbarItem(placement: .principal) {
-                    Text("QRコード共有")
+                    Text("招待コードを管理")
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -148,12 +148,9 @@ struct QRCodeShareView: View {
                             .font(.title3)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("友達追加を許可")
+                            Text("フォローを許可")
                                 .font(.body.weight(.medium))
                                 .foregroundColor(.text)
-                            Text("QRコードでの友達追加を許可します")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
                         }
 
                         Spacer()
@@ -220,7 +217,7 @@ struct QRCodeShareView: View {
                                 Image(systemName: "arrow.down.to.line")
                                     .foregroundColor(.text)
                                     .font(.title3)
-                                Text("保存")
+                                Text("画像を保存")
                                     .font(.caption.weight(.semibold))
                                     .foregroundColor(.text)
                             }

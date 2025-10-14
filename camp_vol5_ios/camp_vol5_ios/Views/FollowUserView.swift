@@ -246,7 +246,7 @@ struct FollowUserView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "qrcode")
                         .font(.title2)
-                    Text("自分のQRコードを表示")
+                    Text("招待コードを管理")
                         .font(.headline)
                     Spacer()
                     Image(systemName: "chevron.right")
