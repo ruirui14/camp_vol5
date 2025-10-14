@@ -272,7 +272,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "Google認証に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "Google認証に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -305,7 +305,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
             currentUser = nil
         } catch {
-            errorMessage = "サインアウトに失敗しました: \(error.localizedDescription)"
+            errorMessage = "サインアウトに失敗しました: \(error.localizedJapaneseDescription)"
         }
     }
 
@@ -325,7 +325,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
                     if case let .failure(error) = completion {
-                        self?.errorMessage = error.localizedDescription
+                        self?.errorMessage = error.localizedJapaneseDescription
                     }
                 },
                 receiveValue: { [weak self] _ in
@@ -358,7 +358,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     receiveCompletion: { [weak self] completion in
                         if case let .failure(error) = completion {
                             self?.isLoading = false
-                            self?.errorMessage = "ユーザーデータの削除に失敗しました: \(error.localizedDescription)"
+                            self?.errorMessage =
+                                "ユーザーデータの削除に失敗しました: \(error.localizedJapaneseDescription)"
                             return
                         }
 
@@ -369,7 +370,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
                                 if let error = error {
                                     self?.errorMessage =
-                                        "アカウントの削除に失敗しました: \(error.localizedDescription)"
+                                        "アカウントの削除に失敗しました: \(error.localizedJapaneseDescription)"
                                 } else {
                                     // 削除成功時は状態をリセット
                                     self?.user = nil
@@ -394,7 +395,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     self?.isLoading = false
 
                     if let error = error {
-                        self?.errorMessage = "アカウントの削除に失敗しました: \(error.localizedDescription)"
+                        self?.errorMessage =
+                            "アカウントの削除に失敗しました: \(error.localizedJapaneseDescription)"
                     } else {
                         // 削除成功時は状態をリセット
                         self?.user = nil
@@ -443,7 +445,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "確認メールの送信に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "確認メールの送信に失敗しました: \(error.localizedJapaneseDescription)"
                 } else {
                     // 成功メッセージを表示（エラーメッセージフィールドを一時的に使用）
                     print("✉️ 確認メールを送信しました")
@@ -463,7 +465,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "ユーザー情報の更新に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "ユーザー情報の更新に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -520,7 +522,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     case 17008:  // FIRAuthErrorCodeInvalidEmail
                         self?.errorMessage = "無効なメールアドレスです"
                     default:
-                        self?.errorMessage = "パスワードリセットメールの送信に失敗しました: \(error.localizedDescription)"
+                        self?.errorMessage =
+                            "パスワードリセットメールの送信に失敗しました: \(error.localizedJapaneseDescription)"
                     }
 
                     print(
@@ -552,7 +555,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "ログインに失敗しました: \(error.localizedDescription)"
+                    print("❌ ログインに失敗しました: \(error)")
+                    self?.errorMessage = "ログインに失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -603,7 +607,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -644,7 +648,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -663,7 +667,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 firebaseUser.sendEmailVerification { error in
                     DispatchQueue.main.async {
                         if let error = error {
-                            self?.errorMessage = "確認メールの送信に失敗しました: \(error.localizedDescription)"
+                            self?.errorMessage =
+                                "確認メールの送信に失敗しました: \(error.localizedJapaneseDescription)"
                         } else {
                             print("✉️ 確認メールを送信しました")
                         }
@@ -683,7 +688,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "匿名認証に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "匿名認証に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -723,7 +728,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         Auth.auth().signIn(with: credential) { [weak self] authResult, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    self?.errorMessage = "認証に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "認証に失敗しました: \(error.localizedJapaneseDescription)"
                 } else if let firebaseUser = authResult?.user {
                     // Google認証成功 - handleAuthenticatedUserで処理される
                     print("Google認証成功: \(firebaseUser.uid)")
@@ -742,7 +747,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
                     if case let .failure(error) = completion {
-                        self?.errorMessage = "ユーザー情報の保存に失敗しました: \(error.localizedDescription)"
+                        self?.errorMessage =
+                            "ユーザー情報の保存に失敗しました: \(error.localizedJapaneseDescription)"
                     } else {
                         // 保存成功後、最新のユーザー情報を再取得
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -767,7 +773,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
                     if case let .failure(error) = completion {
-                        self?.errorMessage = "ユーザー情報の保存に失敗しました: \(error.localizedDescription)"
+                        self?.errorMessage =
+                            "ユーザー情報の保存に失敗しました: \(error.localizedJapaneseDescription)"
                     }
                 },
                 receiveValue: { [weak self] (user: User) in
