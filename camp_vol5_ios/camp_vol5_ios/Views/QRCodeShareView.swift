@@ -56,15 +56,7 @@ struct QRCodeShareView: View {
 
     var body: some View {
         GeometryReader { geometry in
-            VStack {
-                if authenticationManager.isAuthenticated {
-                    authenticatedContent(viewModel: viewModel)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    guestUserContent
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            }
+            authenticatedContent(viewModel: viewModel)
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
             .toolbarBackground(.hidden, for: .navigationBar)
@@ -251,77 +243,12 @@ struct QRCodeShareView: View {
             Spacer()
         }
     }
-
-    private var guestUserContent: some View {
-        VStack(spacing: 30) {
-            Spacer()
-
-            Image(systemName: "qrcode")
-                .font(.system(size: 60))
-                .foregroundColor(.gray)
-
-            VStack(spacing: 16) {
-                Text("QRコード共有機能")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
-                Text("Google認証を行うと、あなた専用のQRコードが生成され、友達があなたを簡単にフォローできるようになります")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            Button(action: {
-                authenticationManager.signInWithGoogle()
-            }) {
-                HStack {
-                    if authenticationManager.isLoading {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                            .tint(.white)
-                    } else {
-                        Image(systemName: "globe")
-                    }
-                    Text(authenticationManager.isLoading ? "認証中..." : "Googleで認証")
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-            }
-            .disabled(authenticationManager.isLoading)
-
-            if let errorMessage = authenticationManager.errorMessage {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .font(.caption)
-                    .multilineTextAlignment(.center)
-                    .onTapGesture {
-                        authenticationManager.clearError()
-                    }
-            }
-
-            Spacer()
-        }
-        .padding(.horizontal)
-    }
 }
 
 struct QRCodeShareView_Previews: PreviewProvider {
     static var previews: some View {
-        Group {
-            // 未認証状態（デフォルト）
-            let authManager1 = AuthenticationManager()
-            QRCodeShareView(viewModel: QRCodeShareViewModel(authenticationManager: authManager1))
-                .environmentObject(authManager1)
-                .previewDisplayName("未認証状態")
-
-            // 認証済み状態をシミュレーション
-            let authManager2 = AuthenticationManager()
-            QRCodeShareView(viewModel: QRCodeShareViewModel(authenticationManager: authManager2))
-                .environmentObject(authManager2)
-                .previewDisplayName("Google認証済み状態")
-        }
+        let authManager = AuthenticationManager()
+        QRCodeShareView(viewModel: QRCodeShareViewModel(authenticationManager: authManager))
+            .environmentObject(authManager)
     }
 }
