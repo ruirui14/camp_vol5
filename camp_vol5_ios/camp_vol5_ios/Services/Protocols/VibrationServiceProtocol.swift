@@ -10,12 +10,18 @@ protocol VibrationServiceProtocol: ObservableObject {
     /// バイブレーション実行中かどうか
     var isVibrating: Bool { get }
 
+    /// バイブレーション機能が有効かどうか
+    var isEnabled: Bool { get }
+
     /// 心拍に合わせたバイブレーションを開始
     /// - Parameter bpm: 心拍数（BPM）
     func startHeartbeatVibration(bpm: Int)
 
     /// バイブレーションを停止
     func stopVibration()
+
+    /// バイブレーション機能のON/OFFをトグル
+    func toggleEnabled()
 
     /// BPMの妥当性をチェック
     /// - Parameter bpm: 心拍数（BPM）

@@ -13,7 +13,6 @@ class HeartbeatDetailViewModel: ObservableObject {
     @Published var currentHeartbeat: Heartbeat?
     @Published var isMonitoring: Bool = false
     @Published var errorMessage: String?
-    @Published var isVibrationEnabled: Bool = true
     @Published var isSleepMode: Bool = false
 
     // MARK: - Private Properties
@@ -30,6 +29,10 @@ class HeartbeatDetailViewModel: ObservableObject {
     var hasValidHeartbeat: Bool {
         guard let heartbeat = currentHeartbeat else { return false }
         return vibrationService.isValidBPM(heartbeat.bpm)
+    }
+
+    var isVibrationEnabled: Bool {
+        vibrationService.isEnabled
     }
 
     // MARK: - Initialization
@@ -61,9 +64,9 @@ class HeartbeatDetailViewModel: ObservableObject {
     }
 
     func toggleVibration() {
-        isVibrationEnabled.toggle()
+        vibrationService.toggleEnabled()
 
-        if isVibrationEnabled {
+        if vibrationService.isEnabled {
             enableVibrationIfNeeded()
         } else {
             disableVibration()
@@ -138,7 +141,7 @@ class HeartbeatDetailViewModel: ObservableObject {
     }
 
     private func updateVibrationBasedOnHeartbeat() {
-        guard isVibrationEnabled else { return }
+        guard vibrationService.isEnabled else { return }
 
         if hasValidHeartbeat, let bpm = currentHeartbeat?.bpm {
             vibrationService.startHeartbeatVibration(bpm: bpm)
