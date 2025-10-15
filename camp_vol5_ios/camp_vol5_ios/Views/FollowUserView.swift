@@ -185,6 +185,7 @@ struct FollowUserView: View {
                     if !inputText.isEmpty {
                         Button(action: {
                             inputText = ""
+                            isInputFocused = false
                         }) {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.secondary)
