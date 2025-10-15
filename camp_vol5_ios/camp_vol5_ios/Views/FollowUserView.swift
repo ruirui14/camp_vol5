@@ -171,6 +171,12 @@ struct FollowUserView: View {
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
                     .focused($isInputFocused)
+                    .onSubmit {
+                        if !inputText.isEmpty {
+                            viewModel.searchUserByInviteCode(inputText)
+                            isInputFocused = false
+                        }
+                    }
                     .onChange(of: inputText) { _, _ in
                         viewModel.clearError()
                     }
