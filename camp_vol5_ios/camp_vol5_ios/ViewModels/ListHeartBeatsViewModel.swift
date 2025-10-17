@@ -105,7 +105,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
             return
         }
 
-        userService.unfollowUser(currentUser: currentUser, targetUserId: userId)
+        userService.unfollowUser(currentUserId: currentUser.id, targetUserId: userId)
             .flatMap { [weak self] _ -> AnyPublisher<User?, Error> in
                 // フォロー解除成功後、最新のユーザー情報を取得
                 guard let self = self else {
@@ -176,7 +176,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
 
         setLoading(true)
 
-        userService.getFollowingUsers(followingUserIds: currentUser.followingUserIds)
+        userService.getFollowingUsers(userId: currentUser.id)
             .flatMap { [weak self] users -> AnyPublisher<[UserWithHeartbeat], Error> in
                 self?.loadHeartbeatsForUsers(users)
                     ?? Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()

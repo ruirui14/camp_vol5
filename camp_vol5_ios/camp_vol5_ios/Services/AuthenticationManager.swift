@@ -70,6 +70,10 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     // Firebase Service削除に伴い、直接Modelを使用
     var cancellables = Set<AnyCancellable>()
     private var authStateListener: AuthStateDidChangeListenerHandle?
+    private let notificationService: NotificationServiceProtocol = NotificationService(
+        followerRepository: FirestoreFollowerRepository()
+    )
+    private let followingRepository: FollowingRepositoryProtocol = FirestoreFollowingRepository()
 
     // MARK: - Initialization
 
@@ -225,6 +229,9 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                         print("🔥 Existing user found: \(user.name), skipping name input")
                         self?.currentUser = user
                         self?.needsUserNameInput = false
+
+                        // FCMトークンを登録して、フォロー先に更新
+                        self?.registerFCMTokenAndUpdateFollowers(userId: user.id)
                     } else {
                         // ユーザーが見つからない場合、ユーザー名入力画面に遷移
                         print("🔥 User not found, requiring name input")
@@ -758,6 +765,9 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 },
                 receiveValue: { [weak self] (user: User) in
                     self?.currentUser = user
+
+                    // FCMトークンを登録して、フォロー先に更新
+                    self?.registerFCMTokenAndUpdateFollowers(userId: user.id)
                 }
             )
             .store(in: &cancellables)
@@ -781,9 +791,72 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     print("🔥 Email signup user created in Firestore: \(user.name)")
                     self?.currentUser = user
                     self?.needsUserNameInput = false  // 名前入力をスキップ
+
+                    // FCMトークンを登録（新規ユーザーなのでフォロー先は空）
+                    self?.registerFCMTokenAndUpdateFollowers(userId: user.id)
                 }
             )
             .store(in: &cancellables)
+    }
+
+    // MARK: - FCM Token Management
+
+    /// FCMトークンを登録し、フォロー先のfollowersコレクションを更新
+    /// - Parameters:
+    ///   - userId: 現在のユーザーID
+    ///   - retryCount: リトライ回数（最大3回）
+    private func registerFCMTokenAndUpdateFollowers(userId: String, retryCount: Int = 0) {
+        // APNsトークンの準備を待つために少し遅延を入れる
+        let delay: TimeInterval = retryCount == 0 ? 1.0 : 2.0
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self else { return }
+
+            // FCMトークンを取得
+            self.notificationService.registerFCMToken(userId: userId)
+                .flatMap { [weak self] _ -> AnyPublisher<Void, Error> in
+                    guard let self = self else {
+                        return Fail(error: NotificationError.serviceUnavailable).eraseToAnyPublisher()
+                    }
+
+                    // followingコレクションからフォロー先IDを取得
+                    return self.followingRepository.fetchFollowings(userId: userId)
+                        .flatMap { followings -> AnyPublisher<Void, Error> in
+                            let followingIds = followings.map { $0.followingId }
+
+                            // フォロー先のfollowersコレクションにFCMトークンを更新
+                            if followingIds.isEmpty {
+                                return Just(()).setFailureType(to: Error.self).eraseToAnyPublisher()
+                            }
+
+                            return self.notificationService.updateFCMTokenForFollowings(
+                                followingIds: followingIds,
+                                currentUserId: userId
+                            )
+                        }
+                        .eraseToAnyPublisher()
+                }
+                .receive(on: DispatchQueue.main)
+                .sink(
+                    receiveCompletion: { [weak self] completion in
+                        if case let .failure(error) = completion {
+                            let errorMessage = error.localizedDescription
+
+                            // APNsトークンが未設定のエラーの場合はリトライ
+                            if errorMessage.contains("No APNS token") && retryCount < 3 {
+                                print("⚠️ APNsトークン待機中... リトライ \(retryCount + 1)/3")
+                                self?.registerFCMTokenAndUpdateFollowers(userId: userId, retryCount: retryCount + 1)
+                            } else {
+                                print("❌ FCMトークン登録エラー: \(errorMessage)")
+                            }
+                        }
+                    },
+                    receiveValue: { _ in
+                        print("✅ FCMトークンの登録と更新が完了しました")
+                    }
+                )
+                .store(in: &self.cancellables)
+        }
     }
 }
 

@@ -85,8 +85,7 @@ class SettingsViewModel: BaseViewModel {
                         id: userId,
                         name: "Unknown",
                         inviteCode: "",
-                        allowQRRegistration: false,
-                        followingUserIds: []
+                        allowQRRegistration: false
                     )
                 }
             }

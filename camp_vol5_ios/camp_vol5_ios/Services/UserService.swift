@@ -12,9 +12,9 @@ protocol UserServiceProtocol {
     func getUser(uid: String) -> AnyPublisher<User?, Error>
     func updateUser(_ user: User) -> AnyPublisher<Void, Error>
     func findUserByInviteCode(_ inviteCode: String) -> AnyPublisher<User?, Error>
-    func getFollowingUsers(followingUserIds: [String]) -> AnyPublisher<[User], Error>
-    func followUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error>
-    func unfollowUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error>
+    func getFollowingUsers(userId: String) -> AnyPublisher<[User], Error>
+    func followUser(currentUserId: String, targetUserId: String) -> AnyPublisher<Void, Error>
+    func unfollowUser(currentUserId: String, targetUserId: String) -> AnyPublisher<Void, Error>
     func generateNewInviteCode(for user: User) -> AnyPublisher<String, Error>
     func updateQRRegistrationSetting(for user: User, allow: Bool) -> AnyPublisher<Void, Error>
     func deleteUser(userId: String) -> AnyPublisher<Void, Error>
@@ -45,13 +45,33 @@ enum UserServiceError: LocalizedError {
 // MARK: - UserService Implementation
 
 class UserService: UserServiceProtocol {
-    static let shared = UserService()
+    static let shared: UserService = {
+        let followerRepository = FirestoreFollowerRepository()
+        let notificationService = NotificationService(followerRepository: followerRepository)
+        return UserService(
+            repository: FirestoreUserRepository(),
+            followerRepository: followerRepository,
+            followingRepository: FirestoreFollowingRepository(),
+            notificationService: notificationService
+        )
+    }()
 
     private let repository: UserRepositoryProtocol
+    private let followerRepository: FollowerRepositoryProtocol
+    private let followingRepository: FollowingRepositoryProtocol
+    private let notificationService: NotificationServiceProtocol
     private let logger = FirebaseLogger.shared
 
-    init(repository: UserRepositoryProtocol = FirestoreUserRepository()) {
+    init(
+        repository: UserRepositoryProtocol,
+        followerRepository: FollowerRepositoryProtocol,
+        followingRepository: FollowingRepositoryProtocol,
+        notificationService: NotificationServiceProtocol
+    ) {
         self.repository = repository
+        self.followerRepository = followerRepository
+        self.followingRepository = followingRepository
+        self.notificationService = notificationService
     }
 
     // MARK: - User Management
@@ -98,7 +118,6 @@ class UserService: UserServiceProtocol {
             name: user.name,
             inviteCode: newInviteCode,
             allowQRRegistration: user.allowQRRegistration,
-            followingUserIds: user.followingUserIds,
             createdAt: user.createdAt,
             updatedAt: Date()
         )
@@ -110,49 +129,65 @@ class UserService: UserServiceProtocol {
 
     // MARK: - Follow Management
 
-    func followUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error> {
-        var updatedFollowingIds = currentUser.followingUserIds
-        if !updatedFollowingIds.contains(targetUserId) {
-            updatedFollowingIds.append(targetUserId)
-        }
+    func followUser(currentUserId: String, targetUserId: String) -> AnyPublisher<Void, Error> {
+        // FCMトークンを取得
+        let fcmToken = notificationService.currentFCMToken
 
-        let updatedUser = User(
-            id: currentUser.id,
-            name: currentUser.name,
-            inviteCode: currentUser.inviteCode,
-            allowQRRegistration: currentUser.allowQRRegistration,
-            followingUserIds: updatedFollowingIds,
-            createdAt: currentUser.createdAt,
-            updatedAt: Date()
+        // 1. followingコレクションに追加（自分 → フォロー先）
+        let following = Following(followingId: targetUserId)
+        let addFollowing = followingRepository.addFollowing(
+            userId: currentUserId,
+            following: following
         )
 
-        return repository.update(updatedUser)
+        // 2. followersコレクションに追加（フォロー先 → 自分）
+        let follower = Follower(followerId: currentUserId, fcmToken: fcmToken)
+        let addFollower = followerRepository.addFollower(
+            userId: targetUserId,
+            follower: follower
+        )
+
+        // 全ての操作を並行実行
+        return Publishers.Zip(addFollowing, addFollower)
+            .map { _ in () }
             .eraseToAnyPublisher()
     }
 
-    func unfollowUser(currentUser: User, targetUserId: String) -> AnyPublisher<Void, Error> {
-        let updatedFollowingIds = currentUser.followingUserIds.filter { $0 != targetUserId }
-
-        let updatedUser = User(
-            id: currentUser.id,
-            name: currentUser.name,
-            inviteCode: currentUser.inviteCode,
-            allowQRRegistration: currentUser.allowQRRegistration,
-            followingUserIds: updatedFollowingIds,
-            createdAt: currentUser.createdAt,
-            updatedAt: Date()
+    func unfollowUser(currentUserId: String, targetUserId: String) -> AnyPublisher<Void, Error> {
+        // 1. followingコレクションから削除（自分 → フォロー先）
+        let removeFollowing = followingRepository.removeFollowing(
+            userId: currentUserId,
+            followingId: targetUserId
         )
 
-        return repository.update(updatedUser)
+        // 2. followersコレクションから削除（フォロー先 → 自分）
+        let removeFollower = followerRepository.removeFollower(
+            userId: targetUserId,
+            followerId: currentUserId
+        )
+
+        // 全ての操作を並行実行
+        return Publishers.Zip(removeFollowing, removeFollower)
+            .map { _ in () }
             .eraseToAnyPublisher()
     }
 
-    func getFollowingUsers(followingUserIds: [String]) -> AnyPublisher<[User], Error> {
-        guard !followingUserIds.isEmpty else {
-            return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
-        }
+    func getFollowingUsers(userId: String) -> AnyPublisher<[User], Error> {
+        // followingコレクションからフォロー先IDを取得
+        return followingRepository.fetchFollowings(userId: userId)
+            .flatMap { [weak self] followings -> AnyPublisher<[User], Error> in
+                guard let self = self else {
+                    return Fail(error: UserServiceError.serviceUnavailable).eraseToAnyPublisher()
+                }
 
-        return repository.fetchMultiple(userIds: followingUserIds)
+                let followingIds = followings.map { $0.followingId }
+
+                guard !followingIds.isEmpty else {
+                    return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
+                }
+
+                return self.repository.fetchMultiple(userIds: followingIds)
+            }
             .eraseToAnyPublisher()
     }
 
@@ -164,7 +199,6 @@ class UserService: UserServiceProtocol {
             name: user.name,
             inviteCode: user.inviteCode,
             allowQRRegistration: allow,
-            followingUserIds: user.followingUserIds,
             createdAt: user.createdAt,
             updatedAt: Date()
         )

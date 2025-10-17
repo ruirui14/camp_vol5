@@ -29,7 +29,6 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                 name: name,
                 inviteCode: UUID().uuidString,
                 allowQRRegistration: false,
-                followingUserIds: [],
                 createdAt: Date(),
                 updatedAt: Date()
             )
@@ -170,7 +169,6 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             "name": user.name,
             "inviteCode": user.inviteCode,
             "allowQRRegistration": user.allowQRRegistration,
-            "followingUserIds": user.followingUserIds,
         ]
 
         if let createdAt = user.createdAt {
@@ -188,8 +186,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
     private func fromFirestore(_ data: [String: Any], userId: String) -> User? {
         guard let name = data["name"] as? String,
             let inviteCode = data["inviteCode"] as? String,
-            let allowQRRegistration = data["allowQRRegistration"] as? Bool,
-            let followingUserIds = data["followingUserIds"] as? [String]
+            let allowQRRegistration = data["allowQRRegistration"] as? Bool
         else {
             return nil
         }
@@ -202,7 +199,6 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             name: name,
             inviteCode: inviteCode,
             allowQRRegistration: allowQRRegistration,
-            followingUserIds: followingUserIds,
             createdAt: createdAt,
             updatedAt: updatedAt
         )

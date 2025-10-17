@@ -16,6 +16,7 @@ class FollowUserViewModel: BaseViewModel {
     // MARK: - Private Properties
     private var authenticationManager: AuthenticationManager
     private let userService: UserServiceProtocol
+    private let followingRepository: FollowingRepositoryProtocol
 
     // MARK: - Computed Properties
     var canFollowUser: Bool {
@@ -34,10 +35,12 @@ class FollowUserViewModel: BaseViewModel {
 
     init(
         authenticationManager: AuthenticationManager = AuthenticationManager(),
-        userService: UserServiceProtocol = UserService.shared
+        userService: UserServiceProtocol = UserService.shared,
+        followingRepository: FollowingRepositoryProtocol = FirestoreFollowingRepository()
     ) {
         self.authenticationManager = authenticationManager
         self.userService = userService
+        self.followingRepository = followingRepository
         super.init()
     }
 
@@ -161,20 +164,16 @@ class FollowUserViewModel: BaseViewModel {
     }
 
     private func checkFollowingStatusWithFirebase(userId: String, targetUserId: String) {
-        userService.getUser(uid: userId)
-            .handleErrors(on: self, defaultValue: nil)
-            .sink { [weak self] currentUser in
+        // followingコレクションを確認
+        followingRepository.fetchFollowings(userId: userId)
+            .handleErrors(on: self, defaultValue: [])
+            .sink { [weak self] followings in
                 guard let self = self else { return }
-                if let currentUser = currentUser {
-                    let isFollowing = currentUser.followingUserIds.contains(targetUserId)
-                    self.isFollowingUser = isFollowing
-                    print(
-                        "✅ [FollowUserViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)"
-                    )
-                } else {
-                    self.isFollowingUser = false
-                    print("⚠️ [FollowUserViewModel] checkIfAlreadyFollowing: currentUserがnil")
-                }
+                let isFollowing = followings.contains { $0.followingId == targetUserId }
+                self.isFollowingUser = isFollowing
+                print(
+                    "✅ [FollowUserViewModel] checkIfAlreadyFollowing: Firebase確認完了 - isFollowing: \(isFollowing)"
+                )
                 print("👤 [FollowUserViewModel] checkIfAlreadyFollowing: 完了")
             }
             .store(in: &cancellables)
@@ -184,7 +183,7 @@ class FollowUserViewModel: BaseViewModel {
         print("🔥 [FollowUserViewModel] followUserWithFirebase: 開始 - target: \(targetUser.name)")
         isLoading = true
 
-        userService.followUser(currentUser: currentUser, targetUserId: targetUser.id)
+        userService.followUser(currentUserId: currentUser.id, targetUserId: targetUser.id)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.handleFollowCompletion(completion, targetUserName: targetUser.name)
@@ -199,7 +198,7 @@ class FollowUserViewModel: BaseViewModel {
             "🔥 [FollowUserViewModel] unfollowUserWithFirebase: 開始 - target: \(targetUser.name)")
         isLoading = true
 
-        userService.unfollowUser(currentUser: currentUser, targetUserId: targetUser.id)
+        userService.unfollowUser(currentUserId: currentUser.id, targetUserId: targetUser.id)
             .sink(
                 receiveCompletion: { [weak self] completion in
                     self?.handleUnfollowCompletion(completion, targetUserName: targetUser.name)
