@@ -57,7 +57,7 @@ struct camp_vol5_iosApp: App {
             )
         )
     }
-
+    
     var body: some Scene {
         WindowGroup {
             switch appStateManager.currentState {
@@ -84,7 +84,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         didFinishLaunchingWithOptions _: [UIApplication
             .LaunchOptionsKey: Any]?
     ) -> Bool {
-        // Firebase設定は App struct の init() で行うため、ここでは不要
+        // Firebase設定は App struct の init() で行うため、ここでは不要        
+        // ConnectivityManager を初期化してWatch連携を開始
+        connectivityManager = ConnectivityManager()
 
         // プッシュ通知の設定
         UNUserNotificationCenter.current().delegate = self

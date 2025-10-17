@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		7238E5512E93F53300C7D704 /* RiveRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 7238E5502E93F53300C7D704 /* RiveRuntime */; };
+		7281D3462E9D598F003B7437 /* crazy_love Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 7281D33C2E9D598E003B7437 /* crazy_love Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D10CD88B2E04843900689536 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD88A2E04843900689536 /* FirebaseAnalytics */; };
 		D10CD88D2E04843900689536 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD88C2E04843900689536 /* FirebaseAuth */; };
 		D10CD88F2E04843900689536 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD88E2E04843900689536 /* FirebaseFirestore */; };
@@ -20,11 +21,41 @@
 		D1EE64482E9CDFC20033CF92 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = D1EE64472E9CDFC20033CF92 /* FirebaseCrashlytics */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		7281D3442E9D598F003B7437 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B3D475BE2E0406710045AD7A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7281D33B2E9D598E003B7437;
+			remoteInfo = "crazy_love Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7281D3472E9D598F003B7437 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				7281D3462E9D598F003B7437 /* crazy_love Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		7281D33C2E9D598E003B7437 /* crazy_love Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "crazy_love Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3D475C62E0406710045AD7A /* camp_vol5_ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = camp_vol5_ios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		7281D33D2E9D598E003B7437 /* crazy_love Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "crazy_love Watch App";
+			sourceTree = "<group>";
+		};
 		B3D475C82E0406710045AD7A /* camp_vol5_ios */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = camp_vol5_ios;
@@ -33,6 +64,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		7281D3392E9D598E003B7437 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B3D475C32E0406710045AD7A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -58,6 +96,7 @@
 			isa = PBXGroup;
 			children = (
 				B3D475C82E0406710045AD7A /* camp_vol5_ios */,
+				7281D33D2E9D598E003B7437 /* crazy_love Watch App */,
 				B3D475C72E0406710045AD7A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -66,6 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				B3D475C62E0406710045AD7A /* camp_vol5_ios.app */,
+				7281D33C2E9D598E003B7437 /* crazy_love Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -73,6 +113,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		7281D33B2E9D598E003B7437 /* crazy_love Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7281D34A2E9D598F003B7437 /* Build configuration list for PBXNativeTarget "crazy_love Watch App" */;
+			buildPhases = (
+				7281D3382E9D598E003B7437 /* Sources */,
+				7281D3392E9D598E003B7437 /* Frameworks */,
+				7281D33A2E9D598E003B7437 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				7281D33D2E9D598E003B7437 /* crazy_love Watch App */,
+			);
+			name = "crazy_love Watch App";
+			packageProductDependencies = (
+			);
+			productName = "crazy_love Watch App";
+			productReference = 7281D33C2E9D598E003B7437 /* crazy_love Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
 		B3D475C52E0406710045AD7A /* camp_vol5_ios */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = B3D475D12E0406720045AD7A /* Build configuration list for PBXNativeTarget "camp_vol5_ios" */;
@@ -80,10 +142,12 @@
 				B3D475C22E0406710045AD7A /* Sources */,
 				B3D475C32E0406710045AD7A /* Frameworks */,
 				B3D475C42E0406710045AD7A /* Resources */,
+				7281D3472E9D598F003B7437 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				7281D3452E9D598F003B7437 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				B3D475C82E0406710045AD7A /* camp_vol5_ios */,
@@ -113,9 +177,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1640;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
+					7281D33B2E9D598E003B7437 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					B3D475C52E0406710045AD7A = {
 						CreatedOnToolsVersion = 16.4;
 					};
@@ -141,11 +208,19 @@
 			projectRoot = "";
 			targets = (
 				B3D475C52E0406710045AD7A /* camp_vol5_ios */,
+				7281D33B2E9D598E003B7437 /* crazy_love Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		7281D33A2E9D598E003B7437 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B3D475C42E0406710045AD7A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -156,6 +231,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		7281D3382E9D598E003B7437 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B3D475C22E0406710045AD7A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -165,7 +247,91 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		7281D3452E9D598F003B7437 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7281D33B2E9D598E003B7437 /* crazy_love Watch App */;
+			targetProxy = 7281D3442E9D598F003B7437 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		7281D3482E9D598F003B7437 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "crazy_love Watch App/crazy_love Watch App.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SDCTHQR6AD;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = crazy_love;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "心拍数データを取得して配信するために使用します";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "ワークアウトデータを記録するために使用します";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.rui.camp-vol5-ios-1951";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.rui.camp-vol5-ios-1951.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Debug;
+		};
+		7281D3492E9D598F003B7437 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "crazy_love Watch App/crazy_love Watch App.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SDCTHQR6AD;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = crazy_love;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "心拍数データを取得して配信するために使用します";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "ワークアウトデータを記録するために使用します";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.rui.camp-vol5-ios-1951";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.rui.camp-vol5-ios-1951.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.0;
+			};
+			name = Release;
+		};
 		B3D475CF2E0406720045AD7A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -293,7 +459,7 @@
 				CODE_SIGN_ENTITLEMENTS = camp_vol5_ios/camp_vol5_ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = BQ797J5K2V;
+				DEVELOPMENT_TEAM = SDCTHQR6AD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "camp-vol5-ios-Info.plist";
@@ -327,7 +493,7 @@
 				CODE_SIGN_ENTITLEMENTS = camp_vol5_ios/camp_vol5_ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = BQ797J5K2V;
+				DEVELOPMENT_TEAM = SDCTHQR6AD;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "camp-vol5-ios-Info.plist";
@@ -356,6 +522,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		7281D34A2E9D598F003B7437 /* Build configuration list for PBXNativeTarget "crazy_love Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7281D3482E9D598F003B7437 /* Debug */,
+				7281D3492E9D598F003B7437 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		B3D475C12E0406710045AD7A /* Build configuration list for PBXProject "camp_vol5_ios" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

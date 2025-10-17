@@ -77,7 +77,7 @@ struct HeartbeatDetailStatusBar: View {
     }
 }
 
-#Preview {
+#Preview() {
     HeartbeatDetailStatusBar(
         isVibrationEnabled: true,
         isVibrating: true,
