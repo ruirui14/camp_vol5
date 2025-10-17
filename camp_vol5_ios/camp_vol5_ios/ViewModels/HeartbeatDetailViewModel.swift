@@ -55,13 +55,11 @@ class HeartbeatDetailViewModel: ObservableObject {
 
     func startMonitoring() {
         startContinuousMonitoring()
-
         enableVibrationIfNeeded()
     }
 
     func stopMonitoring() {
         stopContinuousMonitoring()
-
         disableVibration()
     }
 

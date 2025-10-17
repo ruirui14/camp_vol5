@@ -459,7 +459,7 @@
 				CODE_SIGN_ENTITLEMENTS = camp_vol5_ios/camp_vol5_ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = SDCTHQR6AD;
+				DEVELOPMENT_TEAM = BQ797J5K2V;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "camp-vol5-ios-Info.plist";
@@ -493,7 +493,7 @@
 				CODE_SIGN_ENTITLEMENTS = camp_vol5_ios/camp_vol5_ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = SDCTHQR6AD;
+				DEVELOPMENT_TEAM = BQ797J5K2V;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "camp-vol5-ios-Info.plist";
