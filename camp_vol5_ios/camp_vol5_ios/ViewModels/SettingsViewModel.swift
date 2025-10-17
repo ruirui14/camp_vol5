@@ -10,6 +10,7 @@ class SettingsViewModel: BaseViewModel {
     // MARK: - Published Properties
     @Published var currentUser: User?
     @Published var currentHeartbeat: Heartbeat?
+    @Published var connectionCount: Int = 0
     @Published var inviteCode: String = ""
     @Published var allowQRRegistration: Bool = true
 
@@ -120,6 +121,14 @@ class SettingsViewModel: BaseViewModel {
             .handleErrors(on: self)
             .sink { [weak self] heartbeat in
                 self?.currentHeartbeat = heartbeat
+            }
+            .store(in: &cancellables)
+
+        // 接続数の監視を開始
+        heartbeatService.subscribeToConnectionCount(userId: userId)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] count in
+                self?.connectionCount = count
             }
             .store(in: &cancellables)
     }

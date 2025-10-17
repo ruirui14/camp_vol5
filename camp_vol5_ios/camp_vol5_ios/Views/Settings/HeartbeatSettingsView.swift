@@ -12,6 +12,10 @@ struct HeartbeatSettingsView: View {
             Section("心拍データ") {
                 HeartbeatContent(viewModel: viewModel)
             }
+
+            Section("接続情報") {
+                ConnectionCountRow(count: viewModel.connectionCount)
+            }
         }
         .navigationTitle("心拍データ")
         .navigationBarTitleDisplayMode(.inline)
@@ -101,6 +105,23 @@ struct HeartbeatRefreshButton: View {
             action()
         }
         .buttonStyle(.bordered)
+    }
+}
+
+struct ConnectionCountRow: View {
+    let count: Int
+
+    var body: some View {
+        HStack {
+            Label("現在の接続数", systemImage: "person.2.fill")
+                .foregroundColor(.primary)
+
+            Spacer()
+
+            Text("\(count)")
+                .font(.headline)
+                .foregroundColor(count > 0 ? .green : .secondary)
+        }
     }
 }
 

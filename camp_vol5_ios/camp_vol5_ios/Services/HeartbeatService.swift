@@ -61,4 +61,16 @@ class HeartbeatService: HeartbeatServiceProtocol {
     func unsubscribeFromHeartbeat(userId: String) {
         repository.unsubscribe(userId: userId)
     }
+
+    // MARK: - Connection Count Operations
+
+    /// 接続数をリアルタイムで監視
+    func subscribeToConnectionCount(userId: String) -> AnyPublisher<Int, Never> {
+        return repository.subscribeToConnectionCount(userId: userId)
+    }
+
+    /// 接続数の監視を停止
+    func unsubscribeFromConnectionCount(userId: String) {
+        repository.unsubscribeFromConnectionCount(userId: userId)
+    }
 }

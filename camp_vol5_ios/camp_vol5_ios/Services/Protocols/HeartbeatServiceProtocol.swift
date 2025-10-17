@@ -19,4 +19,13 @@ protocol HeartbeatServiceProtocol {
     /// 心拍データの監視を停止
     /// - Parameter userId: ユーザーID
     func unsubscribeFromHeartbeat(userId: String)
+
+    /// 接続数をリアルタイムで監視
+    /// - Parameter userId: ユーザーID
+    /// - Returns: 接続数のパブリッシャー（エラーなし）
+    func subscribeToConnectionCount(userId: String) -> AnyPublisher<Int, Never>
+
+    /// 接続数の監視を停止
+    /// - Parameter userId: ユーザーID
+    func unsubscribeFromConnectionCount(userId: String)
 }

@@ -11,6 +11,7 @@ import Foundation
 class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
     private let database: Database
     private var connectionHandles: [String: DatabaseHandle] = [:]  // userId -> .info/connected observer handle
+    private var connectionCountHandles: [String: DatabaseHandle] = [:]  // userId -> connections observer handle
 
     init(database: Database = Database.database()) {
         self.database = database
@@ -214,5 +215,45 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
         }
 
         print("🔗 接続数カウンターを削除: \(userId)")
+    }
+
+    // MARK: - Connection Count Subscription
+
+    /// 接続数をリアルタイムで監視
+    /// - Parameter userId: ユーザーID
+    /// - Returns: 接続数のPublisher
+    func subscribeToConnectionCount(userId: String) -> AnyPublisher<Int, Never> {
+        let subject = PassthroughSubject<Int, Never>()
+        let ref = database.reference()
+            .child("live_heartbeats")
+            .child(userId)
+            .child("connections")
+
+        let handle = ref.observe(.value) { snapshot in
+            let count = snapshot.value as? Int ?? 0
+            subject.send(count)
+        }
+
+        connectionCountHandles[userId] = handle
+        print("🔗 接続数の監視を開始: \(userId)")
+
+        return subject.eraseToAnyPublisher()
+    }
+
+    /// 接続数の監視を停止
+    /// - Parameter userId: ユーザーID
+    func unsubscribeFromConnectionCount(userId: String) {
+        guard let handle = connectionCountHandles[userId] else {
+            return
+        }
+
+        let ref = database.reference()
+            .child("live_heartbeats")
+            .child(userId)
+            .child("connections")
+
+        ref.removeObserver(withHandle: handle)
+        connectionCountHandles.removeValue(forKey: userId)
+        print("🔗 接続数の監視を停止: \(userId)")
     }
 }
