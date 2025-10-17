@@ -172,7 +172,8 @@ class UserNameInputViewModel: BaseViewModel {
             name: newName,
             inviteCode: existingUser.inviteCode,
             allowQRRegistration: existingUser.allowQRRegistration,
-            followingUserIds: existingUser.followingUserIds
+            createdAt: existingUser.createdAt,
+            updatedAt: Date()
         )
 
         userService.updateUser(updatedUser)

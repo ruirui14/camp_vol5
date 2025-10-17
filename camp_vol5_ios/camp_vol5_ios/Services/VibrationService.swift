@@ -11,12 +11,18 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
     static let shared = VibrationService()
 
     @Published var isVibrating = false
+    @Published var isEnabled = true  // 振動機能の有効/無効状態
     private var vibrationTimer: Timer?
 
     /// UIアニメーションと同期するためのパブリッシャー
     let heartbeatTrigger = PassthroughSubject<Void, Never>()
 
-    private init() {}
+    private static let vibrationSettingKey = "vibration_enabled"
+
+    private init() {
+        // 保存されている振動設定を読み込む
+        loadVibrationSetting()
+    }
 
     // MARK: - Public Methods
 
@@ -43,7 +49,9 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
 
         vibrationTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) {
             [weak self] _ in
-            self?.triggerHeartbeatPattern()
+            Task { @MainActor in
+                self?.triggerHeartbeatPattern()
+            }
         }
 
         // 初回の振動を即座に実行
@@ -100,8 +108,49 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
         }
     }
 
+    /// 振動機能を有効化
+    func enable() {
+        isEnabled = true
+        saveVibrationSetting()
+    }
+
+    /// 振動機能を無効化
+    func disable() {
+        isEnabled = false
+        stopVibration()
+        saveVibrationSetting()
+    }
+
+    /// 振動機能のON/OFFをトグル
+    func toggleEnabled() {
+        if isEnabled {
+            disable()
+        } else {
+            enable()
+        }
+    }
+
     /// 現在のBPMを取得
     private(set) var currentBPM: Int = 0
+
+    // MARK: - Vibration Settings Persistence
+
+    /// UserDefaultsから振動設定を読み込む
+    private func loadVibrationSetting() {
+        // キーが存在しない場合はtrueを返す（初回はデフォルトで有効）
+        if UserDefaults.standard.object(forKey: Self.vibrationSettingKey) == nil {
+            isEnabled = true
+        } else {
+            isEnabled = UserDefaults.standard.bool(forKey: Self.vibrationSettingKey)
+        }
+        print("📱 Vibration setting loaded: \(isEnabled)")
+    }
+
+    /// UserDefaultsに振動設定を保存する
+    private func saveVibrationSetting() {
+        UserDefaults.standard.set(isEnabled, forKey: Self.vibrationSettingKey)
+        print("💾 Vibration setting saved: \(isEnabled)")
+    }
 }
 
 // MARK: - Extensions

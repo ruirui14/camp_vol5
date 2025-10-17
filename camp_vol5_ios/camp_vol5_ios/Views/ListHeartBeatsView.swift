@@ -79,7 +79,7 @@ struct ListHeartBeatsView: View {
                     }
                 }
             }
-            .toolbarBackground(Color.white, for: .navigationBar)
+            .toolbarBackground(Color(.systemBackground), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .onAppear {
                 print("🔄 [ListHeartBeatsView] onAppear called")

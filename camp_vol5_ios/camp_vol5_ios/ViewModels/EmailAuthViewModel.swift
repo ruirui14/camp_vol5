@@ -16,6 +16,15 @@ class EmailAuthViewModel: BaseViewModel {
     @Published var showPassword: Bool = false
     @Published var animateForm: Bool = false
 
+    // メール確認状態（リアクティブに更新するため@Publishedで管理）
+    @Published var needsEmailVerification: Bool = false
+    @Published var isEmailVerified: Bool = false
+
+    // パスワードリセット関連
+    @Published var showPasswordReset: Bool = false
+    @Published var resetEmail: String = ""
+    @Published var passwordResetSent: Bool = false
+
     // MARK: - Dependencies
     private var authenticationManager: AuthenticationManager
 
@@ -37,6 +46,53 @@ class EmailAuthViewModel: BaseViewModel {
             .receive(on: DispatchQueue.main)
             .assign(to: \.errorMessage, on: self)
             .store(in: &cancellables)
+
+        // メール確認状態をバインディング
+        authenticationManager.$needsEmailVerification
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.needsEmailVerification, on: self)
+            .store(in: &cancellables)
+
+        authenticationManager.$isEmailVerified
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.isEmailVerified, on: self)
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Email Verification
+
+    func sendVerificationEmail() {
+        authenticationManager.sendVerificationEmail()
+    }
+
+    func checkEmailVerification() {
+        authenticationManager.reloadUserAndCheckVerification()
+    }
+
+    // MARK: - Password Reset
+
+    func showPasswordResetSheet() {
+        // 現在入力されているメールアドレスをリセットフォームに設定
+        resetEmail = email
+        passwordResetSent = false
+        showPasswordReset = true
+    }
+
+    func sendPasswordResetEmail() {
+        authenticationManager.sendPasswordResetEmail(email: resetEmail)
+
+        // 成功時の処理（エラーがなければ成功とみなす）
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            if self?.authenticationManager.errorMessage == nil {
+                self?.passwordResetSent = true
+            }
+        }
+    }
+
+    func dismissPasswordReset() {
+        showPasswordReset = false
+        passwordResetSent = false
+        resetEmail = ""
     }
 
     // MARK: - Actions

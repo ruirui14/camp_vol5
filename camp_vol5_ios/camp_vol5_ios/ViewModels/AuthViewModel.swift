@@ -39,6 +39,17 @@ class AuthViewModel: BaseViewModel {
             .receive(on: DispatchQueue.main)
             .assign(to: \.errorMessage, on: self)
             .store(in: &cancellables)
+
+        // メール確認待ち状態の場合、EmailAuthシートを開いたままにする
+        authenticationManager.$needsEmailVerification
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] needsVerification in
+                if needsVerification && self?.selectedAuthMethod == .email {
+                    // メール確認待ち状態になったら、シートを開く
+                    self?.showEmailAuth = true
+                }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - Actions

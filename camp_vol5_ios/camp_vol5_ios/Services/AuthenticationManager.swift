@@ -59,11 +59,21 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     /// 選択された認証方式
     @Published var selectedAuthMethod: String = "anonymous"
 
+    /// メールアドレスが確認済みかどうか
+    @Published var isEmailVerified: Bool = false
+
+    /// メール確認待ち状態
+    @Published var needsEmailVerification: Bool = false
+
     // MARK: - Private Properties
 
     // Firebase Service削除に伴い、直接Modelを使用
     var cancellables = Set<AnyCancellable>()
     private var authStateListener: AuthStateDidChangeListenerHandle?
+    private let notificationService: NotificationServiceProtocol = NotificationService(
+        followerRepository: FirestoreFollowerRepository()
+    )
+    private let followingRepository: FollowingRepositoryProtocol = FirestoreFollowingRepository()
 
     // MARK: - Initialization
 
@@ -131,9 +141,23 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         if firebaseUser.isAnonymous {
             handleAnonymousUser(firebaseUser)
         } else {
-            // Google認証またはメール認証ユーザーの場合、まず既存ユーザーをチェック
+            // メール認証ユーザーの場合、メール確認状態をチェック
+            let isEmailProvider = firebaseUser.providerData.contains { $0.providerID == "password" }
+
+            if isEmailProvider && !firebaseUser.isEmailVerified {
+                // メール未確認の場合、メール確認画面を表示
+                print("⚠️ Email not verified for user: \(firebaseUser.uid)")
+                isEmailVerified = false
+                needsEmailVerification = true
+                needsUserNameInput = false
+                return
+            }
+
+            // Google認証またはメール確認済みユーザーの場合、既存ユーザーをチェック
             print("🔥 Checking existing user for authenticated user: \(firebaseUser.uid)")
-            checkExistingUserOrRequireNameInput(uid: firebaseUser.uid)
+            isEmailVerified = firebaseUser.isEmailVerified
+            needsEmailVerification = false
+            checkExistingUserOrRequireNameInput(uid: firebaseUser.uid, firebaseUser: firebaseUser)
         }
     }
 
@@ -168,8 +192,20 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     }
 
     /// 既存ユーザーをチェックし、存在しない場合はユーザー名入力を要求
-    /// - Parameter uid: ユーザーID
-    private func checkExistingUserOrRequireNameInput(uid: String) {
+    /// - Parameters:
+    ///   - uid: ユーザーID
+    ///   - firebaseUser: Firebaseユーザー
+    private func checkExistingUserOrRequireNameInput(uid: String, firebaseUser: FirebaseAuth.User) {
+        // メール認証ユーザーの場合、メール確認状態を再チェック
+        let isEmailProvider = firebaseUser.providerData.contains { $0.providerID == "password" }
+        if isEmailProvider && !firebaseUser.isEmailVerified {
+            print("⚠️ Email not verified, showing verification screen")
+            isEmailVerified = false
+            needsEmailVerification = true
+            needsUserNameInput = false
+            return
+        }
+
         UserService.shared.getUser(uid: uid)
             .receive(on: DispatchQueue.main)
             .sink(
@@ -180,7 +216,10 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                         self?.needsUserNameInput = true
                         // 認証方式を設定（既に AuthView で設定済みだが、念のため）
                         if self?.selectedAuthMethod.isEmpty == true {
-                            self?.selectedAuthMethod = "google"  // デフォルトでgoogleを設定
+                            let isEmail = firebaseUser.providerData.contains {
+                                $0.providerID == "password"
+                            }
+                            self?.selectedAuthMethod = isEmail ? "email" : "google"
                         }
                     }
                 },
@@ -190,13 +229,19 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                         print("🔥 Existing user found: \(user.name), skipping name input")
                         self?.currentUser = user
                         self?.needsUserNameInput = false
+
+                        // FCMトークンを登録して、フォロー先に更新
+                        self?.registerFCMTokenAndUpdateFollowers(userId: user.id)
                     } else {
                         // ユーザーが見つからない場合、ユーザー名入力画面に遷移
                         print("🔥 User not found, requiring name input")
                         self?.needsUserNameInput = true
                         // 認証方式を設定（既に AuthView で設定済みだが、念のため）
                         if self?.selectedAuthMethod.isEmpty == true {
-                            self?.selectedAuthMethod = "google"  // デフォルトでgoogleを設定
+                            let isEmail = firebaseUser.providerData.contains {
+                                $0.providerID == "password"
+                            }
+                            self?.selectedAuthMethod = isEmail ? "email" : "google"
                         }
                     }
                 }
@@ -234,7 +279,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "Google認証に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "Google認証に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -267,7 +312,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
             currentUser = nil
         } catch {
-            errorMessage = "サインアウトに失敗しました: \(error.localizedDescription)"
+            errorMessage = "サインアウトに失敗しました: \(error.localizedJapaneseDescription)"
         }
     }
 
@@ -287,7 +332,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
                     if case let .failure(error) = completion {
-                        self?.errorMessage = error.localizedDescription
+                        self?.errorMessage = error.localizedJapaneseDescription
                     }
                 },
                 receiveValue: { [weak self] _ in
@@ -320,7 +365,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     receiveCompletion: { [weak self] completion in
                         if case let .failure(error) = completion {
                             self?.isLoading = false
-                            self?.errorMessage = "ユーザーデータの削除に失敗しました: \(error.localizedDescription)"
+                            self?.errorMessage =
+                                "ユーザーデータの削除に失敗しました: \(error.localizedJapaneseDescription)"
                             return
                         }
 
@@ -331,7 +377,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
                                 if let error = error {
                                     self?.errorMessage =
-                                        "アカウントの削除に失敗しました: \(error.localizedDescription)"
+                                        "アカウントの削除に失敗しました: \(error.localizedJapaneseDescription)"
                                 } else {
                                     // 削除成功時は状態をリセット
                                     self?.user = nil
@@ -356,7 +402,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     self?.isLoading = false
 
                     if let error = error {
-                        self?.errorMessage = "アカウントの削除に失敗しました: \(error.localizedDescription)"
+                        self?.errorMessage =
+                            "アカウントの削除に失敗しました: \(error.localizedJapaneseDescription)"
                     } else {
                         // 削除成功時は状態をリセット
                         self?.user = nil
@@ -385,6 +432,118 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         objectWillChange.send()
     }
 
+    /// メール確認メールを送信
+    func sendVerificationEmail() {
+        guard let firebaseUser = user else {
+            errorMessage = "ユーザー情報が取得できませんでした"
+            return
+        }
+
+        if firebaseUser.isEmailVerified {
+            errorMessage = "メールアドレスは既に確認済みです"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        firebaseUser.sendEmailVerification { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    self?.errorMessage = "確認メールの送信に失敗しました: \(error.localizedJapaneseDescription)"
+                } else {
+                    // 成功メッセージを表示（エラーメッセージフィールドを一時的に使用）
+                    print("✉️ 確認メールを送信しました")
+                }
+            }
+        }
+    }
+
+    /// メール確認状態を更新
+    func reloadUserAndCheckVerification() {
+        guard let firebaseUser = user else { return }
+
+        isLoading = true
+
+        firebaseUser.reload { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    self?.errorMessage = "ユーザー情報の更新に失敗しました: \(error.localizedJapaneseDescription)"
+                    return
+                }
+
+                // メール確認状態を更新
+                self?.isEmailVerified = firebaseUser.isEmailVerified
+
+                if firebaseUser.isEmailVerified {
+                    // メール確認完了
+                    self?.needsEmailVerification = false
+                    print("✅ メールアドレスが確認されました")
+
+                    // 既存ユーザーをチェック
+                    self?.checkExistingUserOrRequireNameInput(
+                        uid: firebaseUser.uid, firebaseUser: firebaseUser)
+                } else {
+                    // まだ確認されていない場合
+                    self?.errorMessage = "メールアドレスがまだ確認されていません。メール内のリンクをクリックしてください。"
+                }
+            }
+        }
+    }
+
+    /// パスワードリセットメールを送信
+    /// - Parameter email: リセットするメールアドレス
+    func sendPasswordResetEmail(email: String) {
+        guard !email.isEmpty else {
+            errorMessage = "メールアドレスを入力してください"
+            return
+        }
+
+        // 基本的なメールバリデーション
+        let emailRegex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}"
+        let emailPredicate = NSPredicate(format: "SELF MATCHES %@", emailRegex)
+        guard emailPredicate.evaluate(with: email) else {
+            errorMessage = "有効なメールアドレスを入力してください"
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        Auth.auth().sendPasswordReset(withEmail: email) { [weak self] error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    let nsError = error as NSError
+                    let errorCode = nsError.code
+
+                    // Firebase Authのエラーコードに応じたメッセージ
+                    switch errorCode {
+                    case 17011:  // FIRAuthErrorCodeUserNotFound
+                        self?.errorMessage = "このメールアドレスは登録されていません"
+                    case 17008:  // FIRAuthErrorCodeInvalidEmail
+                        self?.errorMessage = "無効なメールアドレスです"
+                    default:
+                        self?.errorMessage =
+                            "パスワードリセットメールの送信に失敗しました: \(error.localizedJapaneseDescription)"
+                    }
+
+                    print(
+                        "❌ Password reset email failed: \(error.localizedDescription), code: \(errorCode)"
+                    )
+                } else {
+                    print("✅ Password reset email sent successfully to \(email)")
+                    // 成功時は特別なフラグを設定（ViewModelで処理）
+                }
+            }
+        }
+    }
+
     /// メール・パスワードでサインイン
     /// - Parameters:
     ///   - email: メールアドレス
@@ -403,7 +562,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "ログインに失敗しました: \(error.localizedDescription)"
+                    print("❌ ログインに失敗しました: \(error)")
+                    self?.errorMessage = "ログインに失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -412,8 +572,19 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     return
                 }
 
-                // メール認証成功 - handleAuthenticatedUserで処理される
-                print("メール認証成功: \(firebaseUser.uid)")
+                // メール確認状態をチェック
+                self?.isEmailVerified = firebaseUser.isEmailVerified
+
+                if !firebaseUser.isEmailVerified {
+                    // メール未確認の場合、確認待ち画面に遷移
+                    print("⚠️ メールアドレスが未確認です")
+                    self?.needsEmailVerification = true
+                    self?.needsUserNameInput = false
+                } else {
+                    // メール認証成功 - handleAuthenticatedUserで処理される
+                    print("✅ メール認証成功: \(firebaseUser.uid)")
+                    self?.needsEmailVerification = false
+                }
             }
         }
     }
@@ -443,7 +614,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -484,7 +655,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "アカウント作成に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -493,9 +664,23 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                     return
                 }
 
-                // メール新規登録成功後、ユーザー名入力画面に遷移
-                print("🔥 Email signup success, will show name input: \(firebaseUser.uid)")
-                self?.needsUserNameInput = true
+                // メール新規登録成功後、確認メールを送信
+                print("🔥 Email signup success: \(firebaseUser.uid)")
+                self?.needsEmailVerification = true
+                self?.isEmailVerified = false
+                self?.needsUserNameInput = false
+
+                // 確認メールを送信
+                firebaseUser.sendEmailVerification { error in
+                    DispatchQueue.main.async {
+                        if let error = error {
+                            self?.errorMessage =
+                                "確認メールの送信に失敗しました: \(error.localizedJapaneseDescription)"
+                        } else {
+                            print("✉️ 確認メールを送信しました")
+                        }
+                    }
+                }
             }
         }
     }
@@ -510,7 +695,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.isLoading = false
 
                 if let error = error {
-                    self?.errorMessage = "匿名認証に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "匿名認証に失敗しました: \(error.localizedJapaneseDescription)"
                     return
                 }
 
@@ -550,7 +735,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         Auth.auth().signIn(with: credential) { [weak self] authResult, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    self?.errorMessage = "認証に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "認証に失敗しました: \(error.localizedJapaneseDescription)"
                 } else if let firebaseUser = authResult?.user {
                     // Google認証成功 - handleAuthenticatedUserで処理される
                     print("Google認証成功: \(firebaseUser.uid)")
@@ -569,7 +754,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
                     if case let .failure(error) = completion {
-                        self?.errorMessage = "ユーザー情報の保存に失敗しました: \(error.localizedDescription)"
+                        self?.errorMessage =
+                            "ユーザー情報の保存に失敗しました: \(error.localizedJapaneseDescription)"
                     } else {
                         // 保存成功後、最新のユーザー情報を再取得
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -579,6 +765,9 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 },
                 receiveValue: { [weak self] (user: User) in
                     self?.currentUser = user
+
+                    // FCMトークンを登録して、フォロー先に更新
+                    self?.registerFCMTokenAndUpdateFollowers(userId: user.id)
                 }
             )
             .store(in: &cancellables)
@@ -594,16 +783,80 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
                     if case let .failure(error) = completion {
-                        self?.errorMessage = "ユーザー情報の保存に失敗しました: \(error.localizedDescription)"
+                        self?.errorMessage =
+                            "ユーザー情報の保存に失敗しました: \(error.localizedJapaneseDescription)"
                     }
                 },
                 receiveValue: { [weak self] (user: User) in
                     print("🔥 Email signup user created in Firestore: \(user.name)")
                     self?.currentUser = user
                     self?.needsUserNameInput = false  // 名前入力をスキップ
+
+                    // FCMトークンを登録（新規ユーザーなのでフォロー先は空）
+                    self?.registerFCMTokenAndUpdateFollowers(userId: user.id)
                 }
             )
             .store(in: &cancellables)
+    }
+
+    // MARK: - FCM Token Management
+
+    /// FCMトークンを登録し、フォロー先のfollowersコレクションを更新
+    /// - Parameters:
+    ///   - userId: 現在のユーザーID
+    ///   - retryCount: リトライ回数（最大3回）
+    private func registerFCMTokenAndUpdateFollowers(userId: String, retryCount: Int = 0) {
+        // APNsトークンの準備を待つために少し遅延を入れる
+        let delay: TimeInterval = retryCount == 0 ? 1.0 : 2.0
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self = self else { return }
+
+            // FCMトークンを取得
+            self.notificationService.registerFCMToken(userId: userId)
+                .flatMap { [weak self] _ -> AnyPublisher<Void, Error> in
+                    guard let self = self else {
+                        return Fail(error: NotificationError.serviceUnavailable).eraseToAnyPublisher()
+                    }
+
+                    // followingコレクションからフォロー先IDを取得
+                    return self.followingRepository.fetchFollowings(userId: userId)
+                        .flatMap { followings -> AnyPublisher<Void, Error> in
+                            let followingIds = followings.map { $0.followingId }
+
+                            // フォロー先のfollowersコレクションにFCMトークンを更新
+                            if followingIds.isEmpty {
+                                return Just(()).setFailureType(to: Error.self).eraseToAnyPublisher()
+                            }
+
+                            return self.notificationService.updateFCMTokenForFollowings(
+                                followingIds: followingIds,
+                                currentUserId: userId
+                            )
+                        }
+                        .eraseToAnyPublisher()
+                }
+                .receive(on: DispatchQueue.main)
+                .sink(
+                    receiveCompletion: { [weak self] completion in
+                        if case let .failure(error) = completion {
+                            let errorMessage = error.localizedDescription
+
+                            // APNsトークンが未設定のエラーの場合はリトライ
+                            if errorMessage.contains("No APNS token") && retryCount < 3 {
+                                print("⚠️ APNsトークン待機中... リトライ \(retryCount + 1)/3")
+                                self?.registerFCMTokenAndUpdateFollowers(userId: userId, retryCount: retryCount + 1)
+                            } else {
+                                print("❌ FCMトークン登録エラー: \(errorMessage)")
+                            }
+                        }
+                    },
+                    receiveValue: { _ in
+                        print("✅ FCMトークンの登録と更新が完了しました")
+                    }
+                )
+                .store(in: &self.cancellables)
+        }
     }
 }
 

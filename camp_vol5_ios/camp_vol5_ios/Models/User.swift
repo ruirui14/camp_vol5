@@ -11,7 +11,6 @@ struct User: Codable, Identifiable, Equatable {
     let name: String
     let inviteCode: String
     let allowQRRegistration: Bool
-    let followingUserIds: [String]
     let createdAt: Date?
     let updatedAt: Date?
 
@@ -23,7 +22,6 @@ struct User: Codable, Identifiable, Equatable {
         name: String,
         inviteCode: String,
         allowQRRegistration: Bool,
-        followingUserIds: [String],
         createdAt: Date? = nil,
         updatedAt: Date? = nil
     ) {
@@ -31,7 +29,6 @@ struct User: Codable, Identifiable, Equatable {
         self.name = name
         self.inviteCode = inviteCode
         self.allowQRRegistration = allowQRRegistration
-        self.followingUserIds = followingUserIds
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -45,7 +42,6 @@ struct User: Codable, Identifiable, Equatable {
             name: name,
             inviteCode: UUID().uuidString,
             allowQRRegistration: false,
-            followingUserIds: [],
             createdAt: Date(),
             updatedAt: Date()
         )

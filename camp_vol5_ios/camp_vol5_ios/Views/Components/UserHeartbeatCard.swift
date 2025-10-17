@@ -101,8 +101,7 @@ struct UserHeartbeatCard: View {
                     id: "user1",
                     name: "たろう",
                     inviteCode: "code1",
-                    allowQRRegistration: false,
-                    followingUserIds: []
+                    allowQRRegistration: false
                 ),
                 heartbeat: Heartbeat(
                     userId: "user1",
@@ -118,8 +117,7 @@ struct UserHeartbeatCard: View {
                     id: "user2",
                     name: "あやか",
                     inviteCode: "code2",
-                    allowQRRegistration: false,
-                    followingUserIds: []
+                    allowQRRegistration: false
                 ),
                 heartbeat: Heartbeat(
                     userId: "user2",
@@ -135,8 +133,7 @@ struct UserHeartbeatCard: View {
                     id: "user3",
                     name: "るい",
                     inviteCode: "code3",
-                    allowQRRegistration: false,
-                    followingUserIds: []
+                    allowQRRegistration: false
                 ),
                 heartbeat: nil
             )

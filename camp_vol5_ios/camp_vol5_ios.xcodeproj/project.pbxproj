@@ -15,6 +15,8 @@
 		D10CD8912E0484C800689536 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD8902E0484C800689536 /* FirebaseDatabase */; };
 		D10CD8EF2E07363B00689536 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD8EE2E07363B00689536 /* GoogleSignIn */; };
 		D10CD8F12E07363B00689536 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD8F02E07363B00689536 /* GoogleSignInSwift */; };
+		D1634E1E2E9D689F007D524F /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = D1634E1D2E9D689F007D524F /* FirebasePerformance */; };
+		D1B0E9522EA1321D006F3BDC /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = D1B0E9512EA1321D006F3BDC /* FirebaseMessaging */; };
 		D1EE64462E9CDFC20033CF92 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = D1EE64452E9CDFC20033CF92 /* FirebaseAppCheck */; };
 		D1EE64482E9CDFC20033CF92 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = D1EE64472E9CDFC20033CF92 /* FirebaseCrashlytics */; };
 /* End PBXBuildFile section */
@@ -75,12 +77,14 @@
 			files = (
 				D1EE64462E9CDFC20033CF92 /* FirebaseAppCheck in Frameworks */,
 				D10CD8EF2E07363B00689536 /* GoogleSignIn in Frameworks */,
+				D1634E1E2E9D689F007D524F /* FirebasePerformance in Frameworks */,
 				D10CD88B2E04843900689536 /* FirebaseAnalytics in Frameworks */,
 				7238E5512E93F53300C7D704 /* RiveRuntime in Frameworks */,
 				D10CD88D2E04843900689536 /* FirebaseAuth in Frameworks */,
 				D10CD8F12E07363B00689536 /* GoogleSignInSwift in Frameworks */,
 				D1EE64482E9CDFC20033CF92 /* FirebaseCrashlytics in Frameworks */,
 				D10CD8912E0484C800689536 /* FirebaseDatabase in Frameworks */,
+				D1B0E9522EA1321D006F3BDC /* FirebaseMessaging in Frameworks */,
 				D10CD88F2E04843900689536 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -159,6 +163,8 @@
 				7238E5502E93F53300C7D704 /* RiveRuntime */,
 				D1EE64452E9CDFC20033CF92 /* FirebaseAppCheck */,
 				D1EE64472E9CDFC20033CF92 /* FirebaseCrashlytics */,
+				D1634E1D2E9D689F007D524F /* FirebasePerformance */,
+				D1B0E9512EA1321D006F3BDC /* FirebaseMessaging */,
 			);
 			productName = camp_vol5_ios;
 			productReference = B3D475C62E0406710045AD7A /* camp_vol5_ios.app */;
@@ -450,6 +456,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = camp_vol5_ios/camp_vol5_ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SDCTHQR6AD;
@@ -462,7 +469,6 @@
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "背景画像を設定するために写真ライブラリへのアクセスが必要です";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
@@ -471,7 +477,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.rui.camp-vol5-ios-1951";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.rui.camp-vol5-ios2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -484,6 +490,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = camp_vol5_ios/camp_vol5_ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = SDCTHQR6AD;
@@ -504,7 +511,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.rui.camp-vol5-ios-1951";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.rui.camp-vol5-ios2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -606,6 +613,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D10CD8ED2E07363B00689536 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
+		};
+		D1634E1D2E9D689F007D524F /* FirebasePerformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D10CD8892E04843900689536 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebasePerformance;
+		};
+		D1B0E9512EA1321D006F3BDC /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D10CD8892E04843900689536 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 		D1EE64452E9CDFC20033CF92 /* FirebaseAppCheck */ = {
 			isa = XCSwiftPackageProductDependency;

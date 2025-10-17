@@ -13,7 +13,6 @@ class HeartbeatDetailViewModel: ObservableObject {
     @Published var currentHeartbeat: Heartbeat?
     @Published var isMonitoring: Bool = false
     @Published var errorMessage: String?
-    @Published var isVibrationEnabled: Bool = true
     @Published var isSleepMode: Bool = false
 
     // MARK: - Private Properties
@@ -24,7 +23,7 @@ class HeartbeatDetailViewModel: ObservableObject {
     // MARK: - Dependencies
     private let userService: UserServiceProtocol
     private let heartbeatService: HeartbeatServiceProtocol
-    private let vibrationService: VibrationServiceProtocol
+    private let vibrationService: any VibrationServiceProtocol
 
     // MARK: - Computed Properties
     var hasValidHeartbeat: Bool {
@@ -32,17 +31,21 @@ class HeartbeatDetailViewModel: ObservableObject {
         return vibrationService.isValidBPM(heartbeat.bpm)
     }
 
+    var isVibrationEnabled: Bool {
+        vibrationService.isEnabled
+    }
+
     // MARK: - Initialization
     init(
         userId: String,
         userService: UserServiceProtocol = UserService.shared,
         heartbeatService: HeartbeatServiceProtocol = HeartbeatService.shared,
-        vibrationService: VibrationServiceProtocol = VibrationService.shared
+        vibrationService: (any VibrationServiceProtocol)? = nil
     ) {
         self.userId = userId
         self.userService = userService
         self.heartbeatService = heartbeatService
-        self.vibrationService = vibrationService
+        self.vibrationService = vibrationService ?? VibrationService.shared
 
         print("HeartbeatDetailViewModel init with userId: \(userId)")
         loadUserInfo()
@@ -63,9 +66,9 @@ class HeartbeatDetailViewModel: ObservableObject {
     }
 
     func toggleVibration() {
-        isVibrationEnabled.toggle()
+        vibrationService.toggleEnabled()
 
-        if isVibrationEnabled {
+        if vibrationService.isEnabled {
             enableVibrationIfNeeded()
         } else {
             disableVibration()
@@ -140,7 +143,7 @@ class HeartbeatDetailViewModel: ObservableObject {
     }
 
     private func updateVibrationBasedOnHeartbeat() {
-        guard isVibrationEnabled else { return }
+        guard vibrationService.isEnabled else { return }
 
         if hasValidHeartbeat, let bpm = currentHeartbeat?.bpm {
             vibrationService.startHeartbeatVibration(bpm: bpm)

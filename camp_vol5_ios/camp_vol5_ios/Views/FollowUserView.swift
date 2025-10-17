@@ -171,6 +171,12 @@ struct FollowUserView: View {
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
                     .focused($isInputFocused)
+                    .onSubmit {
+                        if !inputText.isEmpty {
+                            viewModel.searchUserByInviteCode(inputText)
+                            isInputFocused = false
+                        }
+                    }
                     .onChange(of: inputText) { _, _ in
                         viewModel.clearError()
                     }
@@ -179,6 +185,7 @@ struct FollowUserView: View {
                     if !inputText.isEmpty {
                         Button(action: {
                             inputText = ""
+                            isInputFocused = false
                         }) {
                             Image(systemName: "xmark.circle.fill")
                                 .foregroundColor(.secondary)
@@ -246,7 +253,7 @@ struct FollowUserView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "qrcode")
                         .font(.title2)
-                    Text("自分のQRコードを表示")
+                    Text("招待コードを管理")
                         .font(.headline)
                     Spacer()
                     Image(systemName: "chevron.right")
