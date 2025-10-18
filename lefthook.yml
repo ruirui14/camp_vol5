@@ -9,3 +9,16 @@ pre-commit:
       glob: "*.swift"
       run: swift-format format -i {staged_files}
       stage_fixed: true
+
+    swiftlint-fix:
+      # Auto-fix SwiftLint violations
+      # Fixes auto-correctable violations in staged files
+      glob: "*.swift"
+      run: swiftlint --fix --force-exclude {staged_files}
+      stage_fixed: true
+
+    swiftlint:
+      # Lint Swift code after formatting and auto-fixing
+      # Checks only staged Swift files
+      glob: "*.swift"
+      run: swiftlint lint --strict --force-exclude {staged_files}
