@@ -60,6 +60,10 @@ struct QRCodeShareView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarBackButtonHidden(true)
                 .toolbarBackground(.hidden, for: .navigationBar)
+                .onAppear {
+                    // 画面表示時にQRコードを遅延生成
+                    viewModel.onViewAppear()
+                }
                 .toolbar {
                     ToolbarItem(placement: .navigationBarLeading) {
                         Button("戻る") {
@@ -110,13 +114,26 @@ struct QRCodeShareView: View {
 
             if let inviteCode = viewModel.inviteCode {
                 VStack(spacing: 40) {
-                    // QRコード
+                    // QRコード（プレースホルダー付き）
                     Group {
                         if let qrCodeImage = viewModel.qrCodeImage {
                             Image(uiImage: qrCodeImage)
                                 .resizable()
                                 .interpolation(.none)
+                                .transition(.opacity)
+                        } else if viewModel.isGeneratingQRCode {
+                            // QRコード生成中のプレースホルダー
+                            VStack(spacing: 16) {
+                                ProgressView()
+                                    .scaleEffect(1.2)
+                                    .tint(.main)
+                                Text("QRコードを生成中...")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .frame(width: 250, height: 250)
                         } else {
+                            // デフォルトアイコン
                             Image(systemName: "qrcode")
                                 .font(.system(size: 100))
                                 .foregroundColor(.gray)
@@ -132,6 +149,7 @@ struct QRCodeShareView: View {
                         x: 0,
                         y: 4
                     )
+                    .animation(.easeInOut(duration: 0.3), value: viewModel.qrCodeImage != nil)
 
                     // QR登録許可トグル
                     HStack(spacing: 12) {
@@ -178,6 +196,8 @@ struct QRCodeShareView: View {
                             }
                             .frame(minWidth: 60)
                         }
+                        .disabled(viewModel.isGeneratingQRCode || viewModel.isLoading)
+
                         // リンク
                         Button(action: {
                             UIPasteboard.general.string = inviteCode
@@ -199,6 +219,17 @@ struct QRCodeShareView: View {
                                 qrCodeImage: qrCodeImage,
                                 inviteCode: inviteCode
                             )
+                        } else {
+                            // QRコード生成中のプレースホルダー
+                            VStack(spacing: 8) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundColor(.gray)
+                                    .font(.title3)
+                                Text("シェア")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(.gray)
+                            }
+                            .frame(minWidth: 60)
                         }
 
                         // 保存
@@ -207,14 +238,15 @@ struct QRCodeShareView: View {
                         }) {
                             VStack(spacing: 8) {
                                 Image(systemName: "arrow.down.to.line")
-                                    .foregroundColor(.text)
+                                    .foregroundColor(viewModel.qrCodeImage != nil ? .text : .gray)
                                     .font(.title3)
                                 Text("画像を保存")
                                     .font(.caption.weight(.semibold))
-                                    .foregroundColor(.text)
+                                    .foregroundColor(viewModel.qrCodeImage != nil ? .text : .gray)
                             }
                             .frame(minWidth: 60)
                         }
+                        .disabled(viewModel.qrCodeImage == nil || viewModel.isGeneratingQRCode)
                     }
                 }
             } else {

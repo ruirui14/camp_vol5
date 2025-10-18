@@ -10,6 +10,7 @@ class QRCodeShareViewModel: BaseViewModel {
     @Published var currentBPM: Int?
     @Published var userName: String?
     @Published var allowQRRegistration: Bool = true
+    @Published var isGeneratingQRCode: Bool = false
 
     @Published var showingSaveAlert = false
     @Published var saveAlertTitle = ""
@@ -19,6 +20,7 @@ class QRCodeShareViewModel: BaseViewModel {
     private let context = CIContext()
     private let filter = CIFilter.qrCodeGenerator()
     private let cardGenerator = QRCodeCardGenerator()
+    private var qrCodeCache: [String: UIImage] = [:]  // キャッシュ追加
 
     private var authenticationManager: AuthenticationManager
 
@@ -28,14 +30,14 @@ class QRCodeShareViewModel: BaseViewModel {
         setupBindings()
         print("🔥 QRCodeShareViewModel init started")
 
-        // 初期化時に既存のinviteCodeがある場合は設定
+        // 初期化時は招待コードとユーザー情報のみ設定（QRコードは生成しない）
         if let currentUser = authenticationManager.currentUser,
             !currentUser.inviteCode.isEmpty
         {
             inviteCode = currentUser.inviteCode
             userName = currentUser.name
             allowQRRegistration = currentUser.allowQRRegistration
-            qrCodeImage = generateStyledQRCode(from: currentUser.inviteCode)
+            // QRコードは遅延生成（onViewAppearで実行）
         } else if authenticationManager.isAuthenticated {
             authenticationManager.refreshCurrentUser()
 
@@ -50,6 +52,23 @@ class QRCodeShareViewModel: BaseViewModel {
         }
     }
 
+    /// 画面表示時に呼び出されるメソッド（遅延ロード）
+    @MainActor
+    func onViewAppear() {
+        print("🎨 QRCodeShareViewModel onViewAppear: QR code lazy loading started")
+
+        // QRコードが既に生成されている場合はスキップ
+        guard qrCodeImage == nil, let code = inviteCode, !code.isEmpty else {
+            print(
+                "🎨 QRCodeShareViewModel onViewAppear: QR code already exists or invite code is empty"
+            )
+            return
+        }
+
+        // 非同期でQRコードを生成
+        generateQRCodeAsync(from: code)
+    }
+
     private func setupBindings() {
         guard authenticationManager.isAuthenticated else {
             return
@@ -62,9 +81,9 @@ class QRCodeShareViewModel: BaseViewModel {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] name in
                 self?.userName = name
-                // ユーザー名が変わったらQRコードを再生成
+                // ユーザー名が変わったらQRコードを非同期で再生成
                 if let inviteCode = self?.inviteCode {
-                    self?.qrCodeImage = self?.generateStyledQRCode(from: inviteCode)
+                    self?.generateQRCodeAsync(from: inviteCode, forceRegenerate: true)
                 }
             }
             .store(in: &cancellables)
@@ -85,7 +104,10 @@ class QRCodeShareViewModel: BaseViewModel {
                 }
 
                 self.inviteCode = inviteCode
-                self.qrCodeImage = self.generateStyledQRCode(from: inviteCode)
+                // QRコードを非同期で生成（画面が表示されている場合のみ）
+                if self.qrCodeImage != nil {
+                    self.generateQRCodeAsync(from: inviteCode)
+                }
             }
             .store(in: &cancellables)
 
@@ -135,15 +157,59 @@ class QRCodeShareViewModel: BaseViewModel {
                     }
                 },
                 receiveValue: { [weak self] newInviteCode in
-                    // 直接inviteCodeとQRコードを更新
+                    // 直接inviteCodeを更新し、QRコードを非同期で生成
                     self?.inviteCode = newInviteCode
-                    self?.qrCodeImage = self?.generateStyledQRCode(from: newInviteCode)
+                    self?.generateQRCodeAsync(from: newInviteCode, forceRegenerate: true)
 
                     // 循環参照を防ぐため、authenticationManager.refreshCurrentUser()は呼ばない
                     // UserServiceがFirebaseを更新するので、setupBindingsで自動的に反映される
                 }
             )
             .store(in: &cancellables)
+    }
+
+    /// QRコードを非同期で生成（キャッシュ機能付き）
+    /// - Parameters:
+    ///   - inviteCode: 招待コード
+    ///   - forceRegenerate: キャッシュを無視して強制的に再生成するか（デフォルト: false）
+    @MainActor
+    private func generateQRCodeAsync(from inviteCode: String, forceRegenerate: Bool = false) {
+        print(
+            """
+            🎨 QRCodeShareViewModel generateQRCodeAsync: started - \
+            inviteCode: \(inviteCode), forceRegenerate: \(forceRegenerate)
+            """
+        )
+
+        // キャッシュがあれば使用（強制再生成でない場合）
+        if !forceRegenerate, let cachedImage = qrCodeCache[inviteCode] {
+            print("✅ QRCodeShareViewModel generateQRCodeAsync: using cached QR code")
+            self.qrCodeImage = cachedImage
+            return
+        }
+
+        isGeneratingQRCode = true
+
+        // 現在のユーザー名を取得（Task内で使用）
+        let currentUserName = userName
+
+        // バックグラウンドスレッドでQRコード生成
+        Task.detached(priority: .userInitiated) { [weak self, cardGenerator] in
+            guard let self = self else { return }
+
+            print("🔄 QRCodeShareViewModel generateQRCodeAsync: generating QR code in background")
+            // cardGeneratorはアクター隔離されていないため、直接呼び出し可能
+            let image = cardGenerator.generateStyledQRCode(
+                from: inviteCode, userName: currentUserName)
+
+            // メインスレッドで結果を更新
+            await MainActor.run {
+                print("✅ QRCodeShareViewModel generateQRCodeAsync: QR code generation completed")
+                self.qrCodeImage = image
+                self.qrCodeCache[inviteCode] = image  // キャッシュに保存
+                self.isGeneratingQRCode = false
+            }
+        }
     }
 
     // QR登録許可設定を切り替え
