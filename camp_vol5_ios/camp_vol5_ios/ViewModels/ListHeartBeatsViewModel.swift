@@ -26,6 +26,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
 
     private let userService: UserServiceProtocol
     private let heartbeatService: HeartbeatServiceProtocol
+    private let followerRepository: FollowerRepositoryProtocol
 
     // MARK: - Computed Properties
 
@@ -42,11 +43,13 @@ class ListHeartBeatsViewModel: BaseViewModel {
     init(
         authenticationManager: AuthenticationManager = AuthenticationManager(),
         userService: UserServiceProtocol = UserService.shared,
-        heartbeatService: HeartbeatServiceProtocol = HeartbeatService.shared
+        heartbeatService: HeartbeatServiceProtocol = HeartbeatService.shared,
+        followerRepository: FollowerRepositoryProtocol = FirestoreFollowerRepository()
     ) {
         self.authenticationManager = authenticationManager
         self.userService = userService
         self.heartbeatService = heartbeatService
+        self.followerRepository = followerRepository
         super.init()
         setupBindings()
     }
@@ -131,6 +134,45 @@ class ListHeartBeatsViewModel: BaseViewModel {
             .store(in: &cancellables)
     }
 
+    func toggleNotificationSetting(for userId: String, enabled: Bool) {
+        print(
+            "🔔 [ListHeartBeatsViewModel] toggleNotificationSetting: 開始 - userId: \(userId), enabled: \(enabled)"
+        )
+
+        guard let currentUser = authenticationManager.currentUser else {
+            print("⚠️ [ListHeartBeatsViewModel] toggleNotificationSetting: currentUserがnil")
+            handleError(
+                NSError(
+                    domain: "ListHeartBeatsViewModel",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "ユーザー情報が取得できません"]
+                ))
+            return
+        }
+
+        // ローカルの状態を即座に更新（楽観的更新）
+        if let index = followingUsersWithHeartbeats.firstIndex(where: { $0.user.id == userId }) {
+            followingUsersWithHeartbeats[index] = UserWithHeartbeat(
+                user: followingUsersWithHeartbeats[index].user,
+                heartbeat: followingUsersWithHeartbeats[index].heartbeat,
+                notificationEnabled: enabled
+            )
+        }
+
+        userService.updateFollowingNotificationSetting(
+            currentUserId: currentUser.id,
+            targetUserId: userId,
+            enabled: enabled
+        )
+        .handleErrors(on: self)
+        .sink { [weak self] _ in
+            print(
+                "✅ [ListHeartBeatsViewModel] toggleNotificationSetting: 成功 - userId: \(userId)"
+            )
+        }
+        .store(in: &cancellables)
+    }
+
     // MARK: - Private Methods
 
     private func setupBindings() {
@@ -194,19 +236,29 @@ class ListHeartBeatsViewModel: BaseViewModel {
             return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
-        let heartbeatPublishers = users.map { user in
-            heartbeatService.getHeartbeatOnce(userId: user.id)
-                .map { heartbeat in
-                    UserWithHeartbeat(user: user, heartbeat: heartbeat)
-                }
-                .catch { _ in
-                    Just(UserWithHeartbeat(user: user, heartbeat: nil))
-                        .setFailureType(to: Error.self)
-                }
-                .eraseToAnyPublisher()
+        guard let currentUserId = authenticationManager.currentUserId else {
+            return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
-        return Publishers.MergeMany(heartbeatPublishers)
+        let userPublishers = users.map { user in
+            // ハートビート情報とフォロワー情報を並行して取得
+            Publishers.Zip(
+                heartbeatService.getHeartbeatOnce(userId: user.id)
+                    .catch { _ in Just(nil).setFailureType(to: Error.self) },
+                followerRepository.fetchFollower(userId: user.id, followerId: currentUserId)
+                    .catch { _ in Just(nil).setFailureType(to: Error.self) }
+            )
+            .map { heartbeat, follower in
+                UserWithHeartbeat(
+                    user: user,
+                    heartbeat: heartbeat,
+                    notificationEnabled: follower?.notificationEnabled ?? true  // デフォルトはtrue
+                )
+            }
+            .eraseToAnyPublisher()
+        }
+
+        return Publishers.MergeMany(userPublishers)
             .collect()
             .eraseToAnyPublisher()
     }
@@ -252,14 +304,16 @@ struct UserWithHeartbeat: Identifiable, Hashable {
     }
     let user: User
     var heartbeat: Heartbeat?
+    var notificationEnabled: Bool  // フォロー先ユーザーからの通知設定
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(user.id)
         hasher.combine(user.name)
         hasher.combine(heartbeat?.bpm)
+        hasher.combine(notificationEnabled)
     }
 
     static func == (lhs: UserWithHeartbeat, rhs: UserWithHeartbeat) -> Bool {
-        return lhs.user.id == rhs.user.id
+        return lhs.user.id == rhs.user.id && lhs.notificationEnabled == rhs.notificationEnabled
     }
 }

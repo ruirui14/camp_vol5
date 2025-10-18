@@ -74,6 +74,9 @@ struct ListHeartBeatsView: View {
                             },
                             onUnfollow: { userId in
                                 viewModel.unfollowUser(userId: userId)
+                            },
+                            onToggleNotification: { userId, enabled in
+                                viewModel.toggleNotificationSetting(for: userId, enabled: enabled)
                             }
                         )
                     }

@@ -106,7 +106,8 @@ struct UserHeartbeatCard: View {
                 heartbeat: Heartbeat(
                     userId: "user1",
                     bpm: 72
-                )
+                ),
+                notificationEnabled: true
             )
         )
 
@@ -122,7 +123,8 @@ struct UserHeartbeatCard: View {
                 heartbeat: Heartbeat(
                     userId: "user2",
                     bpm: 85
-                )
+                ),
+                notificationEnabled: true
             )
         )
 
@@ -135,7 +137,8 @@ struct UserHeartbeatCard: View {
                     inviteCode: "code3",
                     allowQRRegistration: false
                 ),
-                heartbeat: nil
+                heartbeat: nil,
+                notificationEnabled: false
             )
         )
     }

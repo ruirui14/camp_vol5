@@ -11,6 +11,7 @@ struct FollowingUsersListView: View {
     let onUserTapped: (UserWithHeartbeat) -> Void
     let onRefresh: () -> Void
     let onUnfollow: ((String) -> Void)?
+    let onToggleNotification: ((String, Bool) -> Void)?
 
     var body: some View {
         ScrollView {
@@ -35,7 +36,7 @@ struct FollowingUsersListView: View {
                             onUserTapped(userWithHeartbeat)
                         }
 
-                        // 編集モード時のバツボタン（カードの上に配置）
+                        // 編集モード時のバツボタン（カードの左上に配置）
                         if isEditMode {
                             Button {
                                 print("🔥 Unfollowing user: \(userWithHeartbeat.user.id)")
@@ -56,7 +57,32 @@ struct FollowingUsersListView: View {
                             .offset(x: 20, y: 10)
                             .zIndex(1)
                             .scaleEffect(1.0)
-                            // .transition(.scale(scale: 0.1))
+                        }
+
+                        // 編集モード時の通知トグルスイッチ（カードの右上に配置）
+                        if isEditMode {
+                            HStack {
+                                Spacer()
+                                Button {
+                                    onToggleNotification?(
+                                        userWithHeartbeat.user.id,
+                                        !userWithHeartbeat.notificationEnabled
+                                    )
+                                } label: {
+                                    Image(
+                                        systemName: userWithHeartbeat.notificationEnabled
+                                            ? "bell.fill" : "bell.slash.fill"
+                                    )
+                                    .foregroundColor(
+                                        userWithHeartbeat.notificationEnabled ? .main : .gray
+                                    )
+                                    .padding(8)
+                                    .background(Color.white.opacity(0.9))
+                                    .clipShape(Circle())
+                                }
+                            }
+                            .offset(x: -20, y: 10)
+                            .zIndex(1)
                         }
                     }
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
@@ -77,6 +103,7 @@ struct FollowingUsersListView: View {
         isEditMode: false,
         onUserTapped: { _ in },
         onRefresh: {},
-        onUnfollow: { _ in }
+        onUnfollow: { _ in },
+        onToggleNotification: { _, _ in }
     )
 }

@@ -27,6 +27,13 @@ protocol FollowerRepositoryProtocol {
     /// - Returns: フォロワー配列を返すPublisher
     func fetchFollowers(userId: String) -> AnyPublisher<[Follower], Error>
 
+    /// 特定のフォロワー情報を取得
+    /// - Parameters:
+    ///   - userId: フォローされているユーザーID
+    ///   - followerId: フォロワーのID
+    /// - Returns: フォロワー情報のオプショナルPublisher
+    func fetchFollower(userId: String, followerId: String) -> AnyPublisher<Follower?, Error>
+
     /// フォロワーの通知設定を更新
     /// - Parameters:
     ///   - userId: フォローされているユーザーID

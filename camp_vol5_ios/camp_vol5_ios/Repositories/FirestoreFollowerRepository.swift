@@ -90,6 +90,31 @@ class FirestoreFollowerRepository: FollowerRepositoryProtocol {
         .eraseToAnyPublisher()
     }
 
+    func fetchFollower(userId: String, followerId: String) -> AnyPublisher<Follower?, Error> {
+        return Future { [weak self] promise in
+            guard let self = self else {
+                promise(.failure(RepositoryError.serviceUnavailable))
+                return
+            }
+
+            self.db.collection("users")
+                .document(userId)
+                .collection("followers")
+                .document(followerId)
+                .getDocument { snapshot, error in
+                    if let error = error {
+                        promise(.failure(error))
+                    } else if let data = snapshot?.data() {
+                        let follower = self.fromFirestore(data, followerId: followerId)
+                        promise(.success(follower))
+                    } else {
+                        promise(.success(nil))
+                    }
+                }
+        }
+        .eraseToAnyPublisher()
+    }
+
     func updateNotificationSetting(
         userId: String,
         followerId: String,

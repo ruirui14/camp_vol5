@@ -18,6 +18,7 @@ protocol UserServiceProtocol {
     func generateNewInviteCode(for user: User) -> AnyPublisher<String, Error>
     func updateQRRegistrationSetting(for user: User, allow: Bool) -> AnyPublisher<Void, Error>
     func deleteUser(userId: String) -> AnyPublisher<Void, Error>
+    func updateFollowingNotificationSetting(currentUserId: String, targetUserId: String, enabled: Bool) -> AnyPublisher<Void, Error>
 }
 
 // MARK: - UserService Errors
@@ -193,5 +194,41 @@ class UserService: UserServiceProtocol {
     func deleteUser(userId: String) -> AnyPublisher<Void, Error> {
         return repository.delete(userId: userId)
             .eraseToAnyPublisher()
+    }
+
+    // MARK: - Notification Settings
+
+    /// フォローしているユーザーからの通知設定を更新
+    /// - Parameters:
+    ///   - currentUserId: 現在のユーザーID（フォロワー）
+    ///   - targetUserId: フォロー先のユーザーID
+    ///   - enabled: 通知の有効/無効
+    /// - Returns: 完了通知のPublisher
+    func updateFollowingNotificationSetting(
+        currentUserId: String,
+        targetUserId: String,
+        enabled: Bool
+    ) -> AnyPublisher<Void, Error> {
+        // users/{targetUserId}/followers/{currentUserId} のnotificationEnabledを更新
+        return followerRepository.updateNotificationSetting(
+            userId: targetUserId,
+            followerId: currentUserId,
+            enabled: enabled
+        )
+        .handleEvents(
+            receiveOutput: { [weak self] _ in
+                self?.logger.log(
+                    "Updated notification setting for \(targetUserId): \(enabled)"
+                )
+            },
+            receiveCompletion: { [weak self] completion in
+                if case let .failure(error) = completion {
+                    self?.logger.error(
+                        "Failed to update notification setting: \(error.localizedDescription)"
+                    )
+                }
+            }
+        )
+        .eraseToAnyPublisher()
     }
 }
