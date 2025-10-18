@@ -6,21 +6,10 @@ struct ContentView: View {
     @State private var navigationPath = NavigationPath()
 
     var body: some View {
-        _ = print(
-            """
-            🔥 ContentView - isLoading: \(authenticationManager.isLoading), \
-            needsUserNameInput: \(authenticationManager.needsUserNameInput), \
-            isAuthenticated: \(authenticationManager.isAuthenticated), \
-            currentUser: \(authenticationManager.currentUser != nil), \
-            needsEmailVerification: \(authenticationManager.needsEmailVerification)
-            """
-        )
-
-        return NavigationStack(path: $navigationPath) {
+        NavigationStack(path: $navigationPath) {
             Group {
                 if authenticationManager.needsUserNameInput {
                     // ユーザー名入力が必要な場合
-                    _ = print("🔥 Showing UserNameInputView")
                     UserNameInputView(
                         selectedAuthMethod: mapAuthMethod(
                             authenticationManager.selectedAuthMethod),
@@ -30,18 +19,10 @@ struct ContentView: View {
                     && authenticationManager.currentUser != nil
                 {
                     // ログイン済みかつユーザー情報がある場合
-                    _ = print("🔥 Showing ListHeartBeatsView")
                     ListHeartBeatsView()
                 } else {
                     // 認証されていない場合、またはユーザー情報がない場合は認証画面を表示
                     // メール確認待ち状態も含む
-                    _ = print(
-                        """
-                        🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), \
-                        currentUser: \(authenticationManager.currentUser != nil), \
-                        needsEmailVerification: \(authenticationManager.needsEmailVerification)
-                        """
-                    )
                     AuthView(
                         onStartWithoutAuth: {
                             // このクロージャは現在使用されていない(匿名サインインに置き換えられた)
