@@ -1,0 +1,11 @@
+# Lefthook configuration for git hooks
+# See: https://github.com/evilmartians/lefthook
+
+pre-commit:
+  commands:
+    swift-format:
+      # Format Swift code before committing
+      # Formats only staged Swift files
+      glob: "*.swift"
+      run: swift-format format -i {staged_files}
+      stage_fixed: true
