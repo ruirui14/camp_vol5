@@ -120,7 +120,8 @@ struct ConnectionCountRow: View {
 
             Text("\(count)")
                 .font(.headline)
-                .foregroundColor(!isEmpty ? .green : .secondary)
+                // swiftlint:disable:next empty_count
+                .foregroundColor(count > 0 ? .green : .secondary)
         }
     }
 }
