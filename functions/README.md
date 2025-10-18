@@ -3,6 +3,24 @@
 ## 概要
 Realtime Databaseの`live_heartbeats/{userId}`への書き込みを監視し、フォロワーにプッシュ通知を送信するCloud Functions。
 
+## ファイル構成
+
+```
+functions/
+├── src/                      # TypeScriptソースコード
+│   ├── index.ts             # メイン関数（TypeScript）
+│   └── types.ts             # 型定義
+├── lib/                      # ビルド後のJavaScript（自動生成）
+│   ├── index.js
+│   ├── index.d.ts
+│   ├── types.js
+│   └── types.d.ts
+├── tsconfig.json            # TypeScript設定
+├── .eslintrc.js             # ESLint設定
+├── .prettierrc              # Prettier設定
+└── package.json             
+```
+
 ## 機能
 
 ### onHeartbeatUpdate
@@ -22,7 +40,7 @@ live_heartbeats/
   {userId}/
     bpm: number
     timestamp: number (ミリ秒)
-    lastNotificationSent: number (ミリ秒) ← 新規追加
+    lastNotificationSent: number (ミリ秒)
 ```
 
 ### Firestore
@@ -46,12 +64,12 @@ users/
 ### 1. 依存関係のインストール
 ```bash
 cd functions
-npm install
+pnpm install
 ```
 
 ### 2. Firebase CLIのインストール（未インストールの場合）
 ```bash
-npm install -g firebase-tools
+pnpm install -g firebase-tools
 ```
 
 ### 3. Firebaseプロジェクトの初期化
@@ -62,19 +80,19 @@ firebase use --add  # プロジェクトを選択
 
 ### 4. デプロイ
 ```bash
-npm run deploy
+pnpm run deploy
 ```
 
 ## ローカル開発
 
 ### エミュレータの起動
 ```bash
-npm run serve
+pnpm run serve
 ```
 
 ### ログの確認
 ```bash
-npm run logs
+pnpm run logs
 ```
 
 ## 環境変数
