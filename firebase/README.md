@@ -1,14 +1,15 @@
-# Firebase セキュリティルール
+# Firebase 設定ファイル
 
-このディレクトリには、Firebaseのセキュリティルールファイルが含まれています。
+このディレクトリには、Firebaseのセキュリティルールとインデックス定義が含まれています。
 
 ## ファイル構成
 
 ```
 firebase/
-├── database.rules.json    # Realtime Database のセキュリティルール
-├── firestore.rules        # Cloud Firestore のセキュリティルール
-└── README.md              # このファイル
+├── database.rules.json       # Realtime Database のセキュリティルール
+├── firestore.rules           # Cloud Firestore のセキュリティルール
+├── firestore.indexes.json    # Cloud Firestore のインデックス定義
+└── README.md                 # このファイル
 ```
 
 ## database.rules.json
@@ -19,6 +20,14 @@ Realtime Databaseのセキュリティルールを定義しています。主に
 
 Cloud Firestoreのセキュリティルールを定義しています。ユーザー情報とフォロー機能の管理に使用されます。
 
+## firestore.indexes.json
+
+Cloud Firestoreの複合インデックス定義を管理しています。現在定義されているインデックス：
+
+- **users コレクション**: `inviteCode` + `allowQRRegistration`
+  - QRコードによるユーザー検索クエリで使用
+  - `FirestoreUserRepository.findByInviteCode()` で必要
+
 ## デプロイ方法
 
 ### セキュリティルールのみをデプロイ
@@ -27,11 +36,17 @@ Cloud Firestoreのセキュリティルールを定義しています。ユー�
 # Firestoreルールのみ
 firebase deploy --only firestore:rules
 
+# Firestoreインデックスのみ
+firebase deploy --only firestore:indexes
+
+# Firestoreルールとインデックスを両方デプロイ
+firebase deploy --only firestore
+
 # Realtime Databaseルールのみ
 firebase deploy --only database
 
-# 両方のルールをデプロイ
-firebase deploy --only firestore:rules,database
+# すべてのルールとインデックスをデプロイ
+firebase deploy --only firestore,database
 ```
 
 ### すべてをデプロイ
