@@ -1,6 +1,7 @@
 // Views/Components/HeartbeatDetailStatusBar.swift
 // 心拍詳細画面のステータス表示コンポーネント - 振動状態、自動ロック状態、最終更新時刻を表示
 // SwiftUIベストプラクティスに従い、単一責任の原則を適用
+// モダンなグラスモルフィズムデザインを採用
 
 import SwiftUI
 
@@ -13,52 +14,189 @@ struct HeartbeatDetailStatusBar: View {
     let isSleepMode: Bool
     let heartbeat: Heartbeat?
 
-    var body: some View {
-        VStack(spacing: 8) {
-            // 振動状態表示
-            if isVibrationEnabled {
-                HStack {
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 8, height: 8)
-                        .scaleEffect(isVibrating ? 1.5 : 1.0)
-                        .animation(
-                            .easeInOut(duration: 0.5).repeatForever(),
-                            value: isVibrating
-                        )
+    @State private var pulseAnimation = false
 
-                    Text("心拍振動: \(vibrationStatus)")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+    var body: some View {
+        VStack(spacing: 12) {
+            // 振動状態表示 - モダンなカプセル型デザイン
+            if isVibrationEnabled {
+                HStack(spacing: 8) {
+                    // 心拍アイコンとパルスアニメーション
+                    ZStack {
+                        // 外側のパルス効果
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Color.red.opacity(0.6), Color.pink.opacity(0.3)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 24, height: 24)
+                            .scaleEffect(pulseAnimation ? 1.3 : 1.0)
+                            .opacity(pulseAnimation ? 0 : 0.8)
+
+                        // メインアイコン
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color.red, Color.pink],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .scaleEffect(pulseAnimation ? 1.1 : 1.0)
+                    }
+                    .onAppear {
+                        if isVibrating {
+                            withAnimation(
+                                .easeInOut(duration: 1.2)
+                                    .repeatForever(autoreverses: false)
+                            ) {
+                                pulseAnimation = true
+                            }
+                        }
+                    }
+
+                    Text(vibrationStatus)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.white, Color.white.opacity(0.9)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.15))
+                        .background(
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.3),
+                                            Color.white.opacity(0.1),
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
             }
 
             // 自動ロック無効化残り時間
             if autoLockDisabled && remainingTime > 0 && !isSleepMode {
-                HStack {
-                    Image(systemName: "lock.slash")
-                        .foregroundColor(.yellow)
-                        .font(.caption)
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.open.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.yellow, Color.orange],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
 
-                    Text("自動ロック無効: \(formatRemainingTime(remainingTime))")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                    Text("\(formatRemainingTime(remainingTime))")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.95))
                 }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.12))
+                        .background(
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
             }
 
-            // 最終更新時刻
+            // 最終更新時刻 - エレガントなタイムスタンプ表示
             if let heartbeat = heartbeat {
-                Text("Last updated: \(heartbeat.timestamp, formatter: dateFormatter)")
-                    .font(.caption)
-                    .foregroundColor(.white)
-                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.blue.opacity(0.8), Color.cyan.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+
+                    Text(relativeTimeString(from: heartbeat.timestamp))
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.95))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.12))
+                        .background(
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.25),
+                                            Color.white.opacity(0.1),
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 0.5
+                                )
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
             } else {
-                Text("No data available")
-                    .font(.caption)
-                    .foregroundColor(.white)
-                    .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.orange.opacity(0.8))
+
+                    Text("データなし")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.9))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.1))
+                        .background(
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
             }
         }
     }
@@ -67,6 +205,30 @@ struct HeartbeatDetailStatusBar: View {
         let minutes = Int(timeInterval) / 60
         let seconds = Int(timeInterval) % 60
         return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    // 相対時間を日本語で表示（"1分前"、"たった今"など）
+    private func relativeTimeString(from date: Date) -> String {
+        let now = Date()
+        let interval = now.timeIntervalSince(date)
+
+        if interval < 10 {
+            return "たった今"
+        } else if interval < 60 {
+            return "\(Int(interval))秒前"
+        } else if interval < 3600 {
+            let minutes = Int(interval / 60)
+            return "\(minutes)分前"
+        } else if interval < 86400 {
+            let hours = Int(interval / 3600)
+            return "\(hours)時間前"
+        } else {
+            // 1日以上経過している場合は日時を表示
+            let formatter = DateFormatter()
+            formatter.dateFormat = "M/d HH:mm"
+            formatter.locale = Locale(identifier: "ja_JP")
+            return formatter.string(from: date)
+        }
     }
 
     private var dateFormatter: DateFormatter {
