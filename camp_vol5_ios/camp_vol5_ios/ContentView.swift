@@ -8,28 +8,27 @@ struct ContentView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             Group {
-                let _ = print(
+                _ = print(
                     "🔥 ContentView - isLoading: \(authenticationManager.isLoading), needsUserNameInput: \(authenticationManager.needsUserNameInput), isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil), needsEmailVerification: \(authenticationManager.needsEmailVerification)"
                 )
 
                 if authenticationManager.needsUserNameInput {
                     // ユーザー名入力が必要な場合
-                    let _ = print("🔥 Showing UserNameInputView")
+                    _ = print("🔥 Showing UserNameInputView")
                     UserNameInputView(
                         selectedAuthMethod: mapAuthMethod(
                             authenticationManager.selectedAuthMethod),
                         factory: viewModelFactory
                     )
                 } else if authenticationManager.isAuthenticated
-                    && authenticationManager.currentUser != nil
-                {
+                    && authenticationManager.currentUser != nil {
                     // ログイン済みかつユーザー情報がある場合
-                    let _ = print("🔥 Showing ListHeartBeatsView")
+                    _ = print("🔥 Showing ListHeartBeatsView")
                     ListHeartBeatsView()
                 } else {
                     // 認証されていない場合、またはユーザー情報がない場合は認証画面を表示
                     // メール確認待ち状態も含む
-                    let _ = print(
+                    _ = print(
                         "🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil), needsEmailVerification: \(authenticationManager.needsEmailVerification)"
                     )
                     AuthView(
@@ -85,7 +84,7 @@ struct LoadingView: View {
             LinearGradient(
                 colors: [
                     Color(.systemBackground),
-                    Color(.systemGray6).opacity(0.3),
+                    Color(.systemGray6).opacity(0.3)
                 ],
                 startPoint: .top,
                 endPoint: .bottom

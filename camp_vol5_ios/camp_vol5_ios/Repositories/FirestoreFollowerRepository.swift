@@ -173,7 +173,7 @@ class FirestoreFollowerRepository: FollowerRepositoryProtocol {
     private func toFirestore(_ follower: Follower) -> [String: Any] {
         var dict: [String: Any] = [
             "followerId": follower.followerId,
-            "notificationEnabled": follower.notificationEnabled,
+            "notificationEnabled": follower.notificationEnabled
         ]
 
         if let fcmToken = follower.fcmToken {

@@ -77,8 +77,7 @@ struct camp_vol5_iosApp: App {
 
 // AppDelegate クラスを追加
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate,
-    MessagingDelegate
-{
+    MessagingDelegate {
     // ConnectivityManager を初期化してWatch連携を開始
     var connectivityManager = ConnectivityManager()
 

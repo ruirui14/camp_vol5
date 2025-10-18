@@ -120,7 +120,7 @@ struct ConnectionCountRow: View {
 
             Text("\(count)")
                 .font(.headline)
-                .foregroundColor(count > 0 ? .green : .secondary)
+                .foregroundColor(!isEmpty ? .green : .secondary)
         }
     }
 }

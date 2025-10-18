@@ -25,7 +25,7 @@ struct AuthView: View {
                     colors: [
                         Color(.systemIndigo).opacity(0.1),
                         Color(.systemBlue).opacity(0.05),
-                        Color(.systemBackground),
+                        Color(.systemBackground)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -45,7 +45,7 @@ struct AuthView: View {
                                         .fill(
                                             LinearGradient(
                                                 colors: [
-                                                    Color.red.opacity(0.2), Color.pink.opacity(0.1),
+                                                    Color.red.opacity(0.2), Color.pink.opacity(0.1)
                                                 ],
                                                 startPoint: .topLeading,
                                                 endPoint: .bottomTrailing
@@ -100,13 +100,11 @@ struct AuthView: View {
                                             .opacity(viewModel.animateContent ? 1.0 : 0.5)
                                     }
                                 }
-
                             }
                             .frame(height: geometry.size.height * 0.5)
 
                             // Start Without Auth Button
                             VStack(spacing: 12) {
-
                                 Button(action: {
                                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                         viewModel.signInAnonymously()

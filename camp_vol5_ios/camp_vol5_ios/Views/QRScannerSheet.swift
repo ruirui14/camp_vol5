@@ -66,7 +66,7 @@ struct QRScannerSheet: View {
                                             LinearGradient(
                                                 colors: [
                                                     Color.green.opacity(0.8),
-                                                    Color.blue.opacity(0.7),
+                                                    Color.blue.opacity(0.7)
                                                 ],
                                                 startPoint: .topLeading,
                                                 endPoint: .bottomTrailing

@@ -61,8 +61,7 @@ struct AuthenticationStatusSection: View {
                 .font(.headline)
 
                 if let firebaseUser = authenticationManager.user,
-                    let email = firebaseUser.email
-                {
+                    let email = firebaseUser.email {
                     Text(email)
                         .font(.caption)
                         .foregroundColor(.secondary)

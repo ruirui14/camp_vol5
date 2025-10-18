@@ -210,7 +210,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] (completion: Subscribers.Completion<Error>) in
-                    if case .failure(_) = completion {
+                    if case .failure = completion {
                         // ユーザーが見つからない場合、ユーザー名入力画面に遷移
                         print("🔥 User not found, requiring name input")
                         self?.needsUserNameInput = true
@@ -714,7 +714,7 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
 
     /// 現在のユーザーID
     var currentUserId: String? {
-        return Auth.auth().currentUser?.uid
+        Auth.auth().currentUser?.uid
     }
 
     /// Google認証ユーザーかどうか

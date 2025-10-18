@@ -71,7 +71,7 @@ struct EmailAuthView: View {
                 LinearGradient(
                     colors: [
                         Color(.systemBackground),
-                        Color(.systemGray6).opacity(0.1),
+                        Color(.systemGray6).opacity(0.1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -93,7 +93,7 @@ struct EmailAuthView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.blue.opacity(0.2), Color.blue.opacity(0.1),
+                                Color.blue.opacity(0.2), Color.blue.opacity(0.1)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -232,7 +232,7 @@ struct EmailAuthView: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.green.opacity(0.2), Color.green.opacity(0.1),
+                                    Color.green.opacity(0.2), Color.green.opacity(0.1)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -262,7 +262,6 @@ struct EmailAuthView: View {
 
             // フォームセクション
             VStack(spacing: 16) {
-
                 // メールアドレス入力欄
                 VStack(alignment: .leading, spacing: 8) {
                     Text("メールアドレス")
@@ -412,7 +411,6 @@ struct EmailAuthView: View {
             }
         }
     }
-
 }
 
 // MARK: - Password Reset View
@@ -450,7 +448,7 @@ struct PasswordResetView: View {
                 LinearGradient(
                     colors: [
                         Color(.systemBackground),
-                        Color(.systemGray6).opacity(0.1),
+                        Color(.systemGray6).opacity(0.1)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -469,7 +467,7 @@ struct PasswordResetView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.orange.opacity(0.2), Color.orange.opacity(0.1),
+                                Color.orange.opacity(0.2), Color.orange.opacity(0.1)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -580,7 +578,7 @@ struct PasswordResetView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.green.opacity(0.2), Color.green.opacity(0.1),
+                                Color.green.opacity(0.2), Color.green.opacity(0.1)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing

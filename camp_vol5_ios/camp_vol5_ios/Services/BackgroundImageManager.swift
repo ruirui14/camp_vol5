@@ -18,7 +18,7 @@ class BackgroundImageManager: ObservableObject {
     private let userDefaultsService = UserDefaultsImageService.shared
 
     var userIdForDebugging: String {
-        return userId
+        userId
     }
 
     init(userId: String) {

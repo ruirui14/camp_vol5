@@ -151,15 +151,15 @@ class EmailAuthViewModel: BaseViewModel {
     // MARK: - Computed Properties
 
     var isAuthenticated: Bool {
-        return authenticationManager.isAuthenticated
+        authenticationManager.isAuthenticated
     }
 
     var authModeTitle: String {
-        return isSignUp ? "アカウント作成" : "サインイン"
+        isSignUp ? "アカウント作成" : "サインイン"
     }
 
     var authModeSubtitle: String {
-        return isSignUp ? "新しいアカウントを作成します" : "既存のアカウントでログインします"
+        isSignUp ? "新しいアカウントを作成します" : "既存のアカウントでログインします"
     }
 
     var primaryButtonTitle: String {
@@ -170,7 +170,7 @@ class EmailAuthViewModel: BaseViewModel {
     }
 
     var toggleModeText: String {
-        return isSignUp ? "既存のアカウントでサインイン" : "新しいアカウントを作成"
+        isSignUp ? "既存のアカウントでサインイン" : "新しいアカウントを作成"
     }
 
     var isFormValid: Bool {

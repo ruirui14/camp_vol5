@@ -96,8 +96,7 @@ class PersistenceManager {
     }
 
     // 画像の位置とスケール情報を保存（ユーザーID別）
-    func saveImageTransform(offset: CGSize, scale: CGFloat, rotation: Double = 0.0, userId: String)
-    {
+    func saveImageTransform(offset: CGSize, scale: CGFloat, rotation: Double = 0.0, userId: String) {
         let offsetXKey = userSpecificKey(imageOffsetXKey, userId: userId)
         let offsetYKey = userSpecificKey(imageOffsetYKey, userId: userId)
         let scaleKey = userSpecificKey(imageScaleKey, userId: userId)

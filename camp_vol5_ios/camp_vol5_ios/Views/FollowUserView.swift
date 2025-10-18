@@ -313,7 +313,6 @@ struct FollowUserView: View {
                     .controlSize(.small)
                     .foregroundColor(.red)
                     .disabled(viewModel.isLoading)
-
                 } else {
                     Button("フォローする") {
                         showingFollowConfirmation = true

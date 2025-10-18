@@ -10,7 +10,7 @@ struct ImageTransform: Codable {
     var scale: CGFloat = 1.0
     var normalizedOffset: CGPoint = .zero
     var rotation: Double = 0.0
-    var backgroundColor: UIColor? = nil
+    var backgroundColor: UIColor?
 
     enum CodingKeys: String, CodingKey {
         case scale
@@ -379,7 +379,7 @@ extension UIImage {
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceShouldCacheImmediately: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceThumbnailMaxPixelSize: maxDimensionInPixels,
+                kCGImageSourceThumbnailMaxPixelSize: maxDimensionInPixels
             ] as CFDictionary
 
         guard

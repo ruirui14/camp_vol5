@@ -67,8 +67,8 @@ class WatchHeartRateService: ObservableObject {
             "type": "userInfo",
             "data": [
                 "userId": user.id,
-                "userName": user.name,
-            ],
+                "userName": user.name
+            ]
         ]
 
         if WCSession.default.isReachable {
@@ -144,6 +144,6 @@ class WatchHeartRateService: ObservableObject {
 
     // ConnectivityManager への直接アクセス（必要に応じて）
     var connectivity: ConnectivityManager {
-        return connectivityManager
+        connectivityManager
     }
 }

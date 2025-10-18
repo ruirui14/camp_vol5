@@ -131,8 +131,7 @@ struct CardBackgroundEditView: View {
 
                 // 背景色のみの場合のプレビュー
                 if viewModel.selectedImage == nil
-                    && viewModel.selectedBackgroundColor != Color.clear
-                {
+                    && viewModel.selectedBackgroundColor != Color.clear {
                     viewModel.selectedBackgroundColor
                         .mask(
                             RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
@@ -178,7 +177,7 @@ struct CardBackgroundEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.pink.opacity(0.8),
-                                    Color.purple.opacity(0.7),
+                                    Color.purple.opacity(0.7)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -207,7 +206,7 @@ struct CardBackgroundEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.yellow.opacity(0.8),
-                                    Color.orange.opacity(0.7),
+                                    Color.orange.opacity(0.7)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -242,7 +241,7 @@ struct CardBackgroundEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.blue.opacity(0.8),
-                                    Color.cyan.opacity(0.7),
+                                    Color.cyan.opacity(0.7)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing

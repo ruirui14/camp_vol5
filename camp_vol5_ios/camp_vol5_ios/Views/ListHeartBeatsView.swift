@@ -111,8 +111,7 @@ struct ListHeartBeatsView: View {
             .onReceive(viewModel.$followingUsersWithHeartbeats) { usersWithHeartbeats in
                 // フォローユーザーのデータが更新された時に背景画像を更新
                 if !usersWithHeartbeats.isEmpty
-                    && backgroundImageCoordinator.needsLoading(for: usersWithHeartbeats)
-                {
+                    && backgroundImageCoordinator.needsLoading(for: usersWithHeartbeats) {
                     backgroundImageCoordinator.loadBackgroundImages(for: usersWithHeartbeats)
                 }
             }
@@ -187,7 +186,6 @@ struct ListHeartBeatsView: View {
         .statusBarHidden(isStatusBarHidden)
         .persistentSystemOverlays(persistentSystemOverlaysVisibility)
     }
-
 }
 
 struct ListHeartBeatsView_Previews: PreviewProvider {

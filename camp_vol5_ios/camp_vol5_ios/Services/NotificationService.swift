@@ -14,7 +14,7 @@ class NotificationService: NSObject, NotificationServiceProtocol {
     private var _currentFCMToken: String?
 
     var currentFCMToken: String? {
-        return _currentFCMToken
+        _currentFCMToken
     }
 
     init(followerRepository: FollowerRepositoryProtocol) {

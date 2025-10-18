@@ -230,8 +230,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
             .store(in: &cancellables)
     }
 
-    private func loadHeartbeatsForUsers(_ users: [User]) -> AnyPublisher<[UserWithHeartbeat], Error>
-    {
+    private func loadHeartbeatsForUsers(_ users: [User]) -> AnyPublisher<[UserWithHeartbeat], Error> {
         guard !users.isEmpty else {
             return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
@@ -274,8 +273,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
     }
 
     private func sortUsers(_ users: [UserWithHeartbeat], by sortOption: SortOption)
-        -> [UserWithHeartbeat]
-    {
+        -> [UserWithHeartbeat] {
         switch sortOption {
         case .name:
             return users.sorted { $0.user.name < $1.user.name }

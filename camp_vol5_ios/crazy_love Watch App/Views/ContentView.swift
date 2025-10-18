@@ -40,7 +40,7 @@ struct ContentView: View {
                 .frame(height: 100)
                 .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: isBeating) {
                     _, isBeatingNow in
-                    return isBeatingNow
+                    isBeatingNow
                 }
 
                 VStack(spacing: 2) {

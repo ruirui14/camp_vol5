@@ -28,7 +28,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
     private var consecutiveSendSkips: Int = 0
     private let maxConsecutiveSendSkips: Int = 5
 
-    private override init() {
+    override private init() {
         super.init()
         restoreUserFromDefaults()
     }
@@ -76,7 +76,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
 
         let typesToRead: Set = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,
-            HKObjectType.workoutType(),
+            HKObjectType.workoutType()
         ]
 
         // 共有権限も要求（一部のヘルスデータには必要）
@@ -187,7 +187,6 @@ class WatchHeartRateManager: NSObject, ObservableObject {
     }
 
     private func startWorkoutSession() {
-
         guard HKHealthStore.isHealthDataAvailable() else {
             DispatchQueue.main.async {
                 self.isStarting = false
@@ -215,7 +214,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
 
             workoutSession?.startActivity(with: Date())
 
-            builder?.beginCollection(withStart: Date()) { [weak self] success, error in
+            builder?.beginCollection(withStart: Date()) { [weak self] success, _ in
                 guard let self = self else { return }
                 DispatchQueue.main.async {
                     if success {
@@ -345,7 +344,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
             "heartNum": heartRate,
             "timestamp": Date().timeIntervalSince1970 * 1000,
             "userId": user.id,
-            "isValidReading": true,
+            "isValidReading": true
         ]
         let message: [String: Any] = ["type": "heartRate", "data": heartRateData]
 
@@ -380,13 +379,13 @@ class WatchHeartRateManager: NSObject, ObservableObject {
             "timestamp": Date().timeIntervalSince1970 * 1000,
             "userId": user.id,
             "isValidReading": false,
-            "status": "disconnected",
+            "status": "disconnected"
         ]
         let message: [String: Any] = ["type": "heartRate", "data": clearData]
 
         session.transferUserInfo(message)
         if session.isReachable {
-            session.sendMessage(message, replyHandler: nil) { error in
+            session.sendMessage(message, replyHandler: nil) { _ in
             }
         }
     }
@@ -394,9 +393,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
 
 // MARK: - WCSessionDelegate & HealthKit Delegates
 extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
-    HKLiveWorkoutBuilderDelegate
-{
-
+    HKLiveWorkoutBuilderDelegate {
     func session(
         _ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
@@ -407,7 +404,6 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
     }
 
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any]) {
-
         DispatchQueue.main.async {
             self.receivedDataCount += 1
         }
@@ -493,7 +489,6 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
     }
 
     private func handleUserInfoData(_ data: [String: Any]) {
-
         guard let userId = data["userId"] as? String,
             let userName = data["userName"] as? String
         else {
@@ -506,7 +501,6 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
         )
 
         DispatchQueue.main.async {
-
             self.currentUser = user
 
             self.saveUserToDefaults(user)
@@ -522,7 +516,6 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
         _ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState,
         from fromState: HKWorkoutSessionState, date: Date
     ) {
-
         DispatchQueue.main.async {
             switch toState {
             case .running:

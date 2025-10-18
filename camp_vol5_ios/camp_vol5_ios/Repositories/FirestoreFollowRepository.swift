@@ -45,7 +45,7 @@ class FirestoreFollowRepository: FollowRepositoryProtocol {
 
             let followingData: [String: Any] = [
                 "followingId": targetUserId,
-                "createdAt": Timestamp(date: Date()),
+                "createdAt": Timestamp(date: Date())
             ]
             batch.setData(followingData, forDocument: followingRef)
 
@@ -58,7 +58,7 @@ class FirestoreFollowRepository: FollowRepositoryProtocol {
             var followerData: [String: Any] = [
                 "followerId": currentUserId,
                 "notificationEnabled": true,
-                "createdAt": Timestamp(date: Date()),
+                "createdAt": Timestamp(date: Date())
             ]
             if let fcmToken = fcmToken {
                 followerData["fcmToken"] = fcmToken

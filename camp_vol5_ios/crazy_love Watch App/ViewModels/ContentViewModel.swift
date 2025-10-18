@@ -25,7 +25,7 @@ class ContentViewModel: ObservableObject {
         // currentUserの変更を監視
         watchManager.$currentUser
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] user in
+            .sink { [weak self] _ in
             }
             .store(in: &cancellables)
     }

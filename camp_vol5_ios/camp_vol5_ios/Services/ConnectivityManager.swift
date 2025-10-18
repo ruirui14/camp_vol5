@@ -7,7 +7,6 @@ import WatchConnectivity
 
 // iPhone側でApple Watchとの通信を管理するクラス
 class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
-
     // UIに公開するプロパティ
     @Published var heartRate: Int = 0
     @Published var isReachable: Bool = false
@@ -177,9 +176,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
 
         for item in dataToProcess {
             if let data = item.userInfo["data"] as? [String: Any],
-                let userId = data["userId"] as? String
-            {
-
+                let userId = data["userId"] as? String {
                 // より新しいデータがあるかチェック
                 if let existing = latestDataByUser[userId] {
                     if item.timestamp > existing.timestamp {
@@ -288,13 +285,12 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
     }
 
     private func processHeartRateData(_ userInfo: [String: Any]) {
-
         // "heartRate"タイプのデータか確認
         guard let type = userInfo["type"] as? String,
             type == "heartRate",
             let data = userInfo["data"] as? [String: Any],
             let bpm = data["heartNum"] as? Int,
-            data["userId"] as? String != nil
+            data["userId"] is String
         else {
             return
         }
@@ -366,7 +362,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         // Firebase用のデータ構造
         let heartRateData: [String: Any] = [
             "bpm": heartNum,
-            "timestamp": timestamp,  // Watch側からのタイムスタンプ（ミリ秒単位）
+            "timestamp": timestamp  // Watch側からのタイムスタンプ（ミリ秒単位）
         ]
 
         // データベースパス: /live_heartbeats/{userId}（FirebaseHeartbeatRepositoryと同じパス）
@@ -397,15 +393,15 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             "type": "userInfo",
             "data": [
                 "userId": userId,
-                "userName": userName,
-            ],
+                "userName": userName
+            ]
         ]
 
         session.transferUserInfo(userInfo)
 
         // リーチャブルな場合は即座にも送信
         if session.isReachable {
-            session.sendMessage(userInfo, replyHandler: nil) { error in
+            session.sendMessage(userInfo, replyHandler: nil) { _ in
             }
         }
     }

@@ -47,7 +47,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                     .collection("private").document("metadata")
                     .setData([
                         "created_at": FieldValue.serverTimestamp(),
-                        "updated_at": FieldValue.serverTimestamp(),
+                        "updated_at": FieldValue.serverTimestamp()
                     ]) { metadataError in
                         if let metadataError = metadataError {
                             promise(.failure(metadataError))
@@ -195,7 +195,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             "id": user.id,
             "name": user.name,
             "inviteCode": user.inviteCode,
-            "allowQRRegistration": user.allowQRRegistration,
+            "allowQRRegistration": user.allowQRRegistration
         ]
     }
 

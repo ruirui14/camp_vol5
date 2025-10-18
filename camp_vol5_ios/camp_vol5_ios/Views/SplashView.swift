@@ -16,7 +16,6 @@ struct SplashView: View {
             RiveViewModel(fileName: "splash-logo", fit: .scaleDown).view()
                 .offset(x: offset)
                 .rotationEffect(.degrees(rotation))
-
         }
         .onAppear {
             // 振動アニメーション

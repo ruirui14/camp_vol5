@@ -89,10 +89,10 @@ class AuthViewModel: BaseViewModel {
     // MARK: - Computed Properties
 
     var isAuthenticated: Bool {
-        return authenticationManager.isAuthenticated
+        authenticationManager.isAuthenticated
     }
 
     var isGoogleLoading: Bool {
-        return authenticationManager.isLoading && selectedAuthMethod == .google
+        authenticationManager.isLoading && selectedAuthMethod == .google
     }
 }

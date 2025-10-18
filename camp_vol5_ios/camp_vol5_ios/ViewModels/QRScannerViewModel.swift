@@ -17,7 +17,7 @@ class QRScannerViewModel: NSObject, ObservableObject {
 
     // カメラセッションを取得
     var session: AVCaptureSession {
-        return captureSession
+        captureSession
     }
 
     override init() {
