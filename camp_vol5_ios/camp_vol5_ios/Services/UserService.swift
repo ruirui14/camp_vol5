@@ -52,6 +52,7 @@ class UserService: UserServiceProtocol {
             repository: FirestoreUserRepository(),
             followerRepository: followerRepository,
             followingRepository: FirestoreFollowingRepository(),
+            followRepository: FirestoreFollowRepository(),
             notificationService: notificationService
         )
     }()
@@ -59,6 +60,7 @@ class UserService: UserServiceProtocol {
     private let repository: UserRepositoryProtocol
     private let followerRepository: FollowerRepositoryProtocol
     private let followingRepository: FollowingRepositoryProtocol
+    private let followRepository: FollowRepositoryProtocol
     private let notificationService: NotificationServiceProtocol
     private let logger = FirebaseLogger.shared
 
@@ -66,11 +68,13 @@ class UserService: UserServiceProtocol {
         repository: UserRepositoryProtocol,
         followerRepository: FollowerRepositoryProtocol,
         followingRepository: FollowingRepositoryProtocol,
+        followRepository: FollowRepositoryProtocol,
         notificationService: NotificationServiceProtocol
     ) {
         self.repository = repository
         self.followerRepository = followerRepository
         self.followingRepository = followingRepository
+        self.followRepository = followRepository
         self.notificationService = notificationService
     }
 
@@ -133,43 +137,22 @@ class UserService: UserServiceProtocol {
         // FCMトークンを取得
         let fcmToken = notificationService.currentFCMToken
 
-        // 1. followingコレクションに追加（自分 → フォロー先）
-        let following = Following(followingId: targetUserId)
-        let addFollowing = followingRepository.addFollowing(
-            userId: currentUserId,
-            following: following
+        // Batch Writeでアトミックに実行（データ整合性を保証）
+        return followRepository.followUser(
+            currentUserId: currentUserId,
+            targetUserId: targetUserId,
+            fcmToken: fcmToken
         )
-
-        // 2. followersコレクションに追加（フォロー先 → 自分）
-        let follower = Follower(followerId: currentUserId, fcmToken: fcmToken)
-        let addFollower = followerRepository.addFollower(
-            userId: targetUserId,
-            follower: follower
-        )
-
-        // 全ての操作を並行実行
-        return Publishers.Zip(addFollowing, addFollower)
-            .map { _ in () }
-            .eraseToAnyPublisher()
+        .eraseToAnyPublisher()
     }
 
     func unfollowUser(currentUserId: String, targetUserId: String) -> AnyPublisher<Void, Error> {
-        // 1. followingコレクションから削除（自分 → フォロー先）
-        let removeFollowing = followingRepository.removeFollowing(
-            userId: currentUserId,
-            followingId: targetUserId
+        // Batch Writeでアトミックに実行（データ整合性を保証）
+        return followRepository.unfollowUser(
+            currentUserId: currentUserId,
+            targetUserId: targetUserId
         )
-
-        // 2. followersコレクションから削除（フォロー先 → 自分）
-        let removeFollower = followerRepository.removeFollower(
-            userId: targetUserId,
-            followerId: currentUserId
-        )
-
-        // 全ての操作を並行実行
-        return Publishers.Zip(removeFollowing, removeFollower)
-            .map { _ in () }
-            .eraseToAnyPublisher()
+        .eraseToAnyPublisher()
     }
 
     func getFollowingUsers(userId: String) -> AnyPublisher<[User], Error> {
