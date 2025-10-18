@@ -9,11 +9,11 @@ struct HeartbeatSettingsView: View {
 
     var body: some View {
         Form {
-            Section("心拍データ") {
+            Section("あなたの心拍") {
                 HeartbeatContent(viewModel: viewModel)
             }
 
-            Section("接続情報") {
+            Section(" リスナー情報") {
                 ConnectionCountRow(count: viewModel.connectionCount)
             }
         }
@@ -113,7 +113,7 @@ struct ConnectionCountRow: View {
 
     var body: some View {
         HStack {
-            Label("現在の接続数", systemImage: "person.2.fill")
+            Label("現在あなたの心拍を聞いている人数", systemImage: "person.2.fill")
                 .foregroundColor(.primary)
 
             Spacer()

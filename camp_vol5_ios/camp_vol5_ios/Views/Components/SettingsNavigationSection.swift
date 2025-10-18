@@ -60,8 +60,8 @@ struct SettingsNavigationSection: View {
             NavigationLink(destination: HeartbeatSettingsView(viewModel: viewModel)) {
                 SettingRow(
                     icon: "heart.circle",
-                    title: "自分の心拍データ",
-                    subtitle: "現在の心拍情報を確認"
+                    title: "自分のデータ",
+                    subtitle: "現在の心拍情報・同時接続者数を確認"
                 )
             }
 
