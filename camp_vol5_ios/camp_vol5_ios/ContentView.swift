@@ -6,18 +6,18 @@ struct ContentView: View {
     @State private var navigationPath = NavigationPath()
 
     var body: some View {
-        NavigationStack(path: $navigationPath) {
-            Group {
-                _ = print(
-                    """
-                    🔥 ContentView - isLoading: \(authenticationManager.isLoading), \
-                    needsUserNameInput: \(authenticationManager.needsUserNameInput), \
-                    isAuthenticated: \(authenticationManager.isAuthenticated), \
-                    currentUser: \(authenticationManager.currentUser != nil), \
-                    needsEmailVerification: \(authenticationManager.needsEmailVerification)
-                    """
-                )
+        _ = print(
+            """
+            🔥 ContentView - isLoading: \(authenticationManager.isLoading), \
+            needsUserNameInput: \(authenticationManager.needsUserNameInput), \
+            isAuthenticated: \(authenticationManager.isAuthenticated), \
+            currentUser: \(authenticationManager.currentUser != nil), \
+            needsEmailVerification: \(authenticationManager.needsEmailVerification)
+            """
+        )
 
+        return NavigationStack(path: $navigationPath) {
+            Group {
                 if authenticationManager.needsUserNameInput {
                     // ユーザー名入力が必要な場合
                     _ = print("🔥 Showing UserNameInputView")
@@ -44,7 +44,7 @@ struct ContentView: View {
                     )
                     AuthView(
                         onStartWithoutAuth: {
-                            // このクロージャは現在使用されていない（匿名サインインに置き換えられた）
+                            // このクロージャは現在使用されていない(匿名サインインに置き換えられた)
                         },
                         factory: viewModelFactory
                     )
@@ -55,7 +55,7 @@ struct ContentView: View {
             "\(authenticationManager.needsUserNameInput)-\(authenticationManager.currentUser?.id ?? "none")"
         )
         .onChange(of: authenticationManager.isAuthenticated) { _, isAuthenticated in
-            // 認証状態が失われた場合（アカウント削除やサインアウト）、NavigationStackをクリア
+            // 認証状態が失われた場合(アカウント削除やサインアウト)、NavigationStackをクリア
             if !isAuthenticated {
                 navigationPath = NavigationPath()
             }
