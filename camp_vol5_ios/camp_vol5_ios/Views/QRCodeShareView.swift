@@ -57,48 +57,48 @@ struct QRCodeShareView: View {
     var body: some View {
         GeometryReader { geometry in
             authenticatedContent(viewModel: viewModel)
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("戻る") {
-                        dismiss()
-                    }
-                    .foregroundColor(.white)
-                }
-
-                ToolbarItem(placement: .principal) {
-                    Text("招待コードを管理")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarBackButtonHidden(true)
+                .toolbarBackground(.hidden, for: .navigationBar)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("戻る") {
+                            dismiss()
+                        }
                         .foregroundColor(.white)
-                }
-            }
-            .overlay(alignment: .top) {
-                NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
-            }
-            .alert(
-                viewModel.saveAlertTitle,
-                isPresented: $viewModel.showingSaveAlert
-            ) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(viewModel.saveAlertMessage)
-            }
-            .alert(
-                "写真へのアクセス許可",
-                isPresented: $viewModel.showingPermissionAlert
-            ) {
-                Button("キャンセル", role: .cancel) {}
-                Button("設定を開く") {
-                    if let url = URL(string: UIApplication.openSettingsURLString) {
-                        UIApplication.shared.open(url)
+                    }
+
+                    ToolbarItem(placement: .principal) {
+                        Text("招待コードを管理")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
                     }
                 }
-            } message: {
-                Text("QRコードを保存するには、設定で写真へのアクセスを許可してください。")
-            }
+                .overlay(alignment: .top) {
+                    NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
+                }
+                .alert(
+                    viewModel.saveAlertTitle,
+                    isPresented: $viewModel.showingSaveAlert
+                ) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(viewModel.saveAlertMessage)
+                }
+                .alert(
+                    "写真へのアクセス許可",
+                    isPresented: $viewModel.showingPermissionAlert
+                ) {
+                    Button("キャンセル", role: .cancel) {}
+                    Button("設定を開く") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                } message: {
+                    Text("QRコードを保存するには、設定で写真へのアクセスを許可してください。")
+                }
         }
     }
 

@@ -18,7 +18,9 @@ protocol UserServiceProtocol {
     func generateNewInviteCode(for user: User) -> AnyPublisher<String, Error>
     func updateQRRegistrationSetting(for user: User, allow: Bool) -> AnyPublisher<Void, Error>
     func deleteUser(userId: String) -> AnyPublisher<Void, Error>
-    func updateFollowingNotificationSetting(currentUserId: String, targetUserId: String, enabled: Bool) -> AnyPublisher<Void, Error>
+    func updateFollowingNotificationSetting(
+        currentUserId: String, targetUserId: String, enabled: Bool
+    ) -> AnyPublisher<Void, Error>
 }
 
 // MARK: - UserService Errors

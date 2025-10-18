@@ -426,13 +426,13 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
             }
         }
     }
-    
+
     // iPhone側からのリアルタイムメッセージを受信
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         guard let type = message["type"] as? String else {
             return
         }
-        
+
         switch type {
         case "startHeartRate":
             DispatchQueue.main.async {
@@ -446,7 +446,7 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
             print("Unknown message type: \(type)")
         }
     }
-    
+
     // iPhone側からのリアルタイムメッセージを受信
     func session(
         _ session: WCSession, didReceiveMessage message: [String: Any],
@@ -456,7 +456,7 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
             replyHandler(["status": "error", "message": "Invalid message type"])
             return
         }
-        
+
         switch type {
         case "startHeartRate":
             DispatchQueue.main.async {
@@ -472,7 +472,7 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
             replyHandler(["status": "error", "message": "Unknown message type: \(type)"])
         }
     }
-    
+
     private func handleUserSelection(_ userData: [String: Any]) {
         do {
             let jsonData = try JSONSerialization.data(withJSONObject: userData)

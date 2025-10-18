@@ -816,7 +816,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
             self.notificationService.registerFCMToken(userId: userId)
                 .flatMap { [weak self] _ -> AnyPublisher<Void, Error> in
                     guard let self = self else {
-                        return Fail(error: NotificationError.serviceUnavailable).eraseToAnyPublisher()
+                        return Fail(error: NotificationError.serviceUnavailable)
+                            .eraseToAnyPublisher()
                     }
 
                     // followingコレクションからフォロー先IDを取得
@@ -845,7 +846,8 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                             // APNsトークンが未設定のエラーの場合はリトライ
                             if errorMessage.contains("No APNS token") && retryCount < 3 {
                                 print("⚠️ APNsトークン待機中... リトライ \(retryCount + 1)/3")
-                                self?.registerFCMTokenAndUpdateFollowers(userId: userId, retryCount: retryCount + 1)
+                                self?.registerFCMTokenAndUpdateFollowers(
+                                    userId: userId, retryCount: retryCount + 1)
                             } else {
                                 print("❌ FCMトークン登録エラー: \(errorMessage)")
                             }

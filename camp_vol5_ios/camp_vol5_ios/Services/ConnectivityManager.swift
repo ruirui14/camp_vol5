@@ -41,10 +41,10 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
 
         // バックグラウンドでのデータ処理タイマーを開始
         startBackgroundProcessingTimer()
-        
+
         // 心拍数タイムアウト監視を開始
         startHeartRateTimeoutMonitoring()
-        
+
         // 初期化完了を待ってユーザー情報を送信
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             self.sendCurrentUserToWatch()
@@ -263,7 +263,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             }
         }
     }
-    
+
     // リアルタイムメッセージ受信も追加
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         // 停止メッセージの処理
@@ -294,7 +294,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             type == "heartRate",
             let data = userInfo["data"] as? [String: Any],
             let bpm = data["heartNum"] as? Int,
-            let _ = data["userId"] as? String
+            data["userId"] as? String != nil
         else {
             return
         }
@@ -306,7 +306,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             }
             return
         }
-        
+
         // bpm = 0 の場合も停止として扱う
         if bpm <= 0 {
             DispatchQueue.main.async {
@@ -368,10 +368,10 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             "bpm": heartNum,
             "timestamp": timestamp,  // Watch側からのタイムスタンプ（ミリ秒単位）
         ]
-        
+
         // データベースパス: /live_heartbeats/{userId}（FirebaseHeartbeatRepositoryと同じパス）
         let heartRateRef = database.child("live_heartbeats").child(userId)
-        
+
         heartRateRef.setValue(heartRateData) { [weak self] error, _ in
             DispatchQueue.main.async {
                 if error != nil {
@@ -383,17 +383,16 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             }
         }
     }
-    
-    
+
     private func sendCurrentUserToWatch() {
         // FirebaseAuthから現在のユーザーを取得
         guard let currentUser = Auth.auth().currentUser else {
             return
         }
-        
+
         let userId = currentUser.uid
         let userName = currentUser.displayName ?? "Unknown User"
-        
+
         let userInfo: [String: Any] = [
             "type": "userInfo",
             "data": [
@@ -401,16 +400,16 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
                 "userName": userName,
             ],
         ]
-        
+
         session.transferUserInfo(userInfo)
-        
+
         // リーチャブルな場合は即座にも送信
         if session.isReachable {
             session.sendMessage(userInfo, replyHandler: nil) { error in
             }
         }
     }
-    
+
     // WCSessionがアクティブになったときに呼び出す
     func sendUserToWatchIfNeeded() {
         guard session.activationState == .activated else {
@@ -418,7 +417,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         }
         sendCurrentUserToWatch()
     }
-    
+
     deinit {
         // タイマーをクリーンアップ
         processingTimer?.invalidate()
