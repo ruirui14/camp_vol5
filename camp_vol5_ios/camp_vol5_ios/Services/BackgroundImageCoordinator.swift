@@ -48,10 +48,8 @@ class BackgroundImageCoordinator: ObservableObject {
     }
 
     func refreshFromStorage() {
-        for manager in backgroundImageManagers.values {
-            if !manager.isLoading {
-                manager.refreshFromStorage()
-            }
+        for manager in backgroundImageManagers.values where !manager.isLoading {
+            manager.refreshFromStorage()
         }
     }
 

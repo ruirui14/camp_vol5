@@ -30,8 +30,12 @@ struct FollowingUsersListView: View {
                             print(
                                 "Tapping card for user: \(userWithHeartbeat.user.name), id: \(userWithHeartbeat.user.id)"
                             )
+                            let hasImage =
+                                backgroundImageCoordinator
+                                .backgroundImageManagers[userWithHeartbeat.user.id]?
+                                .currentEditedImage != nil
                             print(
-                                "Background image for \(userWithHeartbeat.user.id): \(backgroundImageCoordinator.backgroundImageManagers[userWithHeartbeat.user.id]?.currentEditedImage != nil ? "present" : "nil")"
+                                "Background image for \(userWithHeartbeat.user.id): \(hasImage ? "present" : "nil")"
                             )
                             onUserTapped(userWithHeartbeat)
                         }

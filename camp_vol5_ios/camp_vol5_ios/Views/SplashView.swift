@@ -41,8 +41,8 @@ struct SplashView: View {
         let impactStrong = UIImpactFeedbackGenerator(style: .heavy)
         impactStrong.prepare()
 
-        for i in 0...Int(duration / interval) {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * interval) {
+        for index in 0...Int(duration / interval) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * interval) {
                 impactStrong.impactOccurred(intensity: 1.0)
             }
         }

@@ -25,7 +25,7 @@ struct AuthView: View {
                     colors: [
                         Color(.systemIndigo).opacity(0.1),
                         Color(.systemBlue).opacity(0.05),
-                        Color(.systemBackground)
+                        Color(.systemBackground),
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -45,7 +45,7 @@ struct AuthView: View {
                                         .fill(
                                             LinearGradient(
                                                 colors: [
-                                                    Color.red.opacity(0.2), Color.pink.opacity(0.1)
+                                                    Color.red.opacity(0.2), Color.pink.opacity(0.1),
                                                 ],
                                                 startPoint: .topLeading,
                                                 endPoint: .bottomTrailing
@@ -216,7 +216,11 @@ struct AuthButton: View {
     let isLoading: Bool
 
     init(
-        icon: String, title: String, subtitle: String, color: Color, isSelected: Bool = false,
+        icon: String,
+        title: String,
+        subtitle: String,
+        color: Color,
+        isSelected: Bool = false,
         isLoading: Bool = false
     ) {
         self.icon = icon

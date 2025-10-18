@@ -157,7 +157,8 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
 
 extension VibrationService {
     /// BPMカテゴリに応じた振動の強度を調整（将来の拡張用）
-    private func getVibrationIntensityForBPM(_ bpm: Int) -> UIImpactFeedbackGenerator.FeedbackStyle {
+    private func getVibrationIntensityForBPM(_ bpm: Int) -> UIImpactFeedbackGenerator.FeedbackStyle
+    {
         switch bpm {
         case 0..<60:
             return .light  // 低心拍数

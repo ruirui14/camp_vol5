@@ -67,8 +67,8 @@ class WatchHeartRateService: ObservableObject {
             "type": "userInfo",
             "data": [
                 "userId": user.id,
-                "userName": user.name
-            ]
+                "userName": user.name,
+            ],
         ]
 
         if WCSession.default.isReachable {

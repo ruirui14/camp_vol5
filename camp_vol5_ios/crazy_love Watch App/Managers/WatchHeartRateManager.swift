@@ -76,7 +76,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
 
         let typesToRead: Set = [
             HKObjectType.quantityType(forIdentifier: .heartRate)!,
-            HKObjectType.workoutType()
+            HKObjectType.workoutType(),
         ]
 
         // 共有権限も要求（一部のヘルスデータには必要）
@@ -86,7 +86,6 @@ class WatchHeartRateManager: NSObject, ObservableObject {
 
         healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) {
             success, error in
-
             DispatchQueue.main.async {
                 if let error = error {
                     self.heartRateDetectionStatus = "HealthKit権限エラー: \(error.localizedDescription)"
@@ -344,7 +343,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
             "heartNum": heartRate,
             "timestamp": Date().timeIntervalSince1970 * 1000,
             "userId": user.id,
-            "isValidReading": true
+            "isValidReading": true,
         ]
         let message: [String: Any] = ["type": "heartRate", "data": heartRateData]
 
@@ -379,7 +378,7 @@ class WatchHeartRateManager: NSObject, ObservableObject {
             "timestamp": Date().timeIntervalSince1970 * 1000,
             "userId": user.id,
             "isValidReading": false,
-            "status": "disconnected"
+            "status": "disconnected",
         ]
         let message: [String: Any] = ["type": "heartRate", "data": clearData]
 
@@ -393,9 +392,11 @@ class WatchHeartRateManager: NSObject, ObservableObject {
 
 // MARK: - WCSessionDelegate & HealthKit Delegates
 extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
-    HKLiveWorkoutBuilderDelegate {
+    HKLiveWorkoutBuilderDelegate
+{
     func session(
-        _ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState,
+        _ session: WCSession,
+        activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
         DispatchQueue.main.async {
@@ -445,7 +446,8 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
 
     // iPhone側からのリアルタイムメッセージを受信
     func session(
-        _ session: WCSession, didReceiveMessage message: [String: Any],
+        _ session: WCSession,
+        didReceiveMessage message: [String: Any],
         replyHandler: @escaping ([String: Any]) -> Void
     ) {
         guard let type = message["type"] as? String else {
@@ -513,8 +515,10 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
     }
 
     func workoutSession(
-        _ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState,
-        from fromState: HKWorkoutSessionState, date: Date
+        _ workoutSession: HKWorkoutSession,
+        didChangeTo toState: HKWorkoutSessionState,
+        from fromState: HKWorkoutSessionState,
+        date: Date
     ) {
         DispatchQueue.main.async {
             switch toState {
@@ -545,19 +549,18 @@ extension WatchHeartRateManager: WCSessionDelegate, HKWorkoutSessionDelegate,
     func workoutBuilder(
         _ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>
     ) {
-        for type in collectedTypes {
-            if type == HKObjectType.quantityType(forIdentifier: .heartRate) {
-                guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate),
-                    let statistics = workoutBuilder.statistics(for: heartRateType)
-                else {
-                    return
-                }
+        for type in collectedTypes
+        where type == HKObjectType.quantityType(forIdentifier: .heartRate) {
+            guard let heartRateType = HKObjectType.quantityType(forIdentifier: .heartRate),
+                let statistics = workoutBuilder.statistics(for: heartRateType)
+            else {
+                return
+            }
 
-                if let mostRecentQuantity = statistics.mostRecentQuantity() {
-                    let heartRateUnit = HKUnit(from: "count/min")
-                    let heartRate = Int(mostRecentQuantity.doubleValue(for: heartRateUnit))
-                    updateHeartRate(heartRate)
-                }
+            if let mostRecentQuantity = statistics.mostRecentQuantity() {
+                let heartRateUnit = HKUnit(from: "count/min")
+                let heartRate = Int(mostRecentQuantity.doubleValue(for: heartRateUnit))
+                updateHeartRate(heartRate)
             }
         }
     }

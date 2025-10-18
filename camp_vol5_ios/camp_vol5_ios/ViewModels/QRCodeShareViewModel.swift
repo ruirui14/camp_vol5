@@ -30,7 +30,8 @@ class QRCodeShareViewModel: BaseViewModel {
 
         // 初期化時に既存のinviteCodeがある場合は設定
         if let currentUser = authenticationManager.currentUser,
-            !currentUser.inviteCode.isEmpty {
+            !currentUser.inviteCode.isEmpty
+        {
             inviteCode = currentUser.inviteCode
             userName = currentUser.name
             allowQRRegistration = currentUser.allowQRRegistration
@@ -41,7 +42,8 @@ class QRCodeShareViewModel: BaseViewModel {
             // 少し待ってからinviteCodeがない場合は新規生成
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 if let currentUser = self.authenticationManager.currentUser,
-                    currentUser.inviteCode.isEmpty {
+                    currentUser.inviteCode.isEmpty
+                {
                     self.generateNewInviteCode()
                 }
             }
@@ -261,7 +263,7 @@ class QRCodeShareViewModel: BaseViewModel {
                 let colorSpace = CGColorSpaceCreateDeviceRGB()
                 let colors = [
                     UIColor(Color.main).cgColor,
-                    UIColor(Color.accent).cgColor
+                    UIColor(Color.accent).cgColor,
                 ]
                 let gradient = CGGradient(
                     colorsSpace: colorSpace, colors: colors as CFArray, locations: [0.0, 1.0]

@@ -43,11 +43,14 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                 }
 
                 // タイムスタンプをprivate/metadataに保存
-                self.db.collection("users").document(userId)
-                    .collection("private").document("metadata")
+                self.db
+                    .collection("users")
+                    .document(userId)
+                    .collection("private")
+                    .document("metadata")
                     .setData([
                         "created_at": FieldValue.serverTimestamp(),
-                        "updated_at": FieldValue.serverTimestamp()
+                        "updated_at": FieldValue.serverTimestamp(),
                     ]) { metadataError in
                         if let metadataError = metadataError {
                             promise(.failure(metadataError))
@@ -98,8 +101,11 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                 }
 
                 // private/metadataのupdated_atを更新
-                self.db.collection("users").document(user.id)
-                    .collection("private").document("metadata")
+                self.db
+                    .collection("users")
+                    .document(user.id)
+                    .collection("private")
+                    .document("metadata")
                     .updateData([
                         "updated_at": FieldValue.serverTimestamp()
                     ]) { metadataError in
@@ -195,7 +201,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             "id": user.id,
             "name": user.name,
             "inviteCode": user.inviteCode,
-            "allowQRRegistration": user.allowQRRegistration
+            "allowQRRegistration": user.allowQRRegistration,
         ]
     }
 

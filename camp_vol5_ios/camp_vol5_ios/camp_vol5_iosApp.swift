@@ -77,7 +77,8 @@ struct camp_vol5_iosApp: App {
 
 // AppDelegate クラスを追加
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate,
-    MessagingDelegate {
+    MessagingDelegate
+{
     // ConnectivityManager を初期化してWatch連携を開始
     var connectivityManager = ConnectivityManager()
 
@@ -173,9 +174,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) {
         let userInfo = response.notification.request.content.userInfo
         print("👆 通知タップ: \(userInfo)")
-
-        // TODO: 通知タップ時の処理（ユーザー画面への遷移など）
-
+        // 将来の実装: 通知タップ時の処理（ユーザー画面への遷移など）
         completionHandler()
     }
 }

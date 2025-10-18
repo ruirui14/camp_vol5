@@ -236,8 +236,11 @@ struct HeartbeatDetailView: View {
 
                     print("Saving image transform for user: \(userIdParams)")
                     persistenceManager.saveImageTransform(
-                        offset: imageOffset, scale: imageScale, rotation: imageRotation,
-                        userId: userIdParams)
+                        offset: imageOffset,
+                        scale: imageScale,
+                        rotation: imageRotation,
+                        userId: userIdParams
+                    )
 
                     showingImageEditor = false
                     print("=== End HeartbeatDetailView onApply ===")
@@ -294,7 +297,10 @@ struct HeartbeatDetailView: View {
         // ハートのサイズを読み込み
         heartSize = persistenceManager.loadHeartSize(userId: userIdParams)
         print(
-            "Loaded data - offset: \(transform.offset), scale: \(transform.scale), rotation: \(transform.rotation), heartOffset: \(heartPosition), heartSize: \(heartSize)"
+            """
+            Loaded data - offset: \(transform.offset), scale: \(transform.scale), rotation: \(transform.rotation), \
+            heartOffset: \(heartPosition), heartSize: \(heartSize)
+            """
         )
         print("=== End loadPersistedData ===")
     }

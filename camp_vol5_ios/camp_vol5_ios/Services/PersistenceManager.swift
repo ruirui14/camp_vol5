@@ -96,7 +96,8 @@ class PersistenceManager {
     }
 
     // 画像の位置とスケール情報を保存（ユーザーID別）
-    func saveImageTransform(offset: CGSize, scale: CGFloat, rotation: Double = 0.0, userId: String) {
+    func saveImageTransform(offset: CGSize, scale: CGFloat, rotation: Double = 0.0, userId: String)
+    {
         let offsetXKey = userSpecificKey(imageOffsetXKey, userId: userId)
         let offsetYKey = userSpecificKey(imageOffsetYKey, userId: userId)
         let scaleKey = userSpecificKey(imageScaleKey, userId: userId)
@@ -161,9 +162,9 @@ class PersistenceManager {
         let heartOffsetXKey = userSpecificKey(self.heartOffsetXKey, userId: userId)
         let heartOffsetYKey = userSpecificKey(self.heartOffsetYKey, userId: userId)
 
-        let x = userDefaults.double(forKey: heartOffsetXKey)
-        let y = userDefaults.double(forKey: heartOffsetYKey)
-        return CGSize(width: x, height: y)
+        let offsetX = userDefaults.double(forKey: heartOffsetXKey)
+        let offsetY = userDefaults.double(forKey: heartOffsetYKey)
+        return CGSize(width: offsetX, height: offsetY)
     }
 
     // MARK: - Heart Size Management

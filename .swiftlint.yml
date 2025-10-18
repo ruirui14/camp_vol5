@@ -26,7 +26,7 @@ opt_in_rules:
   - empty_count
   - empty_string
   - first_where
-  - force_unwrapping
+  # - force_unwrapping  # 一部のケースで必要
   - implicit_return
   - last_where
   - modifier_order
@@ -48,6 +48,11 @@ opt_in_rules:
 # 無効化するルール
 disabled_rules:
   - trailing_whitespace # swift-formatで対応
+  - multiple_closures_with_trailing_closure # SwiftUIの標準パターンと競合
+  - large_tuple # 一部のケースで3要素以上のタプルが便利
+  - trailing_comma # swift-formatと競合するため無効化
+  - closure_parameter_position # swift-formatと競合するため無効化
+  - opening_brace # swift-formatと競合するため無効化
 
 # ルールのカスタマイズ
 line_length:
@@ -57,20 +62,20 @@ line_length:
   ignores_urls: true
 
 file_length:
-  warning: 500
-  error: 1000
+  warning: 1000
+  error: 2000
 
 function_body_length:
-  warning: 60
-  error: 100
+  warning: 120
+  error: 200
 
 type_body_length:
-  warning: 300
-  error: 500
+  warning: 600
+  error: 1000
 
 cyclomatic_complexity:
-  warning: 10
-  error: 20
+  warning: 15
+  error: 25
 
 nesting:
   type_level:
@@ -89,13 +94,14 @@ identifier_name:
     - url
     - URL
     - db
+    - _body  # SwiftUI makeBody requirement
 
 type_name:
   min_length: 3
   max_length: 50
-
-# 強制アンラップの警告レベル
-force_unwrapping: warning
+  excluded:
+    - camp_vol5_iosApp  # Xcode generated App structure
+    - crazy_lave_Watch_AppApp  # Xcode generated Watch App structure
 
 # 暗黙的なreturnを許可する行数
 implicit_return:

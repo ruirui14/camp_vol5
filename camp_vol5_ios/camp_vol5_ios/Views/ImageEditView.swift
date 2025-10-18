@@ -194,7 +194,9 @@ struct ImageEditView: View {
 
                         // 画像の変形情報を直接保存（回転も含む）
                         persistenceManager.saveImageTransform(
-                            offset: tempOffset, scale: tempScale, rotation: tempRotation,
+                            offset: tempOffset,
+                            scale: tempScale,
+                            rotation: tempRotation,
                             userId: userId
                         )
 
@@ -279,7 +281,7 @@ struct ImageEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.pink.opacity(0.8),
-                                    Color.purple.opacity(0.7)
+                                    Color.purple.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -310,7 +312,7 @@ struct ImageEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.red.opacity(0.8),
-                                    Color.orange.opacity(0.7)
+                                    Color.orange.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -341,7 +343,7 @@ struct ImageEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.blue.opacity(0.8),
-                                    Color.cyan.opacity(0.7)
+                                    Color.cyan.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -373,7 +375,7 @@ struct ImageEditView: View {
                                 LinearGradient(
                                     colors: [
                                         Color.yellow.opacity(0.8),
-                                        Color.orange.opacity(0.7)
+                                        Color.orange.opacity(0.7),
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -458,7 +460,7 @@ struct ColorPaletteView: View {
 
     private let colors: [Color] = [
         .clear, .red, .orange, .yellow, .green, .mint, .teal, .cyan,
-        .blue, .indigo, .purple, .pink, .brown, .gray, .black, .white
+        .blue, .indigo, .purple, .pink, .brown, .gray, .black, .white,
     ]
 
     var body: some View {
@@ -479,7 +481,8 @@ struct ColorPaletteView: View {
                                 .fill(
                                     color == .clear
                                         ? LinearGradient(
-                                            colors: [.main, .accent], startPoint: .topLeading,
+                                            colors: [.main, .accent],
+                                            startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )
                                         : LinearGradient(

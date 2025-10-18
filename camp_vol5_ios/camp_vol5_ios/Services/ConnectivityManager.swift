@@ -176,7 +176,8 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
 
         for item in dataToProcess {
             if let data = item.userInfo["data"] as? [String: Any],
-                let userId = data["userId"] as? String {
+                let userId = data["userId"] as? String
+            {
                 // より新しいデータがあるかチェック
                 if let existing = latestDataByUser[userId] {
                     if item.timestamp > existing.timestamp {
@@ -197,7 +198,8 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
     // MARK: - WCSessionDelegate
 
     func session(
-        _ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState,
+        _ session: WCSession,
+        activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
         DispatchQueue.main.async {
@@ -362,7 +364,7 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         // Firebase用のデータ構造
         let heartRateData: [String: Any] = [
             "bpm": heartNum,
-            "timestamp": timestamp  // Watch側からのタイムスタンプ（ミリ秒単位）
+            "timestamp": timestamp,  // Watch側からのタイムスタンプ（ミリ秒単位）
         ]
 
         // データベースパス: /live_heartbeats/{userId}（FirebaseHeartbeatRepositoryと同じパス）
@@ -393,8 +395,8 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             "type": "userInfo",
             "data": [
                 "userId": userId,
-                "userName": userName
-            ]
+                "userName": userName,
+            ],
         ]
 
         session.transferUserInfo(userInfo)

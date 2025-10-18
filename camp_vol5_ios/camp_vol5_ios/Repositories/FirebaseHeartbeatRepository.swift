@@ -82,7 +82,7 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
 
         let data: [String: Any] = [
             "bpm": bpm,
-            "timestamp": timestampMillis
+            "timestamp": timestampMillis,
         ]
 
         ref.setValue(data) { error, _ in

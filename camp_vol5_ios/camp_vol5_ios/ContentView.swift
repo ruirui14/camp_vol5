@@ -9,7 +9,13 @@ struct ContentView: View {
         NavigationStack(path: $navigationPath) {
             Group {
                 _ = print(
-                    "🔥 ContentView - isLoading: \(authenticationManager.isLoading), needsUserNameInput: \(authenticationManager.needsUserNameInput), isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil), needsEmailVerification: \(authenticationManager.needsEmailVerification)"
+                    """
+                    🔥 ContentView - isLoading: \(authenticationManager.isLoading), \
+                    needsUserNameInput: \(authenticationManager.needsUserNameInput), \
+                    isAuthenticated: \(authenticationManager.isAuthenticated), \
+                    currentUser: \(authenticationManager.currentUser != nil), \
+                    needsEmailVerification: \(authenticationManager.needsEmailVerification)
+                    """
                 )
 
                 if authenticationManager.needsUserNameInput {
@@ -21,7 +27,8 @@ struct ContentView: View {
                         factory: viewModelFactory
                     )
                 } else if authenticationManager.isAuthenticated
-                    && authenticationManager.currentUser != nil {
+                    && authenticationManager.currentUser != nil
+                {
                     // ログイン済みかつユーザー情報がある場合
                     _ = print("🔥 Showing ListHeartBeatsView")
                     ListHeartBeatsView()
@@ -29,7 +36,11 @@ struct ContentView: View {
                     // 認証されていない場合、またはユーザー情報がない場合は認証画面を表示
                     // メール確認待ち状態も含む
                     _ = print(
-                        "🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), currentUser: \(authenticationManager.currentUser != nil), needsEmailVerification: \(authenticationManager.needsEmailVerification)"
+                        """
+                        🔥 Showing AuthView - isAuthenticated: \(authenticationManager.isAuthenticated), \
+                        currentUser: \(authenticationManager.currentUser != nil), \
+                        needsEmailVerification: \(authenticationManager.needsEmailVerification)
+                        """
                     )
                     AuthView(
                         onStartWithoutAuth: {
@@ -84,7 +95,7 @@ struct LoadingView: View {
             LinearGradient(
                 colors: [
                     Color(.systemBackground),
-                    Color(.systemGray6).opacity(0.3)
+                    Color(.systemGray6).opacity(0.3),
                 ],
                 startPoint: .top,
                 endPoint: .bottom

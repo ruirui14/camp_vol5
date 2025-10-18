@@ -25,8 +25,11 @@ struct UserHeartbeatCard: View {
         } else {
             self._viewModel = StateObject(
                 wrappedValue: UserHeartbeatCardViewModel(
-                    customBackgroundImage: customBackgroundImage, displayName: displayName,
-                    displayBPM: displayBPM))
+                    customBackgroundImage: customBackgroundImage,
+                    displayName: displayName,
+                    displayBPM: displayBPM
+                )
+            )
         }
     }
 
@@ -67,8 +70,10 @@ struct UserHeartbeatCard: View {
                         Text(viewModel.displayBPM)
                             .font(
                                 .system(
-                                    size: CardConstants.heartFontSize, weight: .heavy,
-                                    design: .rounded)
+                                    size: CardConstants.heartFontSize,
+                                    weight: .heavy,
+                                    design: .rounded
+                                )
                             )
                             .foregroundColor(.white)
                             .lineLimit(1)

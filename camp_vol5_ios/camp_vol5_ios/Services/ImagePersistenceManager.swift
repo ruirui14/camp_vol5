@@ -20,7 +20,9 @@ struct ImageTransform: Codable {
     }
 
     init(
-        scale: CGFloat = 1.0, normalizedOffset: CGPoint = .zero, rotation: Double = 0.0,
+        scale: CGFloat = 1.0,
+        normalizedOffset: CGPoint = .zero,
+        rotation: Double = 0.0,
         backgroundColor: UIColor? = nil
     ) {
         self.scale = scale
@@ -379,7 +381,7 @@ extension UIImage {
                 kCGImageSourceCreateThumbnailFromImageAlways: true,
                 kCGImageSourceShouldCacheImmediately: true,
                 kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceThumbnailMaxPixelSize: maxDimensionInPixels
+                kCGImageSourceThumbnailMaxPixelSize: maxDimensionInPixels,
             ] as CFDictionary
 
         guard

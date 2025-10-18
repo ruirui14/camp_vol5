@@ -35,7 +35,7 @@ struct HeartbeatData: Codable {
     func toDictionary() -> [String: Any] {
         return [
             "bpm": bpm,
-            "timestamp": timestamp
+            "timestamp": timestamp,
         ]
     }
 }

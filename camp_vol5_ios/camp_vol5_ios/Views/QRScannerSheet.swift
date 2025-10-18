@@ -45,37 +45,40 @@ struct QRScannerSheet: View {
                             .shadow(color: .black, radius: 2)
 
                         if authenticationManager.isAuthenticated {
-                            Button(action: {
-                                print("📱 [QRScannerSheet] QRコード表示ボタンタップ")
-                                navigateToQRShare = true
-                            }) {
-                                VStack(spacing: 8) {
-                                    Image(systemName: "qrcode")
-                                        .foregroundColor(.white)
-                                        .font(.title3)
-                                    Text("QRコードを表示")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundColor(.white)
+                            Button(
+                                action: {
+                                    print("📱 [QRScannerSheet] QRコード表示ボタンタップ")
+                                    navigateToQRShare = true
+                                },
+                                label: {
+                                    VStack(spacing: 8) {
+                                        Image(systemName: "qrcode")
+                                            .foregroundColor(.white)
+                                            .font(.title3)
+                                        Text("QRコードを表示")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundColor(.white)
+                                    }
+                                    .frame(minWidth: 60)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 10)
                                 }
-                                .frame(minWidth: 60)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color.green.opacity(0.8),
-                                                    Color.blue.opacity(0.7)
-                                                ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
+                            )
+                            .background(
+                                RoundedRectangle(cornerRadius: 25)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.green.opacity(0.8),
+                                                Color.blue.opacity(0.7),
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
                                         )
-                                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                                )
-                            }
+                                    )
+                                    .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
+                                    .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                            )
                         } else {
                             Text("Google認証後に自分のQRコードが利用可能")
                                 .font(.caption)

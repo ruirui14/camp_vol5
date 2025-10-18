@@ -131,7 +131,8 @@ struct CardBackgroundEditView: View {
 
                 // 背景色のみの場合のプレビュー
                 if viewModel.selectedImage == nil
-                    && viewModel.selectedBackgroundColor != Color.clear {
+                    && viewModel.selectedBackgroundColor != Color.clear
+                {
                     viewModel.selectedBackgroundColor
                         .mask(
                             RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
@@ -157,36 +158,39 @@ struct CardBackgroundEditView: View {
 
     private var controlButtons: some View {
         HStack(alignment: .top, spacing: 20) {
-            Button(action: {
-                viewModel.showingPhotoPicker = true
-            }) {
-                VStack(spacing: 8) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                    Text("写真を選択")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.white)
+            Button(
+                action: {
+                    viewModel.showingPhotoPicker = true
+                },
+                label: {
+                    VStack(spacing: 8) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .foregroundColor(.white)
+                            .font(.title3)
+                        Text("写真を選択")
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(minWidth: 50)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
                 }
-                .frame(minWidth: 50)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.pink.opacity(0.8),
-                                    Color.purple.opacity(0.7)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 25)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.pink.opacity(0.8),
+                                Color.purple.opacity(0.7),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                )
-            }
+                    )
+                    .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
+                    .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+            )
 
             ZStack {
                 VStack(spacing: 8) {
@@ -206,7 +210,7 @@ struct CardBackgroundEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.yellow.opacity(0.8),
-                                    Color.orange.opacity(0.7)
+                                    Color.orange.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -241,7 +245,7 @@ struct CardBackgroundEditView: View {
                             LinearGradient(
                                 colors: [
                                     Color.blue.opacity(0.8),
-                                    Color.cyan.opacity(0.7)
+                                    Color.cyan.opacity(0.7),
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing

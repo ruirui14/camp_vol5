@@ -81,7 +81,10 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     init() {
         print("🔥 AuthenticationManager init started")
         print(
-            "🔥 Initial state - isLoading: \(isLoading), needsUserNameInput: \(needsUserNameInput), isAuthenticated: \(isAuthenticated)"
+            """
+            🔥 Initial state - isLoading: \(isLoading), needsUserNameInput: \(needsUserNameInput), \
+            isAuthenticated: \(isAuthenticated)
+            """
         )
         setupAuthStateListener()
         // 初期化時に現在の認証状態をチェック（遅延実行でFirebase初期化完了を待つ）
@@ -128,7 +131,10 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
         // 認証状態確定後のローディング終了
         isLoading = false
         print(
-            "🔥 Final state - isLoading: \(isLoading), needsUserNameInput: \(needsUserNameInput), isAuthenticated: \(isAuthenticated), currentUser: \(currentUser != nil)"
+            """
+            🔥 Final state - isLoading: \(isLoading), needsUserNameInput: \(needsUserNameInput), \
+            isAuthenticated: \(isAuthenticated), currentUser: \(currentUser != nil)
+            """
         )
     }
 

@@ -80,16 +80,22 @@ class UserNameInputViewModel: BaseViewModel {
         if name.isEmpty {
             handleError(
                 NSError(
-                    domain: "UserNameInputViewModel", code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "表示名を入力してください"]))
+                    domain: "UserNameInputViewModel",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "表示名を入力してください"]
+                )
+            )
             return false
         }
 
         if name.count > 20 {
             handleError(
                 NSError(
-                    domain: "UserNameInputViewModel", code: -1,
-                    userInfo: [NSLocalizedDescriptionKey: "表示名は20文字以内で入力してください"]))
+                    domain: "UserNameInputViewModel",
+                    code: -1,
+                    userInfo: [NSLocalizedDescriptionKey: "表示名は20文字以内で入力してください"]
+                )
+            )
             return false
         }
 
@@ -100,7 +106,8 @@ class UserNameInputViewModel: BaseViewModel {
         if !isAnonymousUser {
             // Google/Email認証の場合、既存の表示名を初期値として設定
             if let displayName = authenticationManager.user?.displayName,
-                !displayName.isEmpty {
+                !displayName.isEmpty
+            {
                 userName = displayName
             } else {
                 // Firestoreから既存のユーザー情報を取得して表示名を設定
@@ -192,8 +199,11 @@ class UserNameInputViewModel: BaseViewModel {
     private func handleSaveError(_ message: String) {
         handleError(
             NSError(
-                domain: "UserNameInputViewModel", code: -1,
-                userInfo: [NSLocalizedDescriptionKey: message]))
+                domain: "UserNameInputViewModel",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: message]
+            )
+        )
     }
 
     // MARK: - Computed Properties

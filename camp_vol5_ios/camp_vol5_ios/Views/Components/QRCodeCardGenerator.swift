@@ -100,7 +100,7 @@ class QRCodeCardGenerator {
             let nameText = "❤️ \(name)" as NSString
             let nameAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 45, weight: .semibold),
-                .foregroundColor: UIColor.darkGray
+                .foregroundColor: UIColor.darkGray,
             ]
             let nameSize = nameText.size(withAttributes: nameAttributes)
             let nameRect = CGRect(
@@ -127,7 +127,7 @@ class QRCodeCardGenerator {
             UIColor(red: 254.0 / 255.0, green: 185.0 / 255.0, blue: 191.0 / 255.0, alpha: 1.0)
                 .cgColor,  // #FEB9BF
             UIColor(red: 249.0 / 255.0, green: 147.0 / 255.0, blue: 158.0 / 255.0, alpha: 1.0)
-                .cgColor  // #F9939E
+                .cgColor,  // #F9939E
         ]
         let locations: [CGFloat] = [0.0473, 0.6575, 1.0]
         let gradient = CGGradient(
@@ -170,7 +170,7 @@ class QRCodeCardGenerator {
             // 下部のハート（右端から固定距離）
             (CGPoint(x: canvasSize.width - 160, y: canvasSize.height - 150), 35, -15),  // 左下
             (CGPoint(x: canvasSize.width - 110, y: canvasSize.height - 190), 55, +8),  // 中央
-            (CGPoint(x: canvasSize.width - 60, y: canvasSize.height - 150), 40, +8)  // 右下
+            (CGPoint(x: canvasSize.width - 60, y: canvasSize.height - 150), 40, +8),  // 右下
         ]
 
         for (center, size, angle) in hearts {
