@@ -35,12 +35,26 @@ class FirestoreUserRepository: UserRepositoryProtocol {
 
             let firestoreData = self.toFirestore(user)
 
+            // メインのユーザードキュメントを作成
             self.db.collection("users").document(userId).setData(firestoreData) { error in
                 if let error = error {
                     promise(.failure(error))
-                } else {
-                    promise(.success(user))
+                    return
                 }
+
+                // タイムスタンプをprivate/metadataに保存
+                self.db.collection("users").document(userId)
+                    .collection("private").document("metadata")
+                    .setData([
+                        "created_at": FieldValue.serverTimestamp(),
+                        "updated_at": FieldValue.serverTimestamp()
+                    ]) { metadataError in
+                        if let metadataError = metadataError {
+                            promise(.failure(metadataError))
+                        } else {
+                            promise(.success(user))
+                        }
+                    }
             }
         }
         .eraseToAnyPublisher()
@@ -74,15 +88,27 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                 return
             }
 
-            var updateData = self.toFirestore(user)
-            updateData["updatedAt"] = Timestamp(date: Date())
+            let updateData = self.toFirestore(user)
 
+            // メインのユーザードキュメントを更新
             self.db.collection("users").document(user.id).updateData(updateData) { error in
                 if let error = error {
                     promise(.failure(error))
-                } else {
-                    promise(.success(()))
+                    return
                 }
+
+                // private/metadataのupdated_atを更新
+                self.db.collection("users").document(user.id)
+                    .collection("private").document("metadata")
+                    .updateData([
+                        "updated_at": FieldValue.serverTimestamp()
+                    ]) { metadataError in
+                        if let metadataError = metadataError {
+                            promise(.failure(metadataError))
+                        } else {
+                            promise(.success(()))
+                        }
+                    }
             }
         }
         .eraseToAnyPublisher()
@@ -163,23 +189,14 @@ class FirestoreUserRepository: UserRepositoryProtocol {
     // MARK: - Private: Data Transformation
 
     /// UserをFirestoreデータに変換
+    /// 注意: createdAtとupdatedAtはprivate/metadataに別途保存されるため、ここには含めない
     private func toFirestore(_ user: User) -> [String: Any] {
-        var dict: [String: Any] = [
+        return [
             "id": user.id,
             "name": user.name,
             "inviteCode": user.inviteCode,
             "allowQRRegistration": user.allowQRRegistration,
         ]
-
-        if let createdAt = user.createdAt {
-            dict["createdAt"] = Timestamp(date: createdAt)
-        }
-
-        if let updatedAt = user.updatedAt {
-            dict["updatedAt"] = Timestamp(date: updatedAt)
-        }
-
-        return dict
     }
 
     /// FirestoreデータをUserに変換
