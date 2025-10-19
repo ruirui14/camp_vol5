@@ -13,6 +13,17 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // ユーザーデータのバリデーション
+    function isValidUserData() {
+      return request.resource.data.keys().hasAll(['name', 'inviteCode', 'allowQRRegistration'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 50
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.matches('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+        && request.resource.data.allowQRRegistration is bool;
+    }
+
     // デフォルトルール: すべて拒否
     match /{document=**} {
       allow read, write: if false;
@@ -22,7 +33,8 @@ service cloud.firestore {
     // ユーザードキュメント直下は誰でも読み取り可能、書き込みは本人のみ
     match /users/{userId} {
       allow read: if true;
-      allow write: if isUserAuthenticated(userId);
+      allow create: if isUserAuthenticated(userId) && isValidUserData();
+      allow update: if isUserAuthenticated(userId) && isValidUserData();
 
       // private サブコレクション: 本人のみアクセス可能
       match /private/{docId} {
