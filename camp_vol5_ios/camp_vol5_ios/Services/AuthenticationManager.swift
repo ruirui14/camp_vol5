@@ -9,6 +9,7 @@ import Combine
 import CryptoKit
 import Firebase
 import FirebaseAuth
+import FirebasePerformance
 import Foundation
 import GoogleSignIn
 
@@ -268,15 +269,19 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
 
     /// Googleサインイン
     func signInWithGoogle() {
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.AuthTrace.googleSignIn)
+
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
             let window = windowScene.windows.first,
             let rootViewController = window.rootViewController
         else {
+            PerformanceMonitor.shared.stopTrace(trace)
             errorMessage = "アプリの初期化エラーが発生しました"
             return
         }
 
         guard let clientID = FirebaseApp.app()?.options.clientID else {
+            PerformanceMonitor.shared.stopTrace(trace)
             errorMessage = "Google認証の設定エラーです"
             return
         }
@@ -291,6 +296,7 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
         GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController) {
             [weak self] result, error in
             DispatchQueue.main.async {
+                PerformanceMonitor.shared.stopTrace(trace)
                 self?.isLoading = false
 
                 if let error = error {
@@ -349,6 +355,8 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
 
     /// サインアウト
     func signOut() {
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.AuthTrace.signOut)
+
         do {
             // Firebase Sign Out
             try Auth.auth().signOut()
@@ -357,7 +365,9 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
             GIDSignIn.sharedInstance.signOut()
 
             currentUser = nil
+            PerformanceMonitor.shared.stopTrace(trace)
         } catch {
+            PerformanceMonitor.shared.stopTrace(trace)
             errorMessage = "サインアウトに失敗しました: \(error.localizedJapaneseDescription)"
         }
     }
@@ -600,11 +610,13 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
             return
         }
 
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.AuthTrace.signIn)
         isLoading = true
         errorMessage = nil
 
         Auth.auth().signIn(withEmail: email, password: password) { [weak self] authResult, error in
             DispatchQueue.main.async {
+                PerformanceMonitor.shared.stopTrace(trace)
                 self?.isLoading = false
 
                 if let error = error {
@@ -651,12 +663,14 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
             return
         }
 
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.AuthTrace.signUp)
         isLoading = true
         errorMessage = nil
 
         Auth.auth().createUser(withEmail: email, password: password) {
             [weak self] authResult, error in
             DispatchQueue.main.async {
+                PerformanceMonitor.shared.stopTrace(trace)
                 self?.isLoading = false
 
                 if let error = error {
@@ -733,11 +747,13 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
 
     /// 匿名でサインイン
     func signInAnonymously() {
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.AuthTrace.signIn)
         isLoading = true
         errorMessage = nil
 
         Auth.auth().signInAnonymously { [weak self] authResult, error in
             DispatchQueue.main.async {
+                PerformanceMonitor.shared.stopTrace(trace)
                 self?.isLoading = false
 
                 if let error = error {

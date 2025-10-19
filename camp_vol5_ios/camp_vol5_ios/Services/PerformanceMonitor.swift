@@ -31,6 +31,11 @@ class PerformanceMonitor {
         case fetchFollowingUsers = "data_fetch_following_users"
         case createUser = "data_create_user"
         case updateUser = "data_update_user"
+        case deleteUser = "data_delete_user"
+        case findUserByInviteCode = "data_find_user_by_invite_code"
+        case fetchMultipleUsers = "data_fetch_multiple_users"
+        case subscribeHeartbeat = "data_subscribe_heartbeat"
+        case saveHeartRate = "data_save_heart_rate"
     }
 
     /// UI関連のトレース名
@@ -38,6 +43,10 @@ class PerformanceMonitor {
         case screenLoad = "ui_screen_load"
         case imageLoad = "ui_image_load"
         case qrCodeGeneration = "ui_qr_code_generation"
+        case loadHeartbeatList = "ui_load_heartbeat_list"
+        case loadHeartbeatDetail = "ui_load_heartbeat_detail"
+        case loadFollowingUsers = "ui_load_following_users"
+        case imageProcessing = "ui_image_processing"
     }
 
     // MARK: - Trace Management

@@ -3,6 +3,7 @@
 // ソート機能、データ取得、認証状態管理を責務として持つ
 
 import Combine
+import FirebasePerformance
 import Foundation
 
 enum SortOption: String, CaseIterable {
@@ -213,7 +214,11 @@ class ListHeartBeatsViewModel: BaseViewModel {
     }
 
     func loadFollowingUsersWithHeartbeats() {
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.UITrace.loadHeartbeatList)
+
         guard let currentUser = authenticationManager.currentUser else {
+            PerformanceMonitor.shared.stopTrace(trace)
             setLoading(false)
             return
         }
@@ -227,6 +232,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
             }
             .handleErrors(on: self, defaultValue: [])
             .sink { [weak self] usersWithHeartbeats in
+                PerformanceMonitor.shared.stopTrace(trace)
                 self?.handleLoadSuccess(usersWithHeartbeats)
             }
             .store(in: &cancellables)

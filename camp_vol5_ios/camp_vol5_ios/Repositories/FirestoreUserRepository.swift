@@ -5,6 +5,7 @@
 import Combine
 import Firebase
 import FirebaseFirestore
+import FirebasePerformance
 import Foundation
 
 /// FirestoreベースのUserRepository実装
@@ -18,8 +19,11 @@ class FirestoreUserRepository: UserRepositoryProtocol {
     // MARK: - Public Methods
 
     func create(userId: String, name: String) -> AnyPublisher<User, Error> {
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.DataTrace.createUser)
+
         return Future { [weak self] promise in
             guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
                 promise(.failure(RepositoryError.serviceUnavailable))
                 return
             }
@@ -38,6 +42,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             // メインのユーザードキュメントを作成
             self.db.collection("users").document(userId).setData(firestoreData) { error in
                 if let error = error {
+                    PerformanceMonitor.shared.stopTrace(trace)
                     promise(.failure(error))
                     return
                 }
@@ -52,6 +57,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                         "created_at": FieldValue.serverTimestamp(),
                         "updated_at": FieldValue.serverTimestamp(),
                     ]) { metadataError in
+                        PerformanceMonitor.shared.stopTrace(trace)
                         if let metadataError = metadataError {
                             promise(.failure(metadataError))
                         } else {
@@ -64,13 +70,17 @@ class FirestoreUserRepository: UserRepositoryProtocol {
     }
 
     func fetch(userId: String) -> AnyPublisher<User?, Error> {
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.DataTrace.fetchUser)
+
         return Future { [weak self] promise in
             guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
                 promise(.failure(RepositoryError.serviceUnavailable))
                 return
             }
 
             self.db.collection("users").document(userId).getDocument { snapshot, error in
+                PerformanceMonitor.shared.stopTrace(trace)
                 if let error = error {
                     promise(.failure(error))
                 } else if let data = snapshot?.data() {
@@ -85,8 +95,11 @@ class FirestoreUserRepository: UserRepositoryProtocol {
     }
 
     func update(_ user: User) -> AnyPublisher<Void, Error> {
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.DataTrace.updateUser)
+
         return Future { [weak self] promise in
             guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
                 promise(.failure(RepositoryError.serviceUnavailable))
                 return
             }
@@ -96,6 +109,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             // メインのユーザードキュメントを更新
             self.db.collection("users").document(user.id).updateData(updateData) { error in
                 if let error = error {
+                    PerformanceMonitor.shared.stopTrace(trace)
                     promise(.failure(error))
                     return
                 }
@@ -109,6 +123,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                     .updateData([
                         "updated_at": FieldValue.serverTimestamp()
                     ]) { metadataError in
+                        PerformanceMonitor.shared.stopTrace(trace)
                         if let metadataError = metadataError {
                             promise(.failure(metadataError))
                         } else {
@@ -121,13 +136,17 @@ class FirestoreUserRepository: UserRepositoryProtocol {
     }
 
     func delete(userId: String) -> AnyPublisher<Void, Error> {
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.DataTrace.deleteUser)
+
         return Future { [weak self] promise in
             guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
                 promise(.failure(RepositoryError.serviceUnavailable))
                 return
             }
 
             self.db.collection("users").document(userId).delete { error in
+                PerformanceMonitor.shared.stopTrace(trace)
                 if let error = error {
                     promise(.failure(error))
                 } else {
@@ -139,8 +158,12 @@ class FirestoreUserRepository: UserRepositoryProtocol {
     }
 
     func findByInviteCode(_ inviteCode: String) -> AnyPublisher<User?, Error> {
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.DataTrace.findUserByInviteCode)
+
         return Future { [weak self] promise in
             guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
                 promise(.failure(RepositoryError.serviceUnavailable))
                 return
             }
@@ -149,6 +172,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                 .whereField("inviteCode", isEqualTo: inviteCode)
                 .whereField("allowQRRegistration", isEqualTo: true)
                 .getDocuments { snapshot, error in
+                    PerformanceMonitor.shared.stopTrace(trace)
                     if let error = error {
                         promise(.failure(error))
                     } else if let document = snapshot?.documents.first {
@@ -168,8 +192,12 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.DataTrace.fetchMultipleUsers)
+
         return Future { [weak self] promise in
             guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
                 promise(.failure(RepositoryError.serviceUnavailable))
                 return
             }
@@ -177,6 +205,7 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             self.db.collection("users")
                 .whereField("id", in: userIds)
                 .getDocuments { snapshot, error in
+                    PerformanceMonitor.shared.stopTrace(trace)
                     if let error = error {
                         promise(.failure(error))
                     } else if let documents = snapshot?.documents {

@@ -5,6 +5,7 @@
 import Combine
 import Firebase
 import FirebaseDatabase
+import FirebasePerformance
 import Foundation
 
 /// Firebase Realtime DatabaseベースのHeartbeatRepository実装
@@ -20,8 +21,12 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
     // MARK: - Public Methods
 
     func fetchOnce(userId: String) -> AnyPublisher<Heartbeat?, Error> {
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.DataTrace.fetchHeartbeat)
+
         return Future { [weak self] promise in
             guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
                 promise(.failure(RepositoryError.serviceUnavailable))
                 return
             }
@@ -29,6 +34,7 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
             let ref = self.database.reference().child("live_heartbeats").child(userId)
 
             ref.observeSingleEvent(of: .value) { snapshot in
+                PerformanceMonitor.shared.stopTrace(trace)
                 if let data = snapshot.value as? [String: Any] {
                     let heartbeat = self.fromRealtimeDatabase(data, userId: userId)
                     promise(.success(heartbeat))
@@ -36,6 +42,7 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
                     promise(.success(nil))
                 }
             } withCancel: { error in
+                PerformanceMonitor.shared.stopTrace(trace)
                 promise(.failure(error))
             }
         }
@@ -75,6 +82,8 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
     }
 
     func saveHeartRate(userId: String, bpm: Int) {
+        let trace = PerformanceMonitor.shared.startTrace(PerformanceMonitor.DataTrace.saveHeartRate)
+
         let ref = database.reference().child("live_heartbeats").child(userId)
 
         // タイムスタンプをミリ秒単位に変換
@@ -86,6 +95,7 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
         ]
 
         ref.setValue(data) { error, _ in
+            PerformanceMonitor.shared.stopTrace(trace)
             if let error = error {
                 print("❌ Firebase保存エラー: \(error.localizedDescription)")
             } else {

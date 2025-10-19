@@ -1,5 +1,6 @@
 import Combine
 import CoreImage.CIFilterBuiltins
+import FirebasePerformance
 import Foundation
 import Photos
 import SwiftUI
@@ -196,6 +197,8 @@ class QRCodeShareViewModel: BaseViewModel {
             return
         }
 
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.UITrace.qrCodeGeneration)
         isGeneratingQRCode = true
 
         // 現在のユーザー名を取得（Task内で使用）
@@ -203,7 +206,10 @@ class QRCodeShareViewModel: BaseViewModel {
 
         // バックグラウンドスレッドでQRコード生成
         Task.detached(priority: .userInitiated) { [weak self, cardGenerator] in
-            guard let self = self else { return }
+            guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
+                return
+            }
 
             print("🔄 QRCodeShareViewModel generateQRCodeAsync: generating QR code in background")
             // cardGeneratorはアクター隔離されていないため、直接呼び出し可能
@@ -212,6 +218,7 @@ class QRCodeShareViewModel: BaseViewModel {
 
             // メインスレッドで結果を更新
             await MainActor.run {
+                PerformanceMonitor.shared.stopTrace(trace)
                 print("✅ QRCodeShareViewModel generateQRCodeAsync: QR code generation completed")
                 self.qrCodeImage = image
                 self.qrCodeCache[inviteCode] = image  // キャッシュに保存

@@ -3,6 +3,7 @@
 // Viewからデータ取得、監視制御、エラーハンドリングを分離
 
 import Combine
+import FirebasePerformance
 import Foundation
 import SwiftUI
 
@@ -84,10 +85,14 @@ class HeartbeatDetailViewModel: ObservableObject {
     // MARK: - Private Methods
 
     private func loadUserInfo() {
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.UITrace.loadHeartbeatDetail)
+
         userService.getUser(uid: userId)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
+                    PerformanceMonitor.shared.stopTrace(trace)
                     if case let .failure(error) = completion {
                         self?.handleError(error)
                     }
