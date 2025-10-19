@@ -8,7 +8,13 @@
 export interface HeartbeatData {
     bpm: number;
     timestamp: number;
-    lastNotificationSent?: number;
+    connections?: number;
+}
+/**
+ * Notification Triggerデータ型（最小限）
+ */
+export interface NotificationTriggerData {
+    t: number;
 }
 /**
  * Firestoreのフォロワー情報型

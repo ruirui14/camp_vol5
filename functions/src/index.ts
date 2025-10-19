@@ -28,6 +28,9 @@ import type {
 // Firebase初期化
 admin.initializeApp();
 
+// 古いハートビートデータの自動削除機能をエクスポート
+export { cleanupOldHeartbeats } from "./cleanupOldHeartbeats";
+
 const db = admin.firestore();
 
 // 定数定義
