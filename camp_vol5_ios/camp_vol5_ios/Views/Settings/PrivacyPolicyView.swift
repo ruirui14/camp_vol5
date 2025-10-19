@@ -1,11 +1,11 @@
-// Views/Settings/TermsOfServiceView.swift
-// 利用規約画面 - MarkdownUIを使って利用規約を表示
-// Resources/TERMS_OF_SERVICE.mdファイルから内容を読み込んでMarkdown形式で表示
+// Views/Settings/PrivacyPolicyView.swift
+// プライバシーポリシー画面 - MarkdownUIを使ってプライバシーポリシーを表示
+// Resources/PRIVACY_POLICY.mdファイルから内容を読み込んでMarkdown形式で表示
 
 import MarkdownUI
 import SwiftUI
 
-struct TermsOfServiceView: View {
+struct PrivacyPolicyView: View {
     @State private var markdownContent: String = ""
     @State private var isLoading: Bool = true
     @State private var errorMessage: String?
@@ -32,7 +32,7 @@ struct TermsOfServiceView: View {
                     .padding()
             }
         }
-        .navigationTitle("利用規約")
+        .navigationTitle("プライバシーポリシー")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             loadMarkdown()
@@ -40,7 +40,7 @@ struct TermsOfServiceView: View {
     }
 
     private func loadMarkdown() {
-        guard let url = Bundle.main.url(forResource: "TERMS_OF_SERVICE", withExtension: "md") else {
+        guard let url = Bundle.main.url(forResource: "PRIVACY_POLICY", withExtension: "md") else {
             errorMessage = "ファイルが見つかりません"
             isLoading = false
             return
@@ -58,6 +58,6 @@ struct TermsOfServiceView: View {
 
 #Preview {
     NavigationStack {
-        TermsOfServiceView()
+        PrivacyPolicyView()
     }
 }

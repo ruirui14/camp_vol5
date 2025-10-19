@@ -81,6 +81,22 @@ struct SettingsNavigationSection: View {
                 )
             }
 
+            NavigationLink(destination: PrivacyPolicyView()) {
+                SettingRow(
+                    icon: "lock.doc",
+                    title: "プライバシーポリシー",
+                    subtitle: "個人情報の取り扱いについて"
+                )
+            }
+
+            NavigationLink(destination: LicensesView()) {
+                SettingRow(
+                    icon: "doc.plaintext",
+                    title: "Licenses",
+                    subtitle: "使用しているライブラリのライセンス"
+                )
+            }
+
             Button {
                 if let url = URL(
                     string:

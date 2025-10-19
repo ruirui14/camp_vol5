@@ -17,6 +17,7 @@
 		D10CD8F12E07363B00689536 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD8F02E07363B00689536 /* GoogleSignInSwift */; };
 		D1634E1E2E9D689F007D524F /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = D1634E1D2E9D689F007D524F /* FirebasePerformance */; };
 		D1B0E9522EA1321D006F3BDC /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = D1B0E9512EA1321D006F3BDC /* FirebaseMessaging */; };
+		D1B0F4CE2EA4BF9F006F3BDC /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = D1B0F4CD2EA4BF9F006F3BDC /* MarkdownUI */; };
 		D1EE64462E9CDFC20033CF92 /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = D1EE64452E9CDFC20033CF92 /* FirebaseAppCheck */; };
 		D1EE64482E9CDFC20033CF92 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = D1EE64472E9CDFC20033CF92 /* FirebaseCrashlytics */; };
 /* End PBXBuildFile section */
@@ -78,6 +79,7 @@
 				D1EE64462E9CDFC20033CF92 /* FirebaseAppCheck in Frameworks */,
 				D10CD8EF2E07363B00689536 /* GoogleSignIn in Frameworks */,
 				D1634E1E2E9D689F007D524F /* FirebasePerformance in Frameworks */,
+				D1B0F4CE2EA4BF9F006F3BDC /* MarkdownUI in Frameworks */,
 				D10CD88B2E04843900689536 /* FirebaseAnalytics in Frameworks */,
 				7238E5512E93F53300C7D704 /* RiveRuntime in Frameworks */,
 				D10CD88D2E04843900689536 /* FirebaseAuth in Frameworks */,
@@ -165,6 +167,7 @@
 				D1EE64472E9CDFC20033CF92 /* FirebaseCrashlytics */,
 				D1634E1D2E9D689F007D524F /* FirebasePerformance */,
 				D1B0E9512EA1321D006F3BDC /* FirebaseMessaging */,
+				D1B0F4CD2EA4BF9F006F3BDC /* MarkdownUI */,
 			);
 			productName = camp_vol5_ios;
 			productReference = B3D475C62E0406710045AD7A /* camp_vol5_ios.app */;
@@ -201,6 +204,7 @@
 				D10CD8892E04843900689536 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				D10CD8ED2E07363B00689536 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				7238E54F2E93F53300C7D704 /* XCRemoteSwiftPackageReference "rive-ios" */,
+				D1B0F4CC2EA4BF9F006F3BDC /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B3D475C72E0406710045AD7A /* Products */;
@@ -576,6 +580,14 @@
 				minimumVersion = 8.0.0;
 			};
 		};
+		D1B0F4CC2EA4BF9F006F3BDC /* XCRemoteSwiftPackageReference "swift-markdown-ui" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/swift-markdown-ui";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -623,6 +635,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D10CD8892E04843900689536 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseMessaging;
+		};
+		D1B0F4CD2EA4BF9F006F3BDC /* MarkdownUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D1B0F4CC2EA4BF9F006F3BDC /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
+			productName = MarkdownUI;
 		};
 		D1EE64452E9CDFC20033CF92 /* FirebaseAppCheck */ = {
 			isa = XCSwiftPackageProductDependency;
