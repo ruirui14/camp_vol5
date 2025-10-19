@@ -38,15 +38,15 @@ class PersistenceManager {
         print("=== PersistenceManager.saveBackgroundImage ===")
         print("UserId: \(userId)")
 
-        guard let data = image.jpegData(compressionQuality: 0.8) else {
-            print("ERROR: Failed to convert image to JPEG data")
+        guard let data = image.pngData() else {
+            print("ERROR: Failed to convert image to PNG data")
             return
         }
 
         if let documentsPath = FileManager.default.urls(
             for: .documentDirectory, in: .userDomainMask
         ).first {
-            let fileName = "backgroundImage_\(userId).jpg"
+            let fileName = "backgroundImage_\(userId).png"
             let imagePath = documentsPath.appendingPathComponent(fileName)
             print("Saving image to: \(imagePath.path)")
 
@@ -76,7 +76,7 @@ class PersistenceManager {
             return nil
         }
 
-        let fileName = "backgroundImage_\(userId).jpg"
+        let fileName = "backgroundImage_\(userId).png"
         let imagePath = documentsPath.appendingPathComponent(fileName)
         print("Looking for image at: \(imagePath.path)")
 
@@ -134,7 +134,7 @@ class PersistenceManager {
         if let documentsPath = FileManager.default.urls(
             for: .documentDirectory, in: .userDomainMask
         ).first {
-            let imagePath = documentsPath.appendingPathComponent("backgroundImage.jpg")
+            let imagePath = documentsPath.appendingPathComponent("backgroundImage.png")
             try? FileManager.default.removeItem(at: imagePath)
         }
 

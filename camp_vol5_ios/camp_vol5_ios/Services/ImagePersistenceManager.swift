@@ -172,8 +172,8 @@ class ImagePersistenceService {
         FileManager.ensureBackgroundImagesDirectory()
 
         let timestamp = UUID().uuidString
-        let originalFileName = "\(userId)_original_\(timestamp).jpg"
-        let editedFileName = "\(userId)_edited_\(timestamp).jpg"
+        let originalFileName = "\(userId)_original_\(timestamp).png"
+        let editedFileName = "\(userId)_edited_\(timestamp).png"
 
         guard saveImage(originalImage, fileName: originalFileName) else {
             return nil
@@ -205,7 +205,7 @@ class ImagePersistenceService {
     private func saveImage(_ image: UIImage, fileName: String) -> Bool {
         let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
 
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+        guard let imageData = image.pngData() else {
             return false
         }
 
@@ -367,7 +367,7 @@ extension FileManager {
 
 extension UIImage {
     func downsample(to pointSize: CGSize, scale: CGFloat = UIScreen.main.scale) -> UIImage? {
-        guard let data = jpegData(compressionQuality: 0.9) else { return nil }
+        guard let data = pngData() else { return nil }
 
         let imageSourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let imageSource = CGImageSourceCreateWithData(data as CFData, imageSourceOptions)
