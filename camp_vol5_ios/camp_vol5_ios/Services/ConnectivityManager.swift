@@ -17,6 +17,23 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
     // Viewに鼓動を通知するための仕組み
     let heartbeatSubject = PassthroughSubject<Void, Never>()
 
+    // ★ 最後に保存したBPM値を記録（BPM変化検出用）
+    private var lastSavedBpm: Int?
+
+    // ★ 最後に通知を送信した時刻（1時間レート制限用）
+    private var lastNotificationSentTime: Date? {
+        didSet {
+            // UserDefaultsに永続化（アプリ再起動時の復元用）
+            if let time = lastNotificationSentTime {
+                UserDefaults.standard.set(
+                    time.timeIntervalSince1970, forKey: "lastNotificationSentTime")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "lastNotificationSentTime")
+            }
+        }
+    }
+    private let notificationCooldownInterval: TimeInterval = 3600.0  // 1時間
+
     private var session: WCSession
     private var database: DatabaseReference
     private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
@@ -32,6 +49,15 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
         self.session = session
         self.database = Database.database().reference()
         super.init()
+
+        // UserDefaultsから最後の通知時刻を復元
+        if let timestamp = UserDefaults.standard.object(forKey: "lastNotificationSentTime")
+            as? TimeInterval
+        {
+            self.lastNotificationSentTime = Date(timeIntervalSince1970: timestamp)
+            print("📅 最後の通知時刻を復元: \(Date(timeIntervalSince1970: timestamp))")
+        }
+
         self.session.delegate = self
         session.activate()
 
@@ -77,7 +103,9 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
     private func resetHeartRate() {
         heartRate = 0
         lastHeartRateReceived = nil
-        print("心拍数リセット完了")
+        // ★ BPM記録もリセット（次回の変化を確実に検出するため）
+        lastSavedBpm = nil
+        print("💫 心拍数リセット完了")
     }
 
     private func updateHeartRateReceived() {
@@ -356,28 +384,71 @@ class ConnectivityManager: NSObject, WCSessionDelegate, ObservableObject {
             return
         }
 
-        // 現在の日時をISO8601形式で取得
-        let now = Date()
-        let formatter = ISO8601DateFormatter()
-        let isoTimestamp = formatter.string(from: now)
+        // ★ BPMが変化していない場合はFirebaseへの送信をスキップ
+        if let lastBpm = lastSavedBpm, lastBpm == heartNum {
+            print("💡 BPM変化なし（\(heartNum) bpm）- Firebase送信スキップ")
+            return
+        }
 
-        // Firebase用のデータ構造
+        let now = Date()
+
+        // Firebase用のデータ構造（リアルタイム表示用）
         let heartRateData: [String: Any] = [
             "bpm": heartNum,
             "timestamp": timestamp,  // Watch側からのタイムスタンプ（ミリ秒単位）
         ]
 
-        // データベースパス: /live_heartbeats/{userId}（FirebaseHeartbeatRepositoryと同じパス）
+        // データベースパス: /live_heartbeats/{userId}（リアルタイム表示用）
         let heartRateRef = database.child("live_heartbeats").child(userId)
 
         heartRateRef.setValue(heartRateData) { [weak self] error, _ in
             DispatchQueue.main.async {
                 if error != nil {
-                    print("Firebase更新エラー")
+                    print("❌ Firebase更新エラー")
                 } else {
+                    print("✅ Firebase送信成功: \(heartNum) bpm")
                     self?.lastSavedTimestamp = now
                     self?.saveCount += 1
+                    // ★ 送信成功時に最後のBPM値を記録
+                    self?.lastSavedBpm = heartNum
                 }
+            }
+        }
+
+        // ★ 通知送信チェック（1時間経過 & BPM変化）
+        checkAndTriggerNotification(userId: userId, bpm: heartNum, timestamp: timestamp)
+    }
+
+    /// 1時間経過チェック & 通知トリガー
+    private func checkAndTriggerNotification(userId: String, bpm: Int, timestamp: Double) {
+        let now = Date()
+
+        // 1時間経過チェック
+        if let lastNotificationTime = lastNotificationSentTime {
+            let timeSinceLastNotification = now.timeIntervalSince(lastNotificationTime)
+
+            if timeSinceLastNotification < notificationCooldownInterval {
+                let remainingTime = Int(notificationCooldownInterval - timeSinceLastNotification)
+                print("⏳ 通知クールダウン中: あと\(remainingTime)秒")
+                return
+            }
+        }
+
+        // ★ 1時間経過している（または初回）→ 通知トリガーパスに最小限のデータを書き込み
+        // Functions側でlive_heartbeatsから実際のBPMを取得する
+        let notificationTriggerData: [String: Any] = [
+            "t": now.timeIntervalSince1970 * 1000  // トリガー時刻のみ
+        ]
+
+        let triggerRef = database.child("notification_triggers").child(userId)
+
+        triggerRef.setValue(notificationTriggerData) { [weak self] error, _ in
+            if error != nil {
+                print("❌ 通知トリガー送信エラー")
+            } else {
+                print("🔔 通知トリガー送信成功")
+                // ★ 最後の通知時刻を記録（UserDefaultsに自動保存される）
+                self?.lastNotificationSentTime = now
             }
         }
     }

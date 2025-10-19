@@ -14,8 +14,10 @@
 import { onValueWritten } from "firebase-functions/v2/database";
 import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v2";
+// import { Redis } from "@upstash/redis"; // ★ 不要（iOS側でレート制限管理）
 import type {
   HeartbeatData,
+  NotificationTriggerData,
   FollowerData,
   UserData,
   NotificationPayload,
@@ -27,11 +29,16 @@ import type {
 admin.initializeApp();
 
 const db = admin.firestore();
-const rtdb = admin.database();
 
 // 定数定義
-const NOTIFICATION_COOLDOWN_MS = 300000; // 5分 (5 * 60 * 1000)
 const REGION = "asia-southeast1" as const;
+
+// ★ Upstash Redisは不要（iOS側でレート制限管理）
+// const redis = new Redis({
+//   url: process.env["UPSTASH_REDIS_REST_URL"] || "",
+//   token: process.env["UPSTASH_REDIS_REST_TOKEN"] || "",
+// });
+// const NOTIFICATION_COOLDOWN_SECONDS = 3600;
 
 /**
  * 型ガード: FCMトークン配列が空でないことを確認
@@ -41,51 +48,60 @@ function isNonEmptyArray<T>(arr: T[]): arr is [T, ...T[]] {
 }
 
 /**
- * BPM書き込み時のトリガー関数
- * live_heartbeats/{userId} への書き込みを監視
+ * 通知トリガー時のCloud Function
+ * notification_triggers/{userId} への書き込みを監視
+ *
+ * iOS側で以下をチェック済み：
+ * - BPM変化検知
+ * - 1時間経過チェック（レート制限）
+ *
+ * この関数の処理：
+ * 1. トリガーを検知
+ * 2. live_heartbeats から最新のBPMを取得
+ * 3. 通知送信
+ * 4. クリーンアップ
  */
-export const onHeartbeatUpdate = onValueWritten(
+export const onNotificationTrigger = onValueWritten(
   {
-    ref: "/live_heartbeats/{userId}",
+    ref: "/notification_triggers/{userId}",
     region: REGION,
   },
   async (event): Promise<FunctionResult> => {
     const { userId } = event.params;
-    const beforeSnapshot = event.data.before;
     const afterSnapshot = event.data.after;
 
     // データが削除された場合は処理をスキップ
     if (!afterSnapshot.exists()) {
-      logger.info(`Heartbeat deleted for user: ${userId}`);
+      logger.info(`Notification trigger deleted for user: ${userId}`);
       return null;
     }
 
-    const beforeData = beforeSnapshot.val() as HeartbeatData | null;
-    const afterData = afterSnapshot.val() as HeartbeatData;
-    const { bpm } = afterData;
-
-    // BPMが変更されていない場合はスキップ（connectionsの変更などを無視）
-    if (beforeData?.bpm === afterData.bpm) {
-      logger.info(
-        `BPM unchanged for user ${userId} (connections or other field changed), skipping notification`
-      );
-      return null;
-    }
-
-    logger.info(`BPM update detected for user ${userId}: ${bpm} bpm`);
+    const triggerData = afterSnapshot.val() as NotificationTriggerData;
+    logger.info(`Notification trigger received for user ${userId} at ${triggerData.t}`);
 
     try {
-      // レート制限チェック
-      const canSendNotification = await checkNotificationCooldown(userId);
-      if (!canSendNotification) {
-        logger.info(`Notification cooldown active for user: ${userId}`);
+      // live_heartbeatsから最新のBPMを取得
+      const heartbeatSnapshot = await admin
+        .database()
+        .ref(`live_heartbeats/${userId}`)
+        .once("value");
+
+      if (!heartbeatSnapshot.exists()) {
+        logger.warn(`No heartbeat data found for user: ${userId}`);
+        await afterSnapshot.ref.remove();
         return null;
       }
+
+      const heartbeatData = heartbeatSnapshot.val() as HeartbeatData;
+      const { bpm } = heartbeatData;
+
+      logger.info(`Retrieved heartbeat data for user ${userId}: ${bpm} bpm`);
 
       // フォロワーを取得
       const followers = await getFollowers(userId);
       if (followers.length === 0) {
         logger.info(`No followers found for user: ${userId}`);
+        await afterSnapshot.ref.remove();
         return null;
       }
 
@@ -93,10 +109,11 @@ export const onHeartbeatUpdate = onValueWritten(
       const user = await getUser(userId);
       if (!user) {
         logger.warn(`User not found: ${userId}`);
+        await afterSnapshot.ref.remove();
         return null;
       }
 
-      // 通知送信対象のトークンを収集（filterでnullish値を除外）
+      // 通知送信対象のトークンを収集
       const tokens = followers
         .filter(
           (follower): follower is FollowerData & { fcmToken: string } =>
@@ -106,44 +123,47 @@ export const onHeartbeatUpdate = onValueWritten(
 
       if (!isNonEmptyArray(tokens)) {
         logger.info(`No valid FCM tokens found for user: ${userId}`);
+        await afterSnapshot.ref.remove();
         return null;
       }
 
       // プッシュ通知を送信
       await sendNotifications(tokens, user.name, bpm);
 
-      // 最終通知送信時刻を更新
-      await updateLastNotificationSent(userId);
-
       logger.info(`Successfully sent ${tokens.length} notifications for user: ${userId}`);
+
+      // 処理完了後、トリガーデータを削除（クリーンアップ）
+      await afterSnapshot.ref.remove();
+      logger.info(`Cleaned up notification trigger for user: ${userId}`);
+
       return null;
     } catch (error) {
-      logger.error(`Error processing heartbeat for user ${userId}:`, error);
+      logger.error(`Error processing notification trigger for user ${userId}:`, error);
+      // エラー時もクリーンアップを試みる
+      try {
+        await afterSnapshot.ref.remove();
+      } catch (cleanupError) {
+        logger.error(`Failed to cleanup trigger for user ${userId}:`, cleanupError);
+      }
       return null;
     }
   }
 );
 
-/**
- * 通知のレート制限をチェック
- * @param userId - ユーザーID
- * @returns 通知を送信可能か
- */
-async function checkNotificationCooldown(userId: string): Promise<boolean> {
-  const ref = rtdb.ref(`live_heartbeats/${userId}/lastNotificationSent`);
-  const snapshot = await ref.once("value");
-  const lastSent = snapshot.val() as number | null;
-
-  // 初回送信の場合はtrue
-  if (!lastSent) {
-    return true;
-  }
-
-  const now = Date.now();
-  const timeSinceLastSent = now - lastSent;
-
-  return timeSinceLastSent >= NOTIFICATION_COOLDOWN_MS;
-}
+// ★ iOS側でレート制限管理するため、この関数は不要
+// /**
+//  * 通知のレート制限をチェック（Redis版）
+//  */
+// async function checkNotificationCooldown(userId: string): Promise<boolean> {
+//   try {
+//     const key = `notification_cooldown:${userId}`;
+//     const exists = await redis.exists(key);
+//     return exists === 0;
+//   } catch (error) {
+//     logger.error(`Redis error in checkNotificationCooldown for user ${userId}:`, error);
+//     return false;
+//   }
+// }
 
 /**
  * フォロワー一覧を取得
@@ -216,11 +236,17 @@ async function sendNotifications(
   }
 }
 
-/**
- * 最終通知送信時刻を更新
- * @param userId - ユーザーID
- */
-async function updateLastNotificationSent(userId: string): Promise<void> {
-  const ref = rtdb.ref(`live_heartbeats/${userId}/lastNotificationSent`);
-  await ref.set(Date.now());
-}
+// ★ iOS側でレート制限管理するため、この関数は不要
+// /**
+//  * 最終通知送信時刻を更新（Redis版）
+//  */
+// async function updateLastNotificationSent(userId: string): Promise<void> {
+//   try {
+//     const key = `notification_cooldown:${userId}`;
+//     const now = Date.now();
+//     await redis.setex(key, NOTIFICATION_COOLDOWN_SECONDS, now.toString());
+//     logger.info(`Notification cooldown set for user ${userId}: ${NOTIFICATION_COOLDOWN_SECONDS}s (1 hour)`);
+//   } catch (error) {
+//     logger.error(`Redis error in updateLastNotificationSent for user ${userId}:`, error);
+//   }
+// }

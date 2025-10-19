@@ -19,6 +19,15 @@
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10000"
         }
       }
+    },
+    "notification_triggers": {
+      "$userID": {
+        ".write": "$userID === auth.uid",
+        ".read": false,
+        "t": {
+          ".validate": "newData.isNumber()"
+        }
+      }
     }
   }
 }
