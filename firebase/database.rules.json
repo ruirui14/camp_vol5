@@ -5,6 +5,7 @@
     "live_heartbeats": {
       "$userID": {
         ".read": "auth != null",
+        ".write": "false",
         "bpm": {
           ".write": "$userID === auth.uid",
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 300"
