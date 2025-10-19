@@ -24,7 +24,8 @@ class FirebaseConfig {
         settings.isPersistenceEnabled = true
 
         // キャッシュサイズを無制限に設定
-        settings.cacheSettings = PersistentCacheSettings(sizeBytes: FirestoreCacheSizeUnlimited)
+        settings.cacheSettings = PersistentCacheSettings(
+            sizeBytes: FirestoreCacheSizeUnlimited as NSNumber)
 
         db.settings = settings
     }
