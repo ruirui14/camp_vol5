@@ -1,3 +1,8 @@
+// AuthView.swift
+// ログイン画面 - モダンでキュートなデザイン
+// 心拍数をテーマにしたアニメーションと、グラスモーフィズム効果を採用
+
+import AuthenticationServices
 import SwiftUI
 
 struct AuthView: View {
@@ -20,172 +25,126 @@ struct AuthView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // Background Gradient
-                LinearGradient(
-                    colors: [
-                        Color(.systemIndigo).opacity(0.1),
-                        Color(.systemBlue).opacity(0.05),
-                        Color(.systemBackground),
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // デフォルトのグラデーション背景
+                MainAccentGradient()
+
+                // 浮遊する円（背景装飾）
+                FloatingCircles()
 
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Hero Section
-                        VStack(spacing: 24) {
-                            Spacer(minLength: 60)
+                        Spacer(minLength: 40)
 
-                            // App Icon and Animation
-                            VStack(spacing: 16) {
-                                ZStack {
-                                    Circle()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [
-                                                    Color.red.opacity(0.2), Color.pink.opacity(0.1),
-                                                ],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
+                        // ヒーローセクション
+                        VStack(spacing: 32) {
+                            // ハートアニメーション
+                            HeartbeatAnimation(isAnimating: viewModel.animateContent)
+                                .frame(width: 140, height: 140)
+
+                            // タイトル
+                            VStack(spacing: 12) {
+                                Text("狂愛")
+                                    .font(.system(size: 48, weight: .heavy, design: .rounded))
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [.white, Color.white.opacity(0.9)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
                                         )
-                                        .frame(width: 120, height: 120)
-                                        .scaleEffect(viewModel.animateContent ? 1.0 : 0.8)
-                                        .animation(
-                                            .easeInOut(duration: 0.8).repeatForever(
-                                                autoreverses: true),
-                                            value: viewModel.animateContent
-                                        )
+                                    )
+                                    .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
+                                    .scaleEffect(viewModel.animateContent ? 1.0 : 0.95)
 
-                                    Image(systemName: "heart.fill")
-                                        .font(.system(size: 50, weight: .medium))
-                                        .foregroundColor(.red)
-                                        .scaleEffect(viewModel.animateContent ? 1.1 : 1.0)
-                                        .animation(
-                                            .easeInOut(duration: 1.0).repeatForever(
-                                                autoreverses: true),
-                                            value: viewModel.animateContent
-                                        )
-                                }
+                                Text("推しの心拍数を感じよう")
+                                    .font(.title3)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                                    .shadow(color: .black.opacity(0.25), radius: 2, x: 0, y: 1)
+                            }
+                            .opacity(viewModel.animateContent ? 1.0 : 0.7)
+                            .animation(
+                                .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
+                                value: viewModel.animateContent
+                            )
+                        }
+                        .padding(.top, 60)
+                        .frame(height: geometry.size.height * 0.45)
 
-                                // Authentication Buttons
-                                VStack(spacing: 20) {
-                                    VStack(spacing: 16) {
-                                        Text("始めましょう")
-                                            .font(.title2)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.primary)
-
-                                        Text("アカウントを作成するか、既存のアカウントでサインインしてください")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                            .multilineTextAlignment(.center)
-                                            .padding(.horizontal, 20)
-                                    }
-
-                                    VStack(spacing: 8) {
-                                        Text("狂愛")
-                                            .font(
-                                                .system(size: 32, weight: .bold, design: .rounded)
-                                            )
-                                            .multilineTextAlignment(.center)
-                                            .opacity(viewModel.animateContent ? 1.0 : 0.7)
-
-                                        Text("推しの心拍数を感じよう")
-                                            .font(.title3)
-                                            .fontWeight(.medium)
-                                            .foregroundColor(.secondary)
-                                            .opacity(viewModel.animateContent ? 1.0 : 0.5)
-                                    }
+                        // 認証ボタンセクション
+                        VStack(spacing: 16) {
+                            // はじめるボタン（ゲストモード）
+                            GlassButton(
+                                icon: "play.circle.fill",
+                                title: "はじめる",
+                                subtitle: "認証なしでアプリを体験",
+                                color: .white
+                            ) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                    viewModel.signInAnonymously()
                                 }
                             }
-                            .frame(height: geometry.size.height * 0.5)
 
-                            // Start Without Auth Button
-                            VStack(spacing: 12) {
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                        viewModel.signInAnonymously()
-                                    }
-                                }) {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "play.circle")
-                                            .font(.title2)
-                                        Text("はじめる")
-                                            .font(.headline)
-                                            .fontWeight(.semibold)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 12)
-                                    .foregroundColor(.accent)
-                                    .background(Color.accent.opacity(0.1))
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.accent.opacity(0.3), lineWidth: 1)
-                                    )
-                                }
-                                .padding(.horizontal, 24)
-
-                                Text("認証なしでアプリを体験")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-
-                                Divider()
-                                    .padding(.horizontal, 24)
-
+                            // 区切り線
+                            HStack {
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 1)
                                 Text("または")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    .padding(.top, 8)
-
-                                // Email Authentication Button
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                        viewModel.showEmailAuthModal()
-                                    }
-                                }) {
-                                    AuthButton(
-                                        icon: "envelope.fill",
-                                        title: "メールアドレスで続ける",
-                                        subtitle: "メールとパスワードで新規作成・ログイン",
-                                        color: .green,
-                                        isSelected: viewModel.selectedAuthMethod == .email
-                                    )
-                                }
-
-                                // Google Authentication Button
-                                Button(action: {
-                                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                        viewModel.signInWithGoogle()
-                                    }
-                                }) {
-                                    AuthButton(
-                                        icon: "globe",
-                                        title: "Googleで続ける",
-                                        subtitle: "Googleアカウントで簡単ログイン",
-                                        color: .blue,
-                                        isSelected: viewModel.selectedAuthMethod == .google,
-                                        isLoading: viewModel.isGoogleLoading
-                                    )
-                                }
-                                .disabled(viewModel.isLoading)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(height: 1)
                             }
-                            .padding(.horizontal, 24)
-                        }
+                            .padding(.vertical, 8)
 
-                        // Error Display
+                            // メール認証ボタン
+                            GlassButton(
+                                icon: "envelope.fill",
+                                title: "メールで続ける",
+                                subtitle: "メールアドレスで新規作成・ログイン",
+                                color: Color(hex: "FFD93D"),
+                                isSelected: viewModel.selectedAuthMethod == .email
+                            ) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                    viewModel.showEmailAuthModal()
+                                }
+                            }
+
+                            // Google認証ボタン（標準デザイン）
+                            StandardGoogleSignInButton(
+                                isLoading: viewModel.isGoogleLoading
+                            ) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                    viewModel.signInWithGoogle()
+                                }
+                            }
+                            .disabled(viewModel.isLoading)
+
+                            // Apple認証ボタン（標準デザイン）
+                            StandardAppleSignInButton(
+                                isLoading: viewModel.isAppleLoading
+                            ) {
+                                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                                    viewModel.signInWithApple()
+                                }
+                            }
+                            .disabled(viewModel.isLoading)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
+
+                        // エラー表示
                         if let errorMessage = viewModel.errorMessage {
-                            ErrorCard(message: errorMessage) {
+                            ErrorBanner(message: errorMessage) {
                                 viewModel.clearError()
                             }
                             .padding(.horizontal, 24)
-                            .padding(.top, 8)
+                            .padding(.top, 16)
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
-
-                        Spacer(minLength: 20)
 
                         Spacer(minLength: 40)
                     }
@@ -205,133 +164,338 @@ struct AuthView: View {
     }
 }
 
-// MARK: - Supporting Views
+// MARK: - 浮遊する円の背景装飾
 
-struct AuthButton: View {
+struct FloatingCircles: View {
+    @State private var animate = false
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.white.opacity(0.1))
+                .frame(width: 200, height: 200)
+                .blur(radius: 30)
+                .offset(x: animate ? -50 : 50, y: animate ? -100 : 100)
+                .animation(
+                    .easeInOut(duration: 4).repeatForever(autoreverses: true),
+                    value: animate
+                )
+
+            Circle()
+                .fill(Color.pink.opacity(0.15))
+                .frame(width: 150, height: 150)
+                .blur(radius: 25)
+                .offset(x: animate ? 100 : -100, y: animate ? 150 : -150)
+                .animation(
+                    .easeInOut(duration: 5).repeatForever(autoreverses: true).delay(0.5),
+                    value: animate
+                )
+
+            Circle()
+                .fill(Color.purple.opacity(0.1))
+                .frame(width: 180, height: 180)
+                .blur(radius: 35)
+                .offset(x: animate ? -80 : 80, y: animate ? 200 : -200)
+                .animation(
+                    .easeInOut(duration: 6).repeatForever(autoreverses: true).delay(1),
+                    value: animate
+                )
+        }
+        .onAppear {
+            animate = true
+        }
+    }
+}
+
+// MARK: - ハートビートアニメーション
+
+struct HeartbeatAnimation: View {
+    let isAnimating: Bool
+    @State private var pulse = false
+
+    var body: some View {
+        ZStack {
+            // 外側の円（波紋効果）
+            ForEach(0..<3) { index in
+                Circle()
+                    .stroke(Color.white.opacity(0.3), lineWidth: 2)
+                    .scaleEffect(pulse ? 1.8 : 1.0)
+                    .opacity(pulse ? 0 : 0.8)
+                    .animation(
+                        .easeOut(duration: 1.5)
+                            .repeatForever(autoreverses: false)
+                            .delay(Double(index) * 0.5),
+                        value: pulse
+                    )
+            }
+
+            // グラスモーフィズム背景
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.3),
+                            Color.white.opacity(0.1),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.ultraThinMaterial)
+                .clipShape(Circle())
+                .shadow(color: .pink.opacity(0.5), radius: 20, x: 0, y: 10)
+
+            // ハートアイコン
+            Image(systemName: "heart.fill")
+                .font(.system(size: 60, weight: .medium))
+                .foregroundStyle(Color.accent)
+                .scaleEffect(pulse ? 1.15 : 1.0)
+                .animation(
+                    .easeInOut(duration: 0.8).repeatForever(autoreverses: true),
+                    value: pulse
+                )
+                .shadow(color: Color.accent.opacity(0.5), radius: 10, x: 0, y: 5)
+        }
+        .onAppear {
+            pulse = true
+        }
+    }
+}
+
+// MARK: - グラスモーフィズムボタン
+
+struct GlassButton: View {
     let icon: String
     let title: String
     let subtitle: String
     let color: Color
-    let isSelected: Bool
-    let isLoading: Bool
+    var isSelected: Bool = false
+    var isLoading: Bool = false
+    let action: () -> Void
 
-    init(
-        icon: String,
-        title: String,
-        subtitle: String,
-        color: Color,
-        isSelected: Bool = false,
-        isLoading: Bool = false
-    ) {
-        self.icon = icon
-        self.title = title
-        self.subtitle = subtitle
-        self.color = color
-        self.isSelected = isSelected
-        self.isLoading = isLoading
-    }
+    @State private var isPressed = false
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Icon Section
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.1))
-                    .frame(width: 50, height: 50)
+        Button(action: {
+            isPressed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isPressed = false
+                action()
+            }
+        }) {
+            HStack(spacing: 16) {
+                // アイコン
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.2))
+                        .frame(width: 50, height: 50)
 
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .tint(color)
-                } else {
-                    Image(systemName: icon)
-                        .font(.title2)
-                        .foregroundColor(color)
+                    if isLoading {
+                        ProgressView()
+                            .tint(color)
+                    } else {
+                        Image(systemName: icon)
+                            .font(.title2)
+                            .foregroundColor(color)
+                    }
                 }
-            }
 
-            // Text Section
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.headline)
+                // テキスト
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.9))
+                }
+
+                Spacer()
+
+                // 矢印
+                Image(systemName: "chevron.right")
+                    .font(.body)
                     .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.leading)
+                    .foregroundColor(.white.opacity(0.7))
             }
-
-            Spacer()
-
-            // Arrow
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .opacity(isSelected ? 1.0 : 0.6)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(isSelected ? 0.35 : 0.25),
+                                Color.white.opacity(isSelected ? 0.25 : 0.15),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .background(.ultraThinMaterial.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.6),
+                                Color.white.opacity(0.3),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+            // swiftlint:disable multiline_arguments
+            .shadow(
+                color: color.opacity(0.25), radius: isSelected ? 15 : 10, x: 0,
+                y: isSelected ? 8 : 5)
+            // swiftlint:enable multiline_arguments
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.systemBackground))
-                .shadow(
-                    color: isSelected ? color.opacity(0.3) : Color.black.opacity(0.05),
-                    radius: isSelected ? 8 : 4,
-                    x: 0,
-                    y: 2
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(
-                    isSelected ? color.opacity(0.5) : Color.clear,
-                    lineWidth: 2
-                )
-        )
-        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
-struct ErrorCard: View {
+// MARK: - エラーバナー
+
+struct ErrorBanner: View {
     let message: String
     let onDismiss: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.red)
+                .foregroundColor(Color(hex: "FF6B6B"))
                 .font(.title3)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("エラーが発生しました")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.red)
-
-                Text(message)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(message)
+                .font(.callout)
+                .foregroundColor(.white)
+                .fontWeight(.medium)
+                .lineLimit(3)
 
             Spacer()
 
-            Button("閉じる", action: onDismiss)
-                .font(.caption)
-                .foregroundColor(.blue)
+            Button(action: onDismiss) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundColor(.white.opacity(0.9))
+                    .font(.title3)
+            }
         }
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.red.opacity(0.05))
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: "FF6B6B").opacity(0.4),
+                            Color(hex: "EE5A6F").opacity(0.3),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.ultraThinMaterial.opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.red.opacity(0.2), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(hex: "FF6B6B").opacity(0.5), lineWidth: 1)
         )
+        .shadow(color: Color(hex: "FF6B6B").opacity(0.3), radius: 10, x: 0, y: 5)
+    }
+}
+
+// MARK: - 標準的なGoogleサインインボタン（Appleボタンと統一デザイン）
+
+struct StandardGoogleSignInButton: View {
+    let isLoading: Bool
+    let action: () -> Void
+
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: {
+            isPressed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isPressed = false
+                action()
+            }
+        }) {
+            HStack(spacing: 12) {
+                if isLoading {
+                    ProgressView()
+                        .tint(Color(hex: "4285F4"))
+                } else {
+                    Image("GoogleLogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 40, height: 40)  // Appleロゴと同じサイズ感（.title2相当）
+                }
+
+                Text("Google でサインイン")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color(hex: "3c4043"))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)  // Appleボタンと同じ高さ
+            .background(Color(hex: "f2f2f2"))
+            .cornerRadius(12)  // Appleボタンと同じ角丸
+            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)  // Appleボタンと同じシャドウ
+        }
+        .scaleEffect(isPressed ? 0.97 : 1.0)  // Appleボタンと同じスケール
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)  // Appleボタンと同じアニメーション
+    }
+}
+
+// MARK: - 標準的なAppleサインインボタン
+
+struct StandardAppleSignInButton: View {
+    let isLoading: Bool
+    let action: () -> Void
+
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: {
+            isPressed = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                isPressed = false
+                action()
+            }
+        }) {
+            HStack(spacing: 12) {
+                if isLoading {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Image(systemName: "apple.logo")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                }
+
+                Text("Appleでサインイン")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)  // Googleボタンと同じ高さ
+            .background(Color.black)
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 2)
+        }
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
     }
 }
 

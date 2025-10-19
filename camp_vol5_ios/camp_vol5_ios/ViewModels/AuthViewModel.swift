@@ -15,7 +15,7 @@ class AuthViewModel: BaseViewModel {
 
     // MARK: - Types
     enum AuthMethod {
-        case none, google, email, anonymous
+        case none, google, apple, email, anonymous
     }
 
     // MARK: - Dependencies
@@ -60,6 +60,12 @@ class AuthViewModel: BaseViewModel {
         authenticationManager.signInWithGoogle()
     }
 
+    func signInWithApple() {
+        selectedAuthMethod = .apple
+        authenticationManager.selectedAuthMethod = "apple"
+        authenticationManager.signInWithApple()
+    }
+
     func signInAnonymously() {
         selectedAuthMethod = .anonymous
         authenticationManager.selectedAuthMethod = "anonymous"
@@ -94,5 +100,9 @@ class AuthViewModel: BaseViewModel {
 
     var isGoogleLoading: Bool {
         authenticationManager.isLoading && selectedAuthMethod == .google
+    }
+
+    var isAppleLoading: Bool {
+        authenticationManager.isLoading && selectedAuthMethod == .apple
     }
 }

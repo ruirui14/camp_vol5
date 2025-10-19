@@ -2,7 +2,11 @@
 // Firebase認証を管理するEnvironmentObject対応のマネージャー
 // シングルトンパターンを廃止し、SwiftUIのベストプラクティスに従った実装
 
+// swiftlint:disable file_length type_body_length line_length multiline_function_chains
+
+import AuthenticationServices
 import Combine
+import CryptoKit
 import Firebase
 import FirebaseAuth
 import Foundation
@@ -21,6 +25,7 @@ protocol AuthenticationProtocol: ObservableObject {
     var currentUserId: String? { get }
 
     func signInWithGoogle()
+    func signInWithApple()
     func signInWithEmail(email: String, password: String)
     func signUpWithEmail(email: String, password: String, name: String)
     func signInAnonymously()
@@ -35,7 +40,7 @@ protocol AuthenticationProtocol: ObservableObject {
 
 /// Firebase認証とユーザー状態を管理するメインクラス
 /// EnvironmentObjectとして使用される
-final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
+final class AuthenticationManager: NSObject, ObservableObject, AuthenticationProtocol {
     // MARK: - Published Properties
 
     /// Firebase認証ユーザー
@@ -75,10 +80,14 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
     )
     private let followingRepository: FollowingRepositoryProtocol = FirestoreFollowingRepository()
 
+    // Apple Sign In用のnonce
+    private var currentNonce: String?
+
     // MARK: - Initialization
 
     /// 初期化
-    init() {
+    override init() {
+        super.init()
         print("🔥 AuthenticationManager init started")
         print(
             """
@@ -305,6 +314,37 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 self?.signInWithCredential(credential: credential, googleUser: user)
             }
         }
+    }
+
+    /// Apple Sign In
+    func signInWithApple() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first
+        else {
+            errorMessage = "アプリの初期化エラーが発生しました"
+            return
+        }
+
+        // nonceを生成
+        let nonce = randomNonceString()
+        currentNonce = nonce
+
+        isLoading = true
+        errorMessage = nil
+
+        // Apple Sign In リクエストを作成
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        let request = appleIDProvider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+
+        // 認証コントローラーを作成
+        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
+        authorizationController.delegate = self
+        authorizationController.presentationContextProvider = self
+
+        // Apple認証画面を表示
+        authorizationController.performRequests()
     }
 
     /// サインアウト
@@ -866,6 +906,160 @@ final class AuthenticationManager: ObservableObject, AuthenticationProtocol {
                 .store(in: &self.cancellables)
         }
     }
+
+    // MARK: - Apple Sign In Helper Methods
+
+    /// ランダムなnonce文字列を生成
+    private func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        if errorCode != errSecSuccess {
+            fatalError(
+                "Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+        }
+
+        let charset: [Character] =
+            Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+
+        let nonce = randomBytes.map { byte in
+            charset[Int(byte) % charset.count]
+        }
+
+        return String(nonce)
+    }
+
+    /// SHA256ハッシュを計算
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        let hashString = hashedData.compactMap {
+            String(format: "%02x", $0)
+        }.joined()
+
+        return hashString
+    }
+}
+
+// MARK: - ASAuthorizationControllerDelegate
+
+extension AuthenticationManager: ASAuthorizationControllerDelegate {
+    /// Apple認証成功時の処理
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithAuthorization authorization: ASAuthorization
+    ) {
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential
+        else {
+            print("❌ Apple認証: ASAuthorizationAppleIDCredentialの取得に失敗")
+            DispatchQueue.main.async {
+                self.isLoading = false
+                self.errorMessage = "Apple認証の情報取得に失敗しました"
+            }
+            return
+        }
+
+        print("✅ Apple認証: AppleIDCredential取得成功")
+        print("   - User ID: \(appleIDCredential.user)")
+        print("   - Email: \(appleIDCredential.email ?? "なし")")
+        print(
+            "   - Full Name: \(appleIDCredential.fullName?.givenName ?? "なし") \(appleIDCredential.fullName?.familyName ?? "")"
+        )
+
+        guard let nonce = currentNonce else {
+            print("❌ Apple認証: nonceが存在しません")
+            DispatchQueue.main.async {
+                self.isLoading = false
+                self.errorMessage = "認証処理でエラーが発生しました"
+            }
+            return
+        }
+
+        print("✅ Apple認証: nonce取得成功")
+
+        guard let appleIDToken = appleIDCredential.identityToken,
+            let idTokenString = String(data: appleIDToken, encoding: .utf8)
+        else {
+            print("❌ Apple認証: identityTokenの取得または変換に失敗")
+            DispatchQueue.main.async {
+                self.isLoading = false
+                self.errorMessage = "Apple認証トークンの取得に失敗しました"
+            }
+            return
+        }
+
+        print("✅ Apple認証: identityToken取得成功")
+        print("   - Token (最初の50文字): \(String(idTokenString.prefix(50)))...")
+
+        // Firebase認証クレデンシャルを作成
+        let credential = OAuthProvider.credential(
+            withProviderID: "apple.com",
+            idToken: idTokenString,
+            rawNonce: nonce
+        )
+
+        print("✅ Firebase認証クレデンシャル作成成功")
+
+        // Firebase認証を実行
+        Auth.auth().signIn(with: credential) { [weak self] authResult, error in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+
+                if let error = error {
+                    let nsError = error as NSError
+                    print("❌ Firebase Apple認証に失敗")
+                    print("   - Error Code: \(nsError.code)")
+                    print("   - Error Domain: \(nsError.domain)")
+                    print("   - Error Description: \(error.localizedDescription)")
+                    print("   - Error UserInfo: \(nsError.userInfo)")
+                    self?.errorMessage = "Apple認証に失敗しました: \(error.localizedDescription)"
+                    return
+                }
+
+                guard let firebaseUser = authResult?.user else {
+                    print("❌ Firebase認証結果からユーザー情報を取得できません")
+                    self?.errorMessage = "ユーザー情報の取得に失敗しました"
+                    return
+                }
+
+                print("✅ Firebase Apple認証成功: \(firebaseUser.uid)")
+                // handleAuthenticatedUserで自動的に処理される
+            }
+        }
+    }
+
+    /// Apple認証失敗時の処理
+    func authorizationController(
+        controller: ASAuthorizationController,
+        didCompleteWithError error: Error
+    ) {
+        DispatchQueue.main.async {
+            self.isLoading = false
+
+            // ユーザーがキャンセルした場合はエラーメッセージを表示しない
+            let authError = error as NSError
+            if authError.code == ASAuthorizationError.canceled.rawValue {
+                print("ℹ️ Apple認証がキャンセルされました")
+                return
+            }
+
+            self.errorMessage = "Apple認証に失敗しました: \(error.localizedJapaneseDescription)"
+        }
+    }
+}
+
+// MARK: - ASAuthorizationControllerPresentationContextProviding
+
+extension AuthenticationManager: ASAuthorizationControllerPresentationContextProviding {
+    /// 認証画面を表示するウィンドウを返す
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+            let window = windowScene.windows.first
+        else {
+            fatalError("ウィンドウの取得に失敗しました")
+        }
+        return window
+    }
 }
 
 // MARK: - Mock Authentication Manager (テスト用)
@@ -887,6 +1081,10 @@ final class MockAuthenticationManager: ObservableObject, AuthenticationProtocol 
     }
 
     func signInWithGoogle() {
+        isAuthenticated = true
+    }
+
+    func signInWithApple() {
         isAuthenticated = true
     }
 

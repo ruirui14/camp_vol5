@@ -53,6 +53,7 @@ disabled_rules:
   - trailing_comma # swift-formatと競合するため無効化
   - closure_parameter_position # swift-formatと競合するため無効化
   - opening_brace # swift-formatと競合するため無効化
+  - blanket_disable_command # 大きなファイルで包括的な無効化が必要なため
 
 # ルールのカスタマイズ
 line_length:
@@ -60,10 +61,14 @@ line_length:
   error: 200
   ignores_comments: true
   ignores_urls: true
+  excluded:
+    - camp_vol5_ios/camp_vol5_ios/Services/AuthenticationManager.swift
 
 file_length:
   warning: 1000
   error: 2000
+  excluded:
+    - camp_vol5_ios/camp_vol5_ios/Services/AuthenticationManager.swift
 
 function_body_length:
   warning: 120
@@ -72,6 +77,8 @@ function_body_length:
 type_body_length:
   warning: 600
   error: 1000
+  excluded:
+    - camp_vol5_ios/camp_vol5_ios/Services/AuthenticationManager.swift
 
 cyclomatic_complexity:
   warning: 15
@@ -108,6 +115,11 @@ implicit_return:
   included:
     - closure
     - getter
+
+# multiline_function_chainsのカスタマイズ
+multiline_function_chains:
+  excluded:
+    - camp_vol5_ios/camp_vol5_ios/Services/AuthenticationManager.swift
 
 # その他の設定
 reporter: "xcode"

@@ -1,5 +1,5 @@
 // Views/EmailAuthView.swift
-// メール・パスワード認証用のSwiftUIビュー
+// メール・パスワード認証用のSwiftUIビュー - モダンでキュートなデザイン
 // サインインとサインアップ機能を含む
 // OnboardingViewとの統合対応
 
@@ -19,19 +19,32 @@ struct EmailAuthView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // メール確認待ち画面
-                    if viewModel.needsEmailVerification {
-                        emailVerificationView
-                    } else {
-                        // 通常の認証フォーム
-                        authenticationFormView
-                    }
+            ZStack {
+                // 適度な明るさのグラデーション背景
+                LinearGradient(
+                    colors: [
+                        Color(hex: "FFB7C5"),  // ライトピンク
+                        Color(hex: "E8A0BF"),  // ソフトローズ
+                        Color(hex: "D4A5D4"),  // ラベンダー
+                        Color(hex: "B8B8DC"),  // ペールパープル
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
-                    Spacer(minLength: 20)
+                ScrollView {
+                    VStack(spacing: 24) {
+                        if viewModel.needsEmailVerification {
+                            emailVerificationView
+                        } else {
+                            authenticationFormView
+                        }
+
+                        Spacer(minLength: 20)
+                    }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -39,44 +52,34 @@ struct EmailAuthView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(action: {
-                        // メール確認待ち状態の場合、確認ダイアログを表示
                         if viewModel.needsEmailVerification {
                             showDismissConfirmation = true
                         } else {
                             dismiss()
                         }
                     }) {
-                        HStack(spacing: 4) {
+                        HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
-                                .font(.title3)
-                                .fontWeight(.medium)
+                                .font(.body)
+                                .fontWeight(.semibold)
                             Text("戻る")
                                 .font(.body)
+                                .fontWeight(.medium)
                         }
-                        .foregroundColor(.primary)
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                     }
                 }
             }
             .alert("メール確認が完了していません", isPresented: $showDismissConfirmation) {
                 Button("戻らずに確認する", role: .cancel) {}
                 Button("キャンセルして戻る", role: .destructive) {
-                    // アカウントを削除してから戻る
                     authenticationManager.signOut()
                     dismiss()
                 }
             } message: {
                 Text("メールアドレスの確認が完了していません。戻る場合、作成したアカウントからサインアウトされます。")
             }
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color(.systemBackground),
-                        Color(.systemGray6).opacity(0.1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
         }
         .sheet(isPresented: $viewModel.showPasswordReset) {
             PasswordResetView(viewModel: viewModel)
@@ -86,50 +89,60 @@ struct EmailAuthView: View {
     // MARK: - Email Verification View
 
     private var emailVerificationView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 28) {
+            Spacer().frame(height: 40)
+
             // アイコン
             ZStack {
                 Circle()
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.blue.opacity(0.2), Color.blue.opacity(0.1),
+                                Color.white.opacity(0.3),
+                                Color.white.opacity(0.1),
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 100, height: 100)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
 
                 Image(systemName: "envelope.badge.shield.half.filled")
-                    .font(.system(size: 48, weight: .medium))
-                    .foregroundColor(.blue)
+                    .font(.system(size: 54, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "FFD93D"), Color(hex: "F9CA24")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
             }
-            .padding(.top, 40)
 
             // タイトルとメッセージ
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 Text("メールアドレスを確認してください")
                     .font(.title2)
-                    .fontWeight(.bold)
+                    .fontWeight(.heavy)
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
 
                 Text("登録したメールアドレスに確認メールを送信しました。\nメール内のリンクをクリックして、メールアドレスを確認してください。")
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 8)
             }
 
             // ボタンセクション
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 // 確認完了ボタン
                 Button(action: {
                     viewModel.checkEmailVerification()
                 }) {
-                    HStack {
+                    HStack(spacing: 10) {
                         if viewModel.isLoading {
                             ProgressView()
-                                .scaleEffect(0.8)
                                 .tint(.white)
                         } else {
                             Image(systemName: "checkmark.circle.fill")
@@ -138,20 +151,32 @@ struct EmailAuthView: View {
 
                         Text("確認完了")
                             .font(.headline)
-                            .fontWeight(.semibold)
+                            .fontWeight(.bold)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
-                        LinearGradient(
-                            colors: [Color.blue, Color.blue.opacity(0.8)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.3),
+                                        Color.white.opacity(0.2),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .background(.ultraThinMaterial.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
                     )
                     .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                    .shadow(color: Color(hex: "4ECDC4").opacity(0.3), radius: 15, x: 0, y: 8)
                 }
                 .disabled(viewModel.isLoading)
 
@@ -159,63 +184,33 @@ struct EmailAuthView: View {
                 Button(action: {
                     viewModel.sendVerificationEmail()
                 }) {
-                    HStack {
+                    HStack(spacing: 8) {
                         Image(systemName: "arrow.triangle.2.circlepath")
                         Text("確認メールを再送信")
                             .font(.callout)
+                            .fontWeight(.medium)
                     }
-                    .foregroundColor(.blue)
+                    .foregroundColor(.white)
                 }
                 .disabled(viewModel.isLoading)
             }
-            .padding(.horizontal, 8)
 
             // 注意事項
-            VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                    Text("メールが届かない場合")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("• 迷惑メールフォルダを確認してください")
-                    Text("• メールアドレスが正しいか確認してください")
-                    Text("• 確認メールの再送信をお試しください")
-                }
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding()
-            .background(Color.orange.opacity(0.1))
-            .cornerRadius(12)
-            .padding(.horizontal, 8)
+            GlassInfoCard(
+                icon: "info.circle.fill",
+                iconColor: Color(hex: "FFD93D"),
+                title: "メールが届かない場合",
+                items: [
+                    "迷惑メールフォルダを確認してください",
+                    "メールアドレスが正しいか確認してください",
+                    "確認メールの再送信をお試しください",
+                ]
+            )
 
             // エラーメッセージ
             if let errorMessage = viewModel.errorMessage {
-                VStack(spacing: 8) {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.red)
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .font(.callout)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(8)
-
-                    Button("エラーを閉じる") {
-                        viewModel.clearError()
-                    }
-                    .font(.caption)
-                    .foregroundColor(.blue)
+                ErrorMessageCard(message: errorMessage) {
+                    viewModel.clearError()
                 }
             }
         }
@@ -224,105 +219,86 @@ struct EmailAuthView: View {
     // MARK: - Authentication Form View
 
     private var authenticationFormView: some View {
-        VStack(spacing: 24) {
-            // ヘッダーセクション
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.green.opacity(0.2), Color.green.opacity(0.1),
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+        VStack(spacing: 28) {
+            Spacer().frame(height: 30)
+
+            // ヘッダーアイコン
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.3),
+                                Color.white.opacity(0.1),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                        .frame(width: 80, height: 80)
-                        .scaleEffect(viewModel.animateForm ? 1.0 : 0.8)
+                    )
+                    .frame(width: 100, height: 100)
+                    .scaleEffect(viewModel.animateForm ? 1.0 : 0.9)
+                    .shadow(color: .white.opacity(0.3), radius: 15, x: 0, y: 8)
 
-                    Image(systemName: "envelope.fill")
-                        .font(.system(size: 32, weight: .medium))
-                        .foregroundColor(.green)
-                }
+                Image(systemName: "envelope.fill")
+                    .font(.system(size: 42, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "FFD93D"), Color(hex: "F9CA24")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+            .animation(
+                .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
+                value: viewModel.animateForm)
 
-                VStack(spacing: 8) {
-                    Text(viewModel.authModeTitle)
-                        .font(.title2)
-                        .fontWeight(.bold)
+            // タイトル
+            VStack(spacing: 10) {
+                Text(viewModel.authModeTitle)
+                    .font(.title2)
+                    .fontWeight(.heavy)
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
 
-                    Text(viewModel.authModeSubtitle)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                Text(viewModel.authModeSubtitle)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+            }
+            .opacity(viewModel.animateForm ? 1.0 : 0.8)
+
+            // フォーム
+            VStack(spacing: 18) {
+                // メールアドレス
+                GlassTextField(
+                    icon: "envelope",
+                    placeholder: "メールアドレス",
+                    text: $viewModel.email,
+                    keyboardType: .emailAddress
+                )
+
+                // パスワード
+                GlassSecureField(
+                    icon: "lock",
+                    placeholder: "パスワード",
+                    text: $viewModel.password,
+                    showPassword: $viewModel.showPassword
+                )
+
+                if viewModel.isSignUp {
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(Color(hex: "FFD93D"))
+                        Text("パスワードは6文字以上で入力してください")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .transition(.opacity)
                 }
             }
-            .padding(.top, 20)
-            .opacity(viewModel.animateForm ? 1.0 : 0.7)
-
-            // フォームセクション
-            VStack(spacing: 16) {
-                // メールアドレス入力欄
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("メールアドレス")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-
-                    TextField("メールアドレスを入力", text: $viewModel.email)
-                        .textFieldStyle(ModernTextFieldStyle())
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                }
-
-                // パスワード入力欄
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("パスワード")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.secondary)
-
-                    HStack {
-                        Group {
-                            if viewModel.showPassword {
-                                TextField("パスワードを入力", text: $viewModel.password)
-                            } else {
-                                SecureField("パスワードを入力", text: $viewModel.password)
-                            }
-                        }
-                        .textContentType(viewModel.isSignUp ? .newPassword : .password)
-
-                        Button(action: {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                viewModel.togglePasswordVisibility()
-                            }
-                        }) {
-                            Image(
-                                systemName: viewModel.showPassword
-                                    ? "eye.slash.fill" : "eye.fill"
-                            )
-                            .foregroundColor(.secondary)
-                            .font(.title3)
-                        }
-                    }
-                    .textFieldStyle(ModernTextFieldStyle())
-
-                    if viewModel.isSignUp {
-                        HStack(spacing: 8) {
-                            Image(systemName: "info.circle.fill")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                            Text("パスワードは6文字以上で入力してください")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        .transition(.opacity)
-                    }
-                }
-            }
-            .padding(.horizontal, 8)
-            .opacity(viewModel.animateForm ? 1.0 : 0.5)
+            .opacity(viewModel.animateForm ? 1.0 : 0.6)
 
             // ボタンセクション
             VStack(spacing: 16) {
@@ -330,35 +306,46 @@ struct EmailAuthView: View {
                 Button(action: {
                     viewModel.signInWithEmail()
                 }) {
-                    HStack {
+                    HStack(spacing: 10) {
                         if viewModel.isLoading {
                             ProgressView()
-                                .scaleEffect(0.8)
                                 .tint(.white)
                         } else {
                             Image(
                                 systemName: viewModel.isSignUp
-                                    ? "person.badge.plus" : "envelope"
+                                    ? "person.badge.plus" : "arrow.right.circle.fill"
                             )
                             .font(.title3)
                         }
 
                         Text(viewModel.primaryButtonTitle)
                             .font(.headline)
-                            .fontWeight(.semibold)
+                            .fontWeight(.bold)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
-                        LinearGradient(
-                            colors: [Color.blue, Color.blue.opacity(0.8)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.3),
+                                        Color.white.opacity(0.2),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .background(.ultraThinMaterial.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
                     )
                     .foregroundColor(.white)
-                    .cornerRadius(12)
-                    .shadow(color: .blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                    .shadow(color: Color(hex: "4ECDC4").opacity(0.3), radius: 15, x: 0, y: 8)
                 }
                 .disabled(viewModel.isLoading || !viewModel.isFormValid)
                 .opacity(viewModel.isFormValid ? 1.0 : 0.6)
@@ -369,47 +356,292 @@ struct EmailAuthView: View {
                 }) {
                     Text(viewModel.toggleModeText)
                         .font(.callout)
-                        .foregroundColor(.blue)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
                         .underline()
                 }
 
-                // パスワードを忘れた場合のリンク（サインインモードのみ表示）
+                // パスワードを忘れた場合
                 if !viewModel.isSignUp {
                     Button(action: {
                         viewModel.showPasswordResetSheet()
                     }) {
                         Text("パスワードをお忘れですか？")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white.opacity(0.9))
                             .underline()
                     }
-                    .padding(.top, 4)
                 }
+
+                // または区切り線
+                HStack(spacing: 16) {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(height: 1)
+
+                    Text("または")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white.opacity(0.8))
+
+                    Rectangle()
+                        .fill(Color.white.opacity(0.3))
+                        .frame(height: 1)
+                }
+                .padding(.vertical, 8)
+
+                // Sign in with Apple ボタン（標準デザイン）
+                Button(action: {
+                    authenticationManager.signInWithApple()
+                }) {
+                    HStack(spacing: 12) {
+                        if authenticationManager.isLoading {
+                            ProgressView()
+                                .tint(.white)
+                        } else {
+                            Image(systemName: "apple.logo")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                        }
+
+                        Text("Appleでサインイン")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.black)
+                    .cornerRadius(12)
+                }
+                .disabled(authenticationManager.isLoading)
             }
 
             // エラーメッセージ
             if let errorMessage = viewModel.errorMessage {
-                VStack(spacing: 8) {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.red)
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .font(.callout)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(8)
-
-                    Button("エラーを閉じる") {
-                        viewModel.clearError()
-                    }
-                    .font(.caption)
-                    .foregroundColor(.blue)
+                ErrorMessageCard(message: errorMessage) {
+                    viewModel.clearError()
                 }
             }
+
+            Spacer()
         }
+    }
+}
+
+// MARK: - Glass TextField
+
+struct GlassTextField: View {
+    let icon: String
+    let placeholder: String
+    @Binding var text: String
+    var keyboardType: UIKeyboardType = .default
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(.white.opacity(0.8))
+
+            TextField(placeholder, text: $text)
+                .textContentType(.emailAddress)
+                .keyboardType(keyboardType)
+                .autocapitalization(.none)
+                .foregroundColor(.white)
+                .tint(.white)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.25),
+                            Color.white.opacity(0.15),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.ultraThinMaterial.opacity(0.3))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .shadow(color: Color.white.opacity(0.5), radius: 1, x: 0, y: -1)
+    }
+}
+
+// MARK: - Glass Secure Field
+
+struct GlassSecureField: View {
+    let icon: String
+    let placeholder: String
+    @Binding var text: String
+    @Binding var showPassword: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(.white.opacity(0.8))
+
+            Group {
+                if showPassword {
+                    TextField(placeholder, text: $text)
+                } else {
+                    SecureField(placeholder, text: $text)
+                }
+            }
+            .textContentType(.password)
+            .foregroundColor(.white)
+            .tint(.white)
+
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showPassword.toggle()
+                }
+            }) {
+                Image(systemName: showPassword ? "eye.slash.fill" : "eye.fill")
+                    .font(.title3)
+                    .foregroundColor(.white.opacity(0.7))
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.25),
+                            Color.white.opacity(0.15),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.ultraThinMaterial.opacity(0.3))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+        .shadow(color: Color.white.opacity(0.5), radius: 1, x: 0, y: -1)
+    }
+}
+
+// MARK: - Glass Info Card
+
+struct GlassInfoCard: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    let items: [String]
+
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.callout)
+                    .foregroundColor(iconColor)
+                Text(title)
+                    .font(.callout)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.white)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(items, id: \.self) { item in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .foregroundColor(.white.opacity(0.7))
+                        Text(item)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.2),
+                            Color.white.opacity(0.1),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.ultraThinMaterial.opacity(0.4))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(iconColor.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)
+    }
+}
+
+// MARK: - Error Message Card
+
+struct ErrorMessageCard: View {
+    let message: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(Color(hex: "FF6B6B"))
+                .font(.title3)
+
+            Text(message)
+                .font(.callout)
+                .foregroundColor(.white)
+                .lineLimit(3)
+
+            Spacer()
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundColor(.white.opacity(0.7))
+                    .font(.title3)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(hex: "FF6B6B").opacity(0.4),
+                            Color(hex: "EE5A6F").opacity(0.3),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .background(.ultraThinMaterial.opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color(hex: "FF6B6B").opacity(0.5), lineWidth: 1)
+        )
+        .shadow(color: Color(hex: "FF6B6B").opacity(0.3), radius: 10, x: 0, y: 5)
     }
 }
 
@@ -421,215 +653,214 @@ struct PasswordResetView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // 成功メッセージまたはフォーム
-                    if viewModel.passwordResetSent {
-                        passwordResetSuccessView
-                    } else {
-                        passwordResetFormView
-                    }
+            ZStack {
+                // 適度な明るさのグラデーション背景
+                LinearGradient(
+                    colors: [
+                        Color(hex: "FFB7C5"),  // ライトピンク
+                        Color(hex: "E8A0BF"),  // ソフトローズ
+                        Color(hex: "D4A5D4"),  // ラベンダー
+                        Color(hex: "B8B8DC"),  // ペールパープル
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
 
-                    Spacer(minLength: 20)
+                ScrollView {
+                    VStack(spacing: 28) {
+                        if viewModel.passwordResetSent {
+                            passwordResetSuccessView
+                        } else {
+                            passwordResetFormView
+                        }
+
+                        Spacer(minLength: 20)
+                    }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
             }
-            .navigationTitle("パスワードリセット")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("閉じる") {
+                    Button(action: {
                         viewModel.dismissPasswordReset()
                         dismiss()
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                     }
                 }
             }
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color(.systemBackground),
-                        Color(.systemGray6).opacity(0.1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
         }
     }
 
-    // MARK: - Password Reset Form View
-
     private var passwordResetFormView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 28) {
+            Spacer().frame(height: 40)
+
             // アイコン
             ZStack {
                 Circle()
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.orange.opacity(0.2), Color.orange.opacity(0.1),
+                                Color.white.opacity(0.3),
+                                Color.white.opacity(0.1),
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 100, height: 100)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
 
                 Image(systemName: "key.fill")
-                    .font(.system(size: 48, weight: .medium))
-                    .foregroundColor(.orange)
+                    .font(.system(size: 54, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "FF9A8B"), Color(hex: "FF6A88")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
             }
-            .padding(.top, 40)
 
-            // タイトルとメッセージ
-            VStack(spacing: 12) {
+            // タイトル
+            VStack(spacing: 16) {
                 Text("パスワードをリセット")
                     .font(.title2)
-                    .fontWeight(.bold)
+                    .fontWeight(.heavy)
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
 
                 Text("登録したメールアドレスを入力してください。\nパスワードリセット用のリンクを送信します。")
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
             }
 
-            // メールアドレス入力欄
-            VStack(alignment: .leading, spacing: 8) {
-                Text("メールアドレス")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.secondary)
-
-                TextField("メールアドレスを入力", text: $viewModel.resetEmail)
-                    .textFieldStyle(ModernTextFieldStyle())
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .autocapitalization(.none)
-            }
-            .padding(.horizontal, 8)
+            // メールアドレス入力
+            GlassTextField(
+                icon: "envelope",
+                placeholder: "メールアドレス",
+                text: $viewModel.resetEmail,
+                keyboardType: .emailAddress
+            )
 
             // 送信ボタン
             Button(action: {
                 viewModel.sendPasswordResetEmail()
             }) {
-                HStack {
+                HStack(spacing: 10) {
                     if viewModel.isLoading {
                         ProgressView()
-                            .scaleEffect(0.8)
                             .tint(.white)
                     } else {
-                        Image(systemName: "envelope.fill")
+                        Image(systemName: "paperplane.fill")
                             .font(.title3)
                     }
 
                     Text(viewModel.isLoading ? "送信中..." : "リセットメールを送信")
                         .font(.headline)
-                        .fontWeight(.semibold)
+                        .fontWeight(.bold)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
                 .background(
-                    LinearGradient(
-                        colors: [Color.orange, Color.orange.opacity(0.8)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.3),
+                                    Color.white.opacity(0.2),
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .background(.ultraThinMaterial.opacity(0.5))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 )
                 .foregroundColor(.white)
-                .cornerRadius(12)
-                .shadow(color: .orange.opacity(0.3), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+                )
+                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                .shadow(color: Color(hex: "FF9A8B").opacity(0.3), radius: 15, x: 0, y: 8)
             }
             .disabled(viewModel.isLoading || viewModel.resetEmail.isEmpty)
             .opacity((viewModel.resetEmail.isEmpty || viewModel.isLoading) ? 0.6 : 1.0)
 
             // エラーメッセージ
             if let errorMessage = viewModel.errorMessage {
-                VStack(spacing: 8) {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.red)
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .font(.callout)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(8)
-
-                    Button("エラーを閉じる") {
-                        viewModel.clearError()
-                    }
-                    .font(.caption)
-                    .foregroundColor(.blue)
+                ErrorMessageCard(message: errorMessage) {
+                    viewModel.clearError()
                 }
             }
         }
     }
 
-    // MARK: - Password Reset Success View
-
     private var passwordResetSuccessView: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 28) {
+            Spacer().frame(height: 60)
+
             // 成功アイコン
             ZStack {
                 Circle()
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.green.opacity(0.2), Color.green.opacity(0.1),
+                                Color.white.opacity(0.3),
+                                Color.white.opacity(0.1),
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 100, height: 100)
+                    .frame(width: 120, height: 120)
+                    .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
 
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 60, weight: .medium))
-                    .foregroundColor(.green)
+                    .font(.system(size: 70, weight: .medium))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [Color(hex: "4ECDC4"), Color(hex: "44A08D")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
             }
-            .padding(.top, 60)
 
-            // タイトルとメッセージ
-            VStack(spacing: 12) {
+            // タイトル
+            VStack(spacing: 16) {
                 Text("メールを送信しました")
                     .font(.title2)
-                    .fontWeight(.bold)
+                    .fontWeight(.heavy)
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.3), radius: 3, x: 0, y: 2)
 
                 Text("パスワードリセット用のリンクを\n\(viewModel.resetEmail)\nに送信しました。")
                     .font(.body)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
             }
 
             // 注意事項
-            VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(systemName: "info.circle.fill")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                    Text("メールが届かない場合")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("• 迷惑メールフォルダを確認してください")
-                    Text("• メールアドレスが正しいか確認してください")
-                    Text("• 数分待ってから再度お試しください")
-                }
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding()
-            .background(Color.blue.opacity(0.1))
-            .cornerRadius(12)
-            .padding(.horizontal, 8)
+            GlassInfoCard(
+                icon: "info.circle.fill",
+                iconColor: Color(hex: "4ECDC4"),
+                title: "メールが届かない場合",
+                items: [
+                    "迷惑メールフォルダを確認してください",
+                    "メールアドレスが正しいか確認してください",
+                    "数分待ってから再度お試しください",
+                ]
+            )
 
             // 完了ボタン
             Button(action: {
@@ -638,12 +869,30 @@ struct PasswordResetView: View {
             }) {
                 Text("完了")
                     .font(.headline)
-                    .fontWeight(.semibold)
+                    .fontWeight(.bold)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(Color.blue)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.3),
+                                        Color.white.opacity(0.2),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .background(.ultraThinMaterial.opacity(0.5))
+                            .clipShape(RoundedRectangle(cornerRadius: 20))
+                    )
                     .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+                    )
+                    .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
             }
             .padding(.top, 20)
         }
