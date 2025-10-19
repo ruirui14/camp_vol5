@@ -114,7 +114,7 @@ struct AuthView: View {
                             }
 
                             // Google認証ボタン（標準デザイン）
-                            StandardGoogleSignInButton(
+                            GoogleSignInButton(
                                 isLoading: viewModel.isGoogleLoading
                             ) {
                                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
@@ -124,7 +124,7 @@ struct AuthView: View {
                             .disabled(viewModel.isLoading)
 
                             // Apple認証ボタン（標準デザイン）
-                            StandardAppleSignInButton(
+                            AppleSignInButton(
                                 isLoading: viewModel.isAppleLoading
                             ) {
                                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
@@ -414,9 +414,9 @@ struct ErrorBanner: View {
     }
 }
 
-// MARK: - 標準的なGoogleサインインボタン（Appleボタンと統一デザイン）
+// MARK: - Googleサインインボタン
 
-struct StandardGoogleSignInButton: View {
+struct GoogleSignInButton: View {
     let isLoading: Bool
     let action: () -> Void
 
@@ -438,7 +438,7 @@ struct StandardGoogleSignInButton: View {
                     Image("GoogleLogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 40, height: 40)  // Appleロゴと同じサイズ感（.title2相当）
+                        .frame(width: 40, height: 40)
                 }
 
                 Text("Google でサインイン")
@@ -447,19 +447,19 @@ struct StandardGoogleSignInButton: View {
                     .foregroundColor(Color(hex: "3c4043"))
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 50)  // Appleボタンと同じ高さ
+            .frame(height: 50)
             .background(Color(hex: "f2f2f2"))
-            .cornerRadius(12)  // Appleボタンと同じ角丸
-            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)  // Appleボタンと同じシャドウ
+            .cornerRadius(12)
+            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
         }
-        .scaleEffect(isPressed ? 0.97 : 1.0)  // Appleボタンと同じスケール
-        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)  // Appleボタンと同じアニメーション
+        .scaleEffect(isPressed ? 0.97 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
     }
 }
 
-// MARK: - 標準的なAppleサインインボタン
+// MARK: - Appleサインインボタン
 
-struct StandardAppleSignInButton: View {
+struct AppleSignInButton: View {
     let isLoading: Bool
     let action: () -> Void
 
@@ -489,7 +489,7 @@ struct StandardAppleSignInButton: View {
                     .foregroundColor(.white)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 50)  // Googleボタンと同じ高さ
+            .frame(height: 50)
             .background(Color.black)
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 2)
