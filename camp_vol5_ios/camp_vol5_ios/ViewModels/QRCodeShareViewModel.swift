@@ -57,15 +57,14 @@ class QRCodeShareViewModel: BaseViewModel {
     func onViewAppear() {
         print("🎨 QRCodeShareViewModel onViewAppear: QR code lazy loading started")
 
-        // QRコードが既に生成されている場合はスキップ
-        guard qrCodeImage == nil, let code = inviteCode, !code.isEmpty else {
-            print(
-                "🎨 QRCodeShareViewModel onViewAppear: QR code already exists or invite code is empty"
-            )
+        // 招待コードが存在しない場合はスキップ
+        guard let code = inviteCode, !code.isEmpty else {
+            print("🎨 QRCodeShareViewModel onViewAppear: invite code is empty")
             return
         }
 
-        // 非同期でQRコードを生成
+        // 現在の招待コードでQRコードを生成（キャッシュがあれば即座に返される）
+        // これにより、招待コードが変更された後に画面を開き直しても正しいQRコードが表示される
         generateQRCodeAsync(from: code)
     }
 
@@ -104,10 +103,10 @@ class QRCodeShareViewModel: BaseViewModel {
                 }
 
                 self.inviteCode = inviteCode
-                // QRコードを非同期で生成（画面が表示されている場合のみ）
-                if self.qrCodeImage != nil {
-                    self.generateQRCodeAsync(from: inviteCode)
-                }
+                // 招待コードが変更されたら、古いキャッシュをクリアして既存のQRコード画像も削除
+                // これにより、次回画面表示時に新しいQRコードが生成される
+                self.qrCodeCache.removeAll()
+                self.qrCodeImage = nil
             }
             .store(in: &cancellables)
 
@@ -157,12 +156,15 @@ class QRCodeShareViewModel: BaseViewModel {
                     }
                 },
                 receiveValue: { [weak self] newInviteCode in
-                    // 直接inviteCodeを更新し、QRコードを非同期で生成
-                    self?.inviteCode = newInviteCode
-                    self?.generateQRCodeAsync(from: newInviteCode, forceRegenerate: true)
+                    guard let self = self else { return }
 
-                    // 循環参照を防ぐため、authenticationManager.refreshCurrentUser()は呼ばない
-                    // UserServiceがFirebaseを更新するので、setupBindingsで自動的に反映される
+                    // 直接inviteCodeを更新し、QRコードを非同期で生成
+                    self.inviteCode = newInviteCode
+                    self.generateQRCodeAsync(from: newInviteCode, forceRegenerate: true)
+
+                    // AuthenticationManagerのcurrentUserを更新
+                    // これにより、次回ViewModelが再作成されたときに最新の招待コードが取得される
+                    self.authenticationManager.refreshCurrentUser()
                 }
             )
             .store(in: &cancellables)
@@ -180,6 +182,12 @@ class QRCodeShareViewModel: BaseViewModel {
             inviteCode: \(inviteCode), forceRegenerate: \(forceRegenerate)
             """
         )
+
+        // 強制再生成の場合は、古いキャッシュをクリア
+        if forceRegenerate {
+            print("🗑️ QRCodeShareViewModel generateQRCodeAsync: clearing old cache")
+            qrCodeCache.removeAll()
+        }
 
         // キャッシュがあれば使用（強制再生成でない場合）
         if !forceRegenerate, let cachedImage = qrCodeCache[inviteCode] {
