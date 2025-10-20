@@ -8,7 +8,6 @@ import SwiftUI
 class QRCodeShareViewModel: BaseViewModel {
     @Published var inviteCode: String?
     @Published var qrCodeImage: UIImage?
-    @Published var currentBPM: Int?
     @Published var userName: String?
     @Published var allowQRRegistration: Bool = true
     @Published var isGeneratingQRCode: Bool = false
@@ -120,16 +119,6 @@ class QRCodeShareViewModel: BaseViewModel {
                 self?.allowQRRegistration = allowQRRegistration
             }
             .store(in: &cancellables)
-
-        // 心拍数の監視
-        if let userId = authenticationManager.currentUserId {
-            HeartbeatService.shared.subscribeToHeartbeat(userId: userId)
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] heartbeat in
-                    self?.currentBPM = heartbeat?.bpm
-                }
-                .store(in: &cancellables)
-        }
     }
 
     func generateNewInviteCode() {
