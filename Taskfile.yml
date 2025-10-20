@@ -14,6 +14,5 @@ tasks:
   tree:
     desc: "Generate directory tree and save to docs/tree.md"
     cmds:
-      - mkdir -p docs
-      - tree -I 'node_modules|.git|build|DerivedData|*.xcworkspace|*.xcodeproj|Pods' > docs/tree.md
+      - tree -I 'node_modules|.git|build|DerivedData|*.xcworkspace|*.xcodeproj|Pods'
     silent: false
