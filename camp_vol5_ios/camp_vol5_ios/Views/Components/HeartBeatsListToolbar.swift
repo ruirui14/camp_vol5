@@ -1,11 +1,13 @@
 // Views/Components/HeartBeatsListToolbar.swift
 // 心拍一覧画面のツールバーコンポーネント - ナビゲーションとソート機能を担当
 // SwiftUIベストプラクティスに従い、アクションを外部に委譲
+// ColorThemeManagerと連携して、ユーザーが選択したテーマカラーを反映
 
 import SwiftUI
 
 struct HeartBeatsListToolbar: ToolbarContent {
     let currentSortOption: SortOption
+    let themeColor: Color
     let onNavigateToSettings: () -> Void
     let onNavigateToQRScanner: () -> Void
     let onSortOptionChanged: (SortOption) -> Void
@@ -16,7 +18,7 @@ struct HeartBeatsListToolbar: ToolbarContent {
                 onNavigateToSettings()
             } label: {
                 Image(systemName: "gearshape")
-                    .foregroundColor(.main)
+                    .foregroundColor(themeColor)
             }
         }
 
@@ -37,7 +39,7 @@ struct HeartBeatsListToolbar: ToolbarContent {
                 }
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
-                    .foregroundColor(.main)
+                    .foregroundColor(themeColor)
             }
 
             // QRスキャナーボタン
@@ -45,7 +47,7 @@ struct HeartBeatsListToolbar: ToolbarContent {
                 onNavigateToQRScanner()
             } label: {
                 Image(systemName: "person.badge.plus")
-                    .foregroundColor(.main)
+                    .foregroundColor(themeColor)
             }
         }
     }
