@@ -7,10 +7,12 @@ import SwiftUI
 struct SettingsNavigationSection: View {
     @ObservedObject var viewModel: SettingsViewModel
     let autoLockManager: AutoLockManager
+    @ObservedObject private var themeManager = ColorThemeManager.shared
     @Environment(\.openURL) private var openURL
     @State private var showEmailConfirmation = false
     @State private var showSecondConfirmation = false
     @State private var navigateToUserInfo = false
+    @State private var showColorResetAlert = false
 
     var body: some View {
         Section {
@@ -71,6 +73,32 @@ struct SettingsNavigationSection: View {
                     title: "自動ロック無効化",
                     subtitle: "画面オフ設定の管理"
                 )
+            }
+
+            Button {
+                showColorResetAlert = true
+            } label: {
+                HStack {
+                    SettingRow(
+                        icon: "paintpalette",
+                        title: "カラーテーマをリセット",
+                        subtitle: "デフォルトの色に戻します"
+                    )
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(Color(.tertiaryLabel))
+                }
+            }
+            .alert("カラーテーマをリセット", isPresented: $showColorResetAlert) {
+                Button("キャンセル", role: .cancel) {}
+                Button("リセット", role: .destructive) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        themeManager.resetToDefaults()
+                    }
+                }
+            } message: {
+                Text("カラーテーマをデフォルトに戻しますか？")
             }
 
             NavigationLink(destination: TermsOfServiceView()) {

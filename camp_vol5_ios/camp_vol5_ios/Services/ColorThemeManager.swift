@@ -1,0 +1,156 @@
+// ColorThemeManager.swift
+// アプリ全体のカラーテーマを管理するサービス
+// UserDefaultsを使ってユーザーが選択したカスタムカラーを永続化
+
+import Combine
+import SwiftUI
+
+/// カラーテーマを管理するシングルトンサービス
+/// UserDefaultsにカスタムカラーを保存し、アプリ全体で使用可能にする
+class ColorThemeManager: ObservableObject {
+    static let shared = ColorThemeManager()
+
+    // MARK: - Published Properties
+
+    /// メインカラー (Assets.xcassetsのデフォルト: #FABDC2)
+    @Published var mainColor: Color
+
+    /// アクセントカラー
+    @Published var accentColor: Color
+
+    /// ベースカラー
+    @Published var baseColor: Color
+
+    /// テキストカラー
+    @Published var textColor: Color
+
+    // MARK: - UserDefaults Keys
+
+    private enum UserDefaultsKey {
+        static let mainColorHex = "colorTheme.main"
+        static let accentColorHex = "colorTheme.accent"
+        static let baseColorHex = "colorTheme.base"
+        static let textColorHex = "colorTheme.text"
+    }
+
+    // MARK: - Default Colors (Assets.xcassetsから読み込んだデフォルト値)
+
+    private let defaultMainColor = Color("main")
+    private let defaultAccentColor = Color("accent")
+    private let defaultBaseColor = Color("base")
+    private let defaultTextColor = Color("text")
+
+    // MARK: - Initialization
+
+    private init() {
+        // UserDefaultsから保存されたカラーを読み込み、なければデフォルト値を使用
+        if let mainHex = UserDefaults.standard.string(forKey: UserDefaultsKey.mainColorHex) {
+            self.mainColor = Color(hex: mainHex)
+        } else {
+            self.mainColor = defaultMainColor
+        }
+
+        if let accentHex = UserDefaults.standard.string(forKey: UserDefaultsKey.accentColorHex) {
+            self.accentColor = Color(hex: accentHex)
+        } else {
+            self.accentColor = defaultAccentColor
+        }
+
+        if let baseHex = UserDefaults.standard.string(forKey: UserDefaultsKey.baseColorHex) {
+            self.baseColor = Color(hex: baseHex)
+        } else {
+            self.baseColor = defaultBaseColor
+        }
+
+        if let textHex = UserDefaults.standard.string(forKey: UserDefaultsKey.textColorHex) {
+            self.textColor = Color(hex: textHex)
+        } else {
+            self.textColor = defaultTextColor
+        }
+    }
+
+    // MARK: - Public Methods
+
+    /// メインカラーを更新してUserDefaultsに保存
+    /// アクセントカラーは自動的にメインカラーから派生した色を設定
+    func updateMainColor(_ color: Color) {
+        mainColor = color
+        // アクセントカラーはメインカラーを少し暗くした色を自動生成
+        accentColor = color.adjustBrightness(by: -0.1)
+
+        UserDefaults.standard.set(color.toHex(), forKey: UserDefaultsKey.mainColorHex)
+        if let accentHex = accentColor.toHex() {
+            UserDefaults.standard.set(accentHex, forKey: UserDefaultsKey.accentColorHex)
+        }
+    }
+
+    /// アクセントカラーを更新してUserDefaultsに保存
+    func updateAccentColor(_ color: Color) {
+        accentColor = color
+        UserDefaults.standard.set(color.toHex(), forKey: UserDefaultsKey.accentColorHex)
+    }
+
+    /// ベースカラーを更新してUserDefaultsに保存
+    func updateBaseColor(_ color: Color) {
+        baseColor = color
+        UserDefaults.standard.set(color.toHex(), forKey: UserDefaultsKey.baseColorHex)
+    }
+
+    /// テキストカラーを更新してUserDefaultsに保存
+    func updateTextColor(_ color: Color) {
+        textColor = color
+        UserDefaults.standard.set(color.toHex(), forKey: UserDefaultsKey.textColorHex)
+    }
+
+    /// すべてのカラーをデフォルト値にリセット
+    /// UserDefaultsから削除した後、Assets.xcassetsから色を読み込む
+    func resetToDefaults() {
+        // UserDefaultsから削除
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKey.mainColorHex)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKey.accentColorHex)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKey.baseColorHex)
+        UserDefaults.standard.removeObject(forKey: UserDefaultsKey.textColorHex)
+
+        // Assets.xcassetsからデフォルトカラーを読み込み
+        mainColor = Color("main")
+        accentColor = Color("accent")
+        baseColor = Color("base")
+        textColor = Color("text")
+    }
+}
+
+// MARK: - Color Extension for Hex Conversion
+
+extension Color {
+    /// ColorをHex文字列に変換 (例: "#FABDC2")
+    func toHex() -> String? {
+        guard let components = UIColor(self).cgColor.components else { return nil }
+
+        let red = Int(components[0] * 255)
+        let green = Int(components[1] * 255)
+        let blue = Int(components[2] * 255)
+
+        return String(format: "#%02X%02X%02X", red, green, blue)
+    }
+
+    /// 明度を調整した色を返す
+    /// - Parameter amount: 調整量 (-1.0 ~ 1.0)。負の値で暗く、正の値で明るく
+    func adjustBrightness(by amount: Double) -> Color {
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+
+        UIColor(self).getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+
+        // 明度を調整 (0.0 ~ 1.0の範囲に制限)
+        let newBrightness = max(0, min(1, brightness + CGFloat(amount)))
+
+        return Color(
+            hue: Double(hue),
+            saturation: Double(saturation),
+            brightness: Double(newBrightness),
+            opacity: Double(alpha)
+        )
+    }
+}

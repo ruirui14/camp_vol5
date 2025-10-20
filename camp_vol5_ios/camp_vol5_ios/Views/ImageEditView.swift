@@ -455,6 +455,7 @@ struct ImageEditView: View {
 // MARK: - Color Palette View
 
 struct ColorPaletteView: View {
+    @ObservedObject private var themeManager = ColorThemeManager.shared
     @Binding var selectedColor: Color
     @Environment(\.presentationMode) var presentationMode
 
@@ -481,7 +482,9 @@ struct ColorPaletteView: View {
                                 .fill(
                                     color == .clear
                                         ? LinearGradient(
-                                            colors: [.main, .accent],
+                                            colors: [
+                                                themeManager.mainColor, themeManager.accentColor,
+                                            ],
                                             startPoint: .topLeading,
                                             endPoint: .bottomTrailing
                                         )

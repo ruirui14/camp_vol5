@@ -25,11 +25,13 @@ struct ListHeartBeatsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel = ListHeartBeatsViewModel()
     @StateObject private var backgroundImageCoordinator = BackgroundImageCoordinator()
+    @ObservedObject private var themeManager = ColorThemeManager.shared
     @State private var navigationPath = NavigationPath()
     @State private var isStatusBarHidden = false
     @State private var persistentSystemOverlaysVisibility: Visibility = .automatic
     @State private var hasAppearedOnce = false
     @State private var isEditMode = false
+    @State private var selectedThemeColor: Color = ColorThemeManager.shared.mainColor
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -129,18 +131,26 @@ struct ListHeartBeatsView: View {
                         navigationPath.append(NavigationDestination.settings)
                     } label: {
                         Image(systemName: "gearshape")
-                            .foregroundColor(.main)
+                            .foregroundColor(themeManager.mainColor)
                     }
                 }
 
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    ColorPicker("", selection: $selectedThemeColor)
+                        .labelsHidden()
+                        .onChange(of: selectedThemeColor) { _, newColor in
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                themeManager.updateMainColor(newColor)
+                            }
+                        }
+
                     Button {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             isEditMode.toggle()
                         }
                     } label: {
                         Image(systemName: isEditMode ? "checkmark" : "pencil")
-                            .foregroundColor(.main)
+                            .foregroundColor(themeManager.mainColor)
                     }
 
                     Menu {
@@ -158,14 +168,14 @@ struct ListHeartBeatsView: View {
                         }
                     } label: {
                         Image(systemName: "arrow.up.arrow.down")
-                            .foregroundColor(.main)
+                            .foregroundColor(themeManager.mainColor)
                     }
 
                     Button {
                         navigationPath.append(NavigationDestination.qrScanner)
                     } label: {
                         Image(systemName: "person.badge.plus")
-                            .foregroundColor(.main)
+                            .foregroundColor(themeManager.mainColor)
                     }
                 }
             }
