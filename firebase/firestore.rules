@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ユーザー認証済みかどうかをチェックするヘルパー関数
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // リクエストしているユーザーのUIDが指定されたUIDと一致するかチェック
+    function isUserAuthenticated(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ユーザーデータのバリデーション
+    function isValidUserData() {
+      return request.resource.data.keys().hasAll(['name', 'inviteCode', 'allowQRRegistration'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 50
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.matches('^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$')
+        && request.resource.data.allowQRRegistration is bool;
+    }
+
+    // デフォルトルール: すべて拒否
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // users コレクション
+    // ユーザードキュメント直下は誰でも読み取り可能、書き込みは本人のみ
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isUserAuthenticated(userId) && isValidUserData();
+      allow update: if isUserAuthenticated(userId) && isValidUserData();
+      allow delete: if isUserAuthenticated(userId);
+
+      // private サブコレクション: 本人のみアクセス可能
+      match /private/{docId} {
+        allow read, write, delete: if isUserAuthenticated(userId);
+      }
+
+      // following サブコレクション: 本人のみアクセス可能
+      match /following/{followId} {
+        allow read, write, delete: if isUserAuthenticated(userId);
+      }
+
+      // followers サブコレクション: 読み取りは本人のみ、書き込みは認証済みユーザー全員
+      match /followers/{followerId} {
+        allow read: if isUserAuthenticated(userId);
+        allow write, delete: if isAuthenticated();
+      }
+    }
+  }
+}

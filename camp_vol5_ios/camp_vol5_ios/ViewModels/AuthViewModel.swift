@@ -1,58 +1,108 @@
 // ViewModels/AuthViewModel.swift
+// AuthenticationManagerを使用した認証状態管理とAuthView用のUI状態管理
+// AuthViewの全ビジネスロジックをViewModelに集約
+
 import Combine
 import Foundation
 
-class AuthViewModel: ObservableObject {
-    @Published var email: String = ""
-    @Published var password: String = ""
-    @Published var name: String = ""
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var isSignUpMode: Bool = false
+@MainActor
+class AuthViewModel: BaseViewModel {
+    // MARK: - Published Properties
+    @Published var selectedAuthMethod: AuthMethod = .none
+    @Published var showEmailAuth = false
+    @Published var animateContent = false
+    @Published var showError = false
 
-    private let authService = AuthService.shared
-    private var cancellables = Set<AnyCancellable>()
+    // MARK: - Types
+    enum AuthMethod {
+        case none, google, apple, email, anonymous
+    }
 
-    init() {
-        // 認証サービスの状態を監視
-        authService.$isLoading
+    // MARK: - Dependencies
+    private var authenticationManager: AuthenticationManager
+
+    init(authenticationManager: AuthenticationManager = AuthenticationManager()) {
+        self.authenticationManager = authenticationManager
+        super.init()
+        setupBindings()
+        startAnimation()
+    }
+
+    private func setupBindings() {
+        // AuthenticationManagerの状態をViewModelに反映
+        authenticationManager.$isLoading
             .receive(on: DispatchQueue.main)
             .assign(to: \.isLoading, on: self)
             .store(in: &cancellables)
 
-        authService.$errorMessage
+        authenticationManager.$errorMessage
             .receive(on: DispatchQueue.main)
             .assign(to: \.errorMessage, on: self)
             .store(in: &cancellables)
+
+        // メール確認待ち状態の場合、EmailAuthシートを開いたままにする
+        authenticationManager.$needsEmailVerification
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] needsVerification in
+                if needsVerification && self?.selectedAuthMethod == .email {
+                    // メール確認待ち状態になったら、シートを開く
+                    self?.showEmailAuth = true
+                }
+            }
+            .store(in: &cancellables)
     }
 
-    func signIn() {
-        guard !email.isEmpty, !password.isEmpty else {
-            errorMessage = "メールアドレスとパスワードを入力してください"
-            return
-        }
+    // MARK: - Actions
 
-        authService.signIn(email: email, password: password)
+    func signInWithGoogle() {
+        selectedAuthMethod = .google
+        authenticationManager.selectedAuthMethod = "google"
+        authenticationManager.signInWithGoogle()
     }
 
-    func signUp() {
-        guard !email.isEmpty, !password.isEmpty, !name.isEmpty else {
-            errorMessage = "全ての項目を入力してください"
-            return
-        }
-
-        authService.signUp(email: email, password: password, name: name)
+    func signInWithApple() {
+        selectedAuthMethod = .apple
+        authenticationManager.selectedAuthMethod = "apple"
+        authenticationManager.signInWithApple()
     }
 
-    func toggleMode() {
-        isSignUpMode.toggle()
-        clearFields()
+    func signInAnonymously() {
+        selectedAuthMethod = .anonymous
+        authenticationManager.selectedAuthMethod = "anonymous"
+        authenticationManager.signInAnonymously()
     }
 
-    func clearFields() {
-        email = ""
-        password = ""
-        name = ""
-        errorMessage = nil
+    func showEmailAuthModal() {
+        selectedAuthMethod = .email
+        authenticationManager.selectedAuthMethod = "email"
+        showEmailAuth = true
+    }
+
+    func dismissEmailAuth() {
+        showEmailAuth = false
+        selectedAuthMethod = .none
+    }
+
+    override func clearError() {
+        authenticationManager.clearError()
+        selectedAuthMethod = .none
+    }
+
+    private func startAnimation() {
+        animateContent = true
+    }
+
+    // MARK: - Computed Properties
+
+    var isAuthenticated: Bool {
+        authenticationManager.isAuthenticated
+    }
+
+    var isGoogleLoading: Bool {
+        authenticationManager.isLoading && selectedAuthMethod == .google
+    }
+
+    var isAppleLoading: Bool {
+        authenticationManager.isLoading && selectedAuthMethod == .apple
     }
 }

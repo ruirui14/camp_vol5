@@ -1,7 +1,10 @@
 // Models/Heartbeat.swift
+// 心拍データを表すデータモデル
+// 純粋なデータ構造のみ - データ変換ロジックはRepositoryで実行
+
 import Foundation
 
-struct Heartbeat: Codable, Identifiable {
+struct Heartbeat: Codable, Identifiable, Equatable {
     var id = UUID()
     let userId: String
     let bpm: Int
@@ -12,19 +15,6 @@ struct Heartbeat: Codable, Identifiable {
         self.bpm = bpm
         self.timestamp = timestamp
     }
-
-    // Realtime Database データから初期化
-    init?(from data: [String: Any], userId: String) {
-        guard let bpm = data["bpm"] as? Int,
-            let timestamp = data["timestamp"] as? TimeInterval
-        else {
-            return nil
-        }
-
-        self.userId = userId
-        self.bpm = bpm
-        self.timestamp = Date(timeIntervalSince1970: timestamp / 1000)
-    }
 }
 
 // Firebase 送信用の軽量データ
@@ -33,13 +23,13 @@ struct HeartbeatData: Codable {
     let timestamp: TimeInterval
 
     init(from heartbeat: Heartbeat) {
-        self.bpm = heartbeat.bpm
-        self.timestamp = heartbeat.timestamp.timeIntervalSince1970 * 1000
+        bpm = heartbeat.bpm
+        timestamp = heartbeat.timestamp.timeIntervalSince1970 * 1000
     }
 
     init(bpm: Int) {
         self.bpm = bpm
-        self.timestamp = Date().timeIntervalSince1970 * 1000
+        timestamp = Date().timeIntervalSince1970 * 1000
     }
 
     func toDictionary() -> [String: Any] {

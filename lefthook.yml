@@ -1,0 +1,45 @@
+# Lefthook configuration for git hooks
+# See: https://github.com/evilmartians/lefthook
+
+pre-commit:
+  commands:
+    # Swift formatting and linting
+    swift-format:
+      # Format Swift code before committing
+      # Formats only staged Swift files
+      glob: "*.swift"
+      run: swift-format format -i {staged_files}
+      stage_fixed: true
+
+    swiftlint-fix:
+      # Auto-fix SwiftLint violations
+      # Fixes auto-correctable violations in staged files
+      glob: "*.swift"
+      run: swiftlint --fix --force-exclude {staged_files}
+      stage_fixed: true
+
+    swiftlint:
+      # Lint Swift code after formatting and auto-fixing
+      # Checks only staged Swift files
+      glob: "*.swift"
+      run: swiftlint lint --strict --force-exclude {staged_files}
+
+    # TypeScript formatting and linting (Firebase Functions)
+    prettier-ts:
+      # Format TypeScript code before committing
+      # Formats only staged TypeScript files in functions directory
+      glob: "functions/src/**/*.ts"
+      run: cd functions && pnpm exec prettier --write {staged_files}
+      stage_fixed: true
+
+    eslint-ts:
+      # Lint TypeScript code after formatting
+      # Checks only staged TypeScript files in functions directory
+      glob: "functions/src/**/*.ts"
+      run: cd functions && pnpm exec eslint {staged_files}
+
+    typescript-check:
+      # Type check TypeScript code
+      # Runs on any TypeScript file change in functions directory
+      glob: "functions/src/**/*.ts"
+      run: cd functions && pnpm run typecheck

@@ -1,72 +1,49 @@
 // Models/User.swift
-import FirebaseFirestore
+// ユーザー情報を表す純粋なデータモデル
+// データ変換ロジックはRepositoryレイヤーに移動
+
 import Foundation
 
-struct User: Codable, Identifiable {
+/// ユーザー情報を表すドメインモデル
+/// ビジネスロジックやデータ変換を含まない純粋なデータ構造
+struct User: Codable, Identifiable, Equatable {
     let id: String
     let name: String
-    let inviteCode: String  // UUIDv4
+    let inviteCode: String
     let allowQRRegistration: Bool
-    let followingUserIds: [String]
     let createdAt: Date?
     let updatedAt: Date?
 
-    // Firestore用の初期化
+    // MARK: - Initialization
+
+    /// 標準イニシャライザ
     init(
         id: String,
         name: String,
-        inviteCode: String = UUID().uuidString,
-        allowQRRegistration: Bool = true,
-        followingUserIds: [String] = []
+        inviteCode: String,
+        allowQRRegistration: Bool,
+        createdAt: Date? = nil,
+        updatedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
         self.inviteCode = inviteCode
         self.allowQRRegistration = allowQRRegistration
-        self.followingUserIds = followingUserIds
-        self.createdAt = Date()
-        self.updatedAt = Date()
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
 
-    // Firestore データから初期化
-    init?(from data: [String: Any], id: String) {
-        guard let name = data["name"] as? String,
-            let inviteCode = data["inviteCode"] as? String,
-            let allowQRRegistration = data["allowQRRegistration"] as? Bool,
-            let followingUserIds = data["followingUserIds"] as? [String]
-        else {
-            return nil
-        }
+    // MARK: - Convenience Initializers
 
-        self.id = id
-        self.name = name
-        self.inviteCode = inviteCode
-        self.allowQRRegistration = allowQRRegistration
-        self.followingUserIds = followingUserIds
-
-        if let createdAtTimestamp = data["createdAt"] as? Timestamp {
-            self.createdAt = createdAtTimestamp.dateValue()
-        } else {
-            self.createdAt = nil
-        }
-
-        if let updatedAtTimestamp = data["updatedAt"] as? Timestamp {
-            self.updatedAt = updatedAtTimestamp.dateValue()
-        } else {
-            self.updatedAt = nil
-        }
-    }
-
-    // Firestore保存用辞書に変換
-    func toDictionary() -> [String: Any] {
-        return [
-            "id": id,
-            "name": name,
-            "inviteCode": inviteCode,
-            "allowQRRegistration": allowQRRegistration,
-            "followingUserIds": followingUserIds,
-            "createdAt": Timestamp(date: createdAt ?? Date()),
-            "updatedAt": Timestamp(date: updatedAt ?? Date()),
-        ]
+    /// 新規ユーザー作成用のコンビニエンスイニシャライザ
+    init(id: String, name: String) {
+        self.init(
+            id: id,
+            name: name,
+            inviteCode: UUID().uuidString,
+            allowQRRegistration: false,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
     }
 }
