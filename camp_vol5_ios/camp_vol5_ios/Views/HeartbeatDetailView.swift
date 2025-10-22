@@ -16,6 +16,7 @@ struct HeartbeatDetailView: View {
     @StateObject private var viewModel: HeartbeatDetailViewModel
     @ObservedObject private var vibrationService = VibrationService.shared
     @StateObject private var autoLockManager = AutoLockManager.shared
+    @StateObject private var orientationManager = DeviceOrientationManager.shared
 
     // MARK: - Environment & Presentation
     @Environment(\.presentationMode) var presentationMode
@@ -173,6 +174,9 @@ struct HeartbeatDetailView: View {
         .onChange(of: viewModel.isSleepMode) {
             updateSystemUIVisibility()
         }
+        .onChange(of: orientationManager.isFaceDown) { _, isFaceDown in
+            handleOrientationChange(isFaceDown: isFaceDown)
+        }
         .fullScreenCover(
             isPresented: $showingImageEditor,
             onDismiss: {
@@ -234,11 +238,13 @@ struct HeartbeatDetailView: View {
         loadPersistedData()
         loadSavedBackgroundColor()
         setupAutoLock()
+        orientationManager.startMonitoring()
     }
 
     private func teardownView() {
         viewModel.stopMonitoring()
         autoLockManager.disableAutoLockDisabling()
+        orientationManager.stopMonitoring()
     }
 
     private func updateSystemUIVisibility() {
@@ -262,6 +268,14 @@ struct HeartbeatDetailView: View {
         imageOffset = CGSize.zero
         imageScale = 1.0
         persistenceManager.clearAllData()
+    }
+
+    private func handleOrientationChange(isFaceDown: Bool) {
+        // 自動スリープが有効で、まだスリープモードでない場合のみ自動でスリープモードに移行
+        if isFaceDown && orientationManager.autoSleepEnabled && !viewModel.isSleepMode {
+            viewModel.toggleSleepMode()
+            updateSystemUIVisibility()
+        }
     }
 
     private func refreshPersistedData() {

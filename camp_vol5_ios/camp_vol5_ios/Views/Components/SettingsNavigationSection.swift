@@ -75,6 +75,14 @@ struct SettingsNavigationSection: View {
                 )
             }
 
+            NavigationLink(destination: AutoSleepSettingsView()) {
+                SettingRow(
+                    icon: "moon.circle",
+                    title: "画面自動OFF",
+                    subtitle: "下向き検知で自動スリープ"
+                )
+            }
+
             Button {
                 showColorResetAlert = true
             } label: {
