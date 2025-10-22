@@ -20,6 +20,7 @@ struct HeartbeatDetailView: View {
 
     // MARK: - Environment & Presentation
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject private var viewModelFactory: ViewModelFactory
     @Binding private var isStatusBarHidden: Bool
     @Binding private var isPersistentSystemOverlaysHidden: Visibility
 
@@ -28,6 +29,7 @@ struct HeartbeatDetailView: View {
     @State private var editedImage: UIImage?
     @State private var showingImageEditor = false
     @State private var showingCardBackgroundEditSheet = false
+    @State private var showingStreamView = false
     @State private var imageOffset = CGSize.zero
     @State private var imageScale: CGFloat = 1.0
     @State private var imageRotation: Double = 0.0
@@ -36,6 +38,7 @@ struct HeartbeatDetailView: View {
     @State private var savedBackgroundColor: Color = .clear
     @State private var backgroundImageData: Data?
     @State private var isAnimatedBackground: Bool = false
+    @State private var streamViewModel: StreamViewModel?
 
     // MARK: - Dependencies
     private let persistenceManager = PersistenceManager.shared
@@ -150,6 +153,15 @@ struct HeartbeatDetailView: View {
                     onToggleVibration: {
                         viewModel.toggleVibration()
                     },
+                    onOpenStream: {
+                        // StreamViewModelを一度だけ作成して保持
+                        // HeartbeatDetailViewModelの心拍データを共有する
+                        if streamViewModel == nil {
+                            streamViewModel = viewModelFactory.makeStreamViewModel(
+                                heartbeatDetailViewModel: viewModel)
+                        }
+                        showingStreamView = true
+                    },
                     onEditCardBackground: {
                         vibrationService.stopVibration()
                         showingCardBackgroundEditSheet = true
@@ -202,6 +214,14 @@ struct HeartbeatDetailView: View {
         ) {
             CardBackgroundEditView(userId: userIdParams)
         }
+        .navigationDestination(isPresented: $showingStreamView) {
+            if let streamViewModel = streamViewModel {
+                StreamView(
+                    viewModel: streamViewModel,
+                    userName: viewModel.user?.name ?? ""
+                )
+            }
+        }
     }
 
     private func loadPersistedData() {
@@ -242,7 +262,11 @@ struct HeartbeatDetailView: View {
     }
 
     private func teardownView() {
-        viewModel.stopMonitoring()
+        // StreamViewが表示されている場合は監視を継続
+        // （StreamViewがHeartbeatDetailViewModelのデータを使用しているため）
+        if !showingStreamView {
+            viewModel.stopMonitoring()
+        }
         autoLockManager.disableAutoLockDisabling()
         orientationManager.stopMonitoring()
     }

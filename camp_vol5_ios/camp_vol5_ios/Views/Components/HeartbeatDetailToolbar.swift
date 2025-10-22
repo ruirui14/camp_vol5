@@ -10,6 +10,7 @@ struct HeartbeatDetailToolbar: ToolbarContent {
     let onDismiss: () -> Void
     let onToggleSleep: () -> Void
     let onToggleVibration: () -> Void
+    let onOpenStream: () -> Void
     let onEditCardBackground: () -> Void
     let onEditBackgroundImage: () -> Void
     let onResetBackgroundImage: () -> Void
@@ -27,6 +28,14 @@ struct HeartbeatDetailToolbar: ToolbarContent {
 
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 15) {
+                // 配信視聴ボタン
+                Button(action: onOpenStream) {
+                    Image(systemName: "play.tv")
+                        .foregroundColor(.white)
+                        .font(.title3)
+                        .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
+                }
+
                 // 手動スリープボタン
                 Button(action: onToggleSleep) {
                     Image(systemName: "moon.circle")

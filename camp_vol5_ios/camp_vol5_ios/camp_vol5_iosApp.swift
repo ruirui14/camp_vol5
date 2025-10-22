@@ -177,4 +177,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // 将来の実装: 通知タップ時の処理（ユーザー画面への遷移など）
         completionHandler()
     }
+
+    // MARK: - Orientation Support
+
+    func application(
+        _ application: UIApplication,
+        supportedInterfaceOrientationsFor window: UIWindow?
+    ) -> UIInterfaceOrientationMask {
+        // 全ての向き（上下逆さま以外）を許可
+        return .allButUpsideDown
+    }
 }
