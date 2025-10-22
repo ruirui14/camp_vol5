@@ -15,6 +15,7 @@ struct StreamView: View {
 
     // MARK: - UI State
     @State private var heartOffset: CGSize = .zero
+    @State private var lastHeartOffset: CGSize = .zero
     private let heartSize: CGFloat = 105.0
 
     // MARK: - Initialization
@@ -63,11 +64,16 @@ struct StreamView: View {
             .gesture(
                 DragGesture()
                     .onChanged { value in
-                        heartOffset = value.translation
+                        heartOffset = CGSize(
+                            width: lastHeartOffset.width + value.translation.width,
+                            height: lastHeartOffset.height + value.translation.height
+                        )
+                    }
+                    .onEnded { _ in
+                        lastHeartOffset = heartOffset
                     }
             )
         }
-        .navigationTitle(userName)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
