@@ -22,6 +22,8 @@ struct ImageEditView: View {
     @State private var selectedBackgroundColor: Color = .clear
     @Environment(\.presentationMode) var presentationMode
     @State private var tempColor: Color = .clear
+    @State private var imageData: Data?
+    @State private var isAnimatedImage: Bool = false
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -36,8 +38,32 @@ struct ImageEditView: View {
                     MainAccentGradient()
                 }
 
-                // 画像表示とジェスチャー
-                if let image = image {
+                // 画像表示とジェスチャー（GIF対応）
+                if let data = imageData, isAnimatedImage {
+                    // GIFアニメーションの場合
+                    ZStack {
+                        AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
+                            .scaleEffect(tempScale)
+                            .rotationEffect(.degrees(tempRotation))
+                            .offset(tempOffset)
+                            .ignoresSafeArea()
+
+                        // ジェスチャー用の透明レイヤー
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .ignoresSafeArea()
+                            .gesture(
+                                SimultaneousGesture(
+                                    SimultaneousGesture(
+                                        dragGesture,
+                                        magnificationGesture
+                                    ),
+                                    rotationGesture
+                                )
+                            )
+                    }
+                } else if let image = image {
+                    // 通常の画像の場合
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -200,7 +226,17 @@ struct ImageEditView: View {
                             userId: userId
                         )
 
+                        // 背景色を保存
                         persistenceManager.saveBackgroundColor(tempColor, userId: userId)
+
+                        // 画像データを保存（GIF対応）
+                        if let image = image {
+                            persistenceManager.saveBackgroundImage(
+                                image,
+                                userId: userId,
+                                imageData: imageData
+                            )
+                        }
 
                         onApply()
                     }
@@ -212,7 +248,7 @@ struct ImageEditView: View {
             }
         }
         .sheet(isPresented: $showingPhotoPicker) {
-            PhotoPicker(selectedImage: $image)
+            GifPhotoPickerView(selectedImage: $image, selectedImageData: $imageData)
         }
         .onAppear {
             // ハートのサイズを読み込み
@@ -220,6 +256,14 @@ struct ImageEditView: View {
 
             // 背景色を読み込み
             selectedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userId)
+
+            // アニメーション画像かどうかを確認
+            isAnimatedImage = persistenceManager.isAnimatedImage(userId: userId)
+
+            // 画像データを読み込み（GIF対応）
+            if let data = persistenceManager.loadBackgroundImageData(userId: userId) {
+                imageData = data
+            }
 
             // Bindingから渡された値を優先し、無ければ永続化データから読み込み
             if imageOffset != .zero || imageScale != 1.0 || imageRotation != 0.0 {
@@ -254,6 +298,16 @@ struct ImageEditView: View {
         .onChange(of: selectedBackgroundColor) { _, newColor in
             // 背景色が変更されたときに仮保存
             tempColor = newColor
+        }
+        .onChange(of: imageData) { _, newData in
+            // 画像データが変更されたときにGIFかどうかを判定
+            if let data = newData, data.count > 3 {
+                // GIFのマジックナンバーをチェック（"GIF"）
+                let header = [UInt8](data.prefix(3))
+                isAnimatedImage = (header == [0x47, 0x49, 0x46])
+            } else {
+                isAnimatedImage = false
+            }
         }
     }
 
@@ -450,90 +504,4 @@ struct ImageEditView: View {
                 lastRotation = tempRotation
             }
     }
-}
-
-// MARK: - Color Palette View
-
-struct ColorPaletteView: View {
-    @ObservedObject private var themeManager = ColorThemeManager.shared
-    @Binding var selectedColor: Color
-    @Environment(\.presentationMode) var presentationMode
-
-    private let colors: [Color] = [
-        .clear, .red, .orange, .yellow, .green, .mint, .teal, .cyan,
-        .blue, .indigo, .purple, .pink, .brown, .gray, .black, .white,
-    ]
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Text("背景色を選択")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .padding(.top)
-
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
-                    ForEach(colors, id: \.self) { color in
-                        Button(action: {
-                            selectedColor = color
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(
-                                    color == .clear
-                                        ? LinearGradient(
-                                            colors: [
-                                                themeManager.mainColor, themeManager.accentColor,
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                        : LinearGradient(
-                                            colors: [color], startPoint: .center, endPoint: .center
-                                        )
-                                )
-                                .frame(width: 60, height: 60)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .stroke(
-                                            selectedColor == color
-                                                ? Color.blue : Color.gray.opacity(0.3),
-                                            lineWidth: selectedColor == color ? 3 : 1
-                                        )
-                                )
-                                .overlay(
-                                    color == .clear
-                                        ? Text("デフォルト")
-                                            .font(.caption)
-                                            .foregroundColor(.white)
-                                            .shadow(color: .black, radius: 1) : nil
-                                )
-                        }
-                    }
-                }
-                .padding(.horizontal)
-
-                Spacer()
-            }
-            .navigationTitle("カラーパレット")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                trailing:
-                    Button("キャンセル") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-            )
-        }
-    }
-}
-
-#Preview {
-    ImageEditView(
-        image: .constant(UIImage(systemName: "photo")),
-        imageOffset: .constant(CGSize.zero),
-        imageScale: .constant(1.0),
-        imageRotation: .constant(0.0),
-        onApply: {},
-        userId: "preview_user"
-    )
 }
