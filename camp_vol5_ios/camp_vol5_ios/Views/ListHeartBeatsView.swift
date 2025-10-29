@@ -100,6 +100,13 @@ struct ListHeartBeatsView: View {
                             for: viewModel.followingUsersWithHeartbeats)
                     }
                 }
+
+                // ColorPickerの初期値をthemeManagerと同期
+                selectedThemeColor = themeManager.mainColor
+            }
+            .onChange(of: themeManager.mainColor) { _, newColor in
+                // themeManagerの色が変更されたらColorPickerも同期
+                selectedThemeColor = newColor
             }
             .onReceive(
                 NotificationCenter.default.publisher(
