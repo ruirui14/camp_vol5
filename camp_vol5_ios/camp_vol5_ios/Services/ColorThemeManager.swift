@@ -111,11 +111,23 @@ class ColorThemeManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: UserDefaultsKey.baseColorHex)
         UserDefaults.standard.removeObject(forKey: UserDefaultsKey.textColorHex)
 
-        // Assets.xcassetsからデフォルトカラーを読み込み
-        mainColor = Color("main")
-        accentColor = Color("accent")
-        baseColor = Color("base")
-        textColor = Color("text")
+        // 一度クリアカラーに設定してから、デフォルトカラーに戻すことで変更検知を確実にする
+        mainColor = .clear
+        accentColor = .clear
+        baseColor = .clear
+        textColor = .clear
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            // Assets.xcassetsから直接デフォルトカラーを読み込み
+            // updateMainColor() などは使わない（accentColorが自動生成されてしまうため）
+            // update-Colorを使わなくても、UserDefaultsが空の状態で初期化されるため、デフォルト色が自動で設定される
+            self.mainColor = Color("main")
+            self.accentColor = Color("accent")
+            self.baseColor = Color("base")
+            self.textColor = Color("text")
+        }
     }
 }
 
