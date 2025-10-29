@@ -156,6 +156,10 @@ class HeartbeatDetailViewModel: ObservableObject {
     }
 
     private func enableVibrationIfNeeded() {
+        guard vibrationService.isEnabled else {
+            return
+        }
+
         if hasValidHeartbeat, let bpm = currentHeartbeat?.bpm {
             vibrationService.startHeartbeatVibration(bpm: bpm)
         } else if currentHeartbeat == nil {
