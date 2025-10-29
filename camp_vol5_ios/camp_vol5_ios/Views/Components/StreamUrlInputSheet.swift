@@ -8,6 +8,7 @@ struct StreamUrlInputSheet: View {
     @Environment(\.dismiss) var dismiss
     @Binding var streamUrl: String
     @State private var inputText: String = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         NavigationView {
@@ -16,11 +17,28 @@ struct StreamUrlInputSheet: View {
                     .font(.headline)
                     .padding(.top)
 
-                TextField("配信URLをペースト", text: $inputText)
-                    .textFieldStyle(.roundedBorder)
-                    .autocapitalization(.none)
-                    .autocorrectionDisabled()
-                    .padding(.horizontal)
+                HStack {
+                    TextField("配信URLをペースト", text: $inputText)
+                        .autocapitalization(.none)
+                        .autocorrectionDisabled()
+                        .focused($isFocused)
+                        .submitLabel(.done)
+
+                    if !inputText.isEmpty {
+                        Button(action: {
+                            inputText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .padding(.horizontal)
 
                 Text("YouTube、Twitch、ニコニコ動画などの配信URLを貼り付けてください")
                     .font(.caption)
