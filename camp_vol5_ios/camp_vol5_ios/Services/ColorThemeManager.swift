@@ -10,6 +10,10 @@ import SwiftUI
 class ColorThemeManager: ObservableObject {
     static let shared = ColorThemeManager()
 
+    /// カラーがリセットされた時に送信される通知
+    static let didResetToDefaultsNotification = Notification.Name(
+        "ColorThemeManagerDidResetToDefaults")
+
     // MARK: - Published Properties
 
     /// メインカラー (Assets.xcassetsのデフォルト: #FABDC2)
@@ -127,6 +131,10 @@ class ColorThemeManager: ObservableObject {
             self.accentColor = Color("accent")
             self.baseColor = Color("base")
             self.textColor = Color("text")
+
+            // ColorPickerなどのUIコンポーネントに通知
+            NotificationCenter.default.post(
+                name: ColorThemeManager.didResetToDefaultsNotification, object: nil)
         }
     }
 }

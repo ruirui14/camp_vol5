@@ -111,6 +111,18 @@ struct ListHeartBeatsView: View {
                 backgroundImageCoordinator.loadBackgroundImages(
                     for: viewModel.followingUsersWithHeartbeats)
             }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: ColorThemeManager.didResetToDefaultsNotification
+                )
+            ) { _ in
+                // カラーテーマがリセットされた時にColorPickerも同期
+                ignoreColorChange = true
+                selectedThemeColor = themeManager.mainColor
+                DispatchQueue.main.async {
+                    ignoreColorChange = false
+                }
+            }
             .onReceive(viewModel.$followingUsersWithHeartbeats) { usersWithHeartbeats in
                 // フォローユーザーのデータが更新された時に背景画像を更新
                 if !usersWithHeartbeats.isEmpty
