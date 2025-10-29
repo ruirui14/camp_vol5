@@ -15,6 +15,7 @@ struct SettingsNavigationSection: View {
     @State private var showColorResetAlert = false
 
     var body: some View {
+        // アカウント設定セクション
         Section {
             Button {
                 showEmailConfirmation = true
@@ -66,7 +67,12 @@ struct SettingsNavigationSection: View {
                     subtitle: "現在の心拍情報・同時接続者数を確認"
                 )
             }
+        } header: {
+            Text("アカウント設定")
+        }
 
+        // 表示設定セクション
+        Section {
             NavigationLink(destination: AutoLockSettingsView(autoLockManager: autoLockManager)) {
                 SettingRow(
                     icon: "lock.circle",
@@ -108,7 +114,12 @@ struct SettingsNavigationSection: View {
             } message: {
                 Text("カラーテーマをデフォルトに戻しますか？")
             }
+        } header: {
+            Text("表示設定")
+        }
 
+        // 情報・サポートセクション
+        Section {
             NavigationLink(destination: TermsOfServiceView()) {
                 SettingRow(
                     icon: "doc.text",
@@ -153,7 +164,12 @@ struct SettingsNavigationSection: View {
                         .foregroundColor(Color(.tertiaryLabel))
                 }
             }
+        } header: {
+            Text("情報・サポート")
+        }
 
+        // アカウント管理セクション
+        Section {
             NavigationLink(destination: AccountDeletionView(viewModel: viewModel)) {
                 SettingRow(
                     icon: "trash.circle",
@@ -161,6 +177,8 @@ struct SettingsNavigationSection: View {
                     subtitle: "アカウントとデータを完全に削除"
                 )
             }
+        } header: {
+            Text("アカウント管理")
         }
     }
 }
