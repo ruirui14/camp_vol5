@@ -32,6 +32,7 @@ struct ListHeartBeatsView: View {
     @State private var hasAppearedOnce = false
     @State private var isEditMode = false
     @State private var selectedThemeColor: Color = ColorThemeManager.shared.mainColor
+    @State private var ignoreColorChange = false
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -100,13 +101,6 @@ struct ListHeartBeatsView: View {
                             for: viewModel.followingUsersWithHeartbeats)
                     }
                 }
-
-                // ColorPickerの初期値をthemeManagerと同期
-                selectedThemeColor = themeManager.mainColor
-            }
-            .onChange(of: themeManager.mainColor) { _, newColor in
-                // themeManagerの色が変更されたらColorPickerも同期
-                selectedThemeColor = newColor
             }
             .onReceive(
                 NotificationCenter.default.publisher(
@@ -146,6 +140,8 @@ struct ListHeartBeatsView: View {
                     ColorPicker("", selection: $selectedThemeColor)
                         .labelsHidden()
                         .onChange(of: selectedThemeColor) { _, newColor in
+                            // 初期化時やプログラムからの変更時は無視
+                            guard !ignoreColorChange else { return }
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 themeManager.updateMainColor(newColor)
                             }
