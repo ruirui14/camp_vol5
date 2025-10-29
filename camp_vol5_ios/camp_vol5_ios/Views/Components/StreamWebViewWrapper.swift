@@ -1,34 +1,62 @@
 // Views/Components/StreamWebViewWrapper.swift
-// WKWebViewをSwiftUIで使用するためのラッパー
-// 配信URLを表示するためのWebViewコンポーネント
+// YouTubePlayerKitを使用したYouTube動画再生ラッパー
+// YouTube動画をフルスクリーンで再生し、テキストオーバーレイをサポート
+// YouTube IFrame Player APIの制限を回避し、安定した動画再生を実現
+// YouTubeURLServiceを使用してURL解析を行い、MVVMアーキテクチャに準拠
 
 import SwiftUI
-import WebKit
+import YouTubePlayerKit
 
-struct StreamWebViewWrapper: UIViewRepresentable {
+struct StreamWebViewWrapper: View {
+    // MARK: - Properties
+
     let urlString: String
+    @State private var youtubePlayer: YouTubePlayer
 
-    func makeUIView(context: Context) -> WKWebView {
-        let configuration = WKWebViewConfiguration()
-        configuration.allowsInlineMediaPlayback = true
-        configuration.mediaTypesRequiringUserActionForPlayback = []
+    // MARK: - Dependencies
 
-        let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.scrollView.isScrollEnabled = true
-        webView.allowsBackForwardNavigationGestures = true
+    private let youtubeURLService: YouTubeURLServiceProtocol
 
-        return webView
+    // MARK: - Initialization
+
+    init(
+        urlString: String,
+        youtubeURLService: YouTubeURLServiceProtocol = YouTubeURLService.shared
+    ) {
+        self.urlString = urlString
+        self.youtubeURLService = youtubeURLService
+
+        // YouTube URLから動画IDを抽出
+        let videoID = youtubeURLService.extractVideoID(from: urlString)
+        _youtubePlayer = State(
+            initialValue: YouTubePlayer(
+                source: .video(id: videoID.isEmpty ? "dQw4w9WgXcQ" : videoID),
+                configuration: .init(
+                    fullscreenMode: .system,
+                    allowsInlineMediaPlayback: true
+                )
+            ))
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {
-        guard !urlString.isEmpty, let url = URL(string: urlString) else {
-            return
-        }
+    // MARK: - Body
 
-        // 現在のURLと異なる場合のみ読み込み
-        if webView.url?.absoluteString != urlString {
-            let request = URLRequest(url: url)
-            webView.load(request)
-        }
+    var body: some View {
+        YouTubePlayerView(youtubePlayer)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black)
+            .ignoresSafeArea()
+            .onChange(of: urlString) { newValue in
+                let videoID = youtubeURLService.extractVideoID(from: newValue)
+                if !videoID.isEmpty {
+                    // 新しい動画IDで YouTubePlayer を再作成
+                    youtubePlayer = YouTubePlayer(
+                        source: .video(id: videoID),
+                        configuration: .init(
+                            fullscreenMode: .system,
+                            allowsInlineMediaPlayback: true
+                        )
+                    )
+                }
+            }
     }
 }
