@@ -67,13 +67,50 @@ class HeartbeatSimulator {
     const timestamp = Date.now();
 
     try {
-      await database.ref(`live_heartbeats/${this.userId}`).set({
+      const ref = database.ref(`live_heartbeats/${this.userId}`);
+
+      // 既存のconnections値を取得
+      const snapshot = await ref.child('connections').once('value');
+      const currentConnections = snapshot.val() || 0;
+
+      await ref.update({
         bpm: bpm,
         timestamp: timestamp
       });
-      console.log(`[${new Date().toISOString()}] User ${this.userId}: ${bpm} bpm`);
+      console.log(`[${new Date().toISOString()}] User ${this.userId}: ${bpm} bpm (connections: ${currentConnections})`);
     } catch (error) {
       console.error(`Error updating heartbeat for ${this.userId}:`, error);
+    }
+  }
+
+  /**
+   * 接続開始時にconnectionsをインクリメント
+   */
+  async incrementConnections() {
+    try {
+      const ref = database.ref(`live_heartbeats/${this.userId}/connections`);
+      const snapshot = await ref.once('value');
+      const currentConnections = snapshot.val() || 0;
+      await ref.set(currentConnections + 1);
+      console.log(`[${this.userId}] Connections incremented: ${currentConnections + 1}`);
+    } catch (error) {
+      console.error(`Error incrementing connections for ${this.userId}:`, error);
+    }
+  }
+
+  /**
+   * 接続終了時にconnectionsをデクリメント
+   */
+  async decrementConnections() {
+    try {
+      const ref = database.ref(`live_heartbeats/${this.userId}/connections`);
+      const snapshot = await ref.once('value');
+      const currentConnections = snapshot.val() || 0;
+      const newConnections = Math.max(0, currentConnections - 1);
+      await ref.set(newConnections);
+      console.log(`[${this.userId}] Connections decremented: ${newConnections}`);
+    } catch (error) {
+      console.error(`Error decrementing connections for ${this.userId}:`, error);
     }
   }
 }
@@ -95,6 +132,12 @@ async function startSimulation(userIds, intervalSeconds = 3) {
     return new HeartbeatSimulator(userId, baseBpm);
   });
 
+  // 開始時にconnectionsをインクリメント
+  console.log('Incrementing connections...');
+  const incrementPromises = simulators.map(sim => sim.incrementConnections());
+  await Promise.all(incrementPromises);
+  console.log('');
+
   // 定期的に更新
   const interval = setInterval(async () => {
     const updatePromises = simulators.map(sim => sim.updateHeartbeat());
@@ -105,6 +148,11 @@ async function startSimulation(userIds, intervalSeconds = 3) {
   process.on('SIGINT', async () => {
     console.log('\n\nStopping simulation...');
     clearInterval(interval);
+
+    // connectionsをデクリメント
+    console.log('Decrementing connections...');
+    const decrementPromises = simulators.map(sim => sim.decrementConnections());
+    await Promise.all(decrementPromises);
 
     // 最後にすべてのユーザーの心拍データを削除（オプション）
     console.log('Cleaning up heartbeat data...');
