@@ -11,6 +11,7 @@ import Foundation
 /// Firebase Realtime DatabaseベースのHeartbeatRepository実装
 class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
     private let database: Database
+    private var connectionHandles: [String: DatabaseHandle] = [:]  // userId -> .info/connected observer handle
     private var connectionCountHandles: [String: DatabaseHandle] = [:]  // userId -> connections observer handle
     private var heartbeatObserverHandles: [String: [DatabaseHandle]] = [:]  // userId -> [observer handles]
     private var observerCount: [String: Int] = [:]  // userId -> active observer count
@@ -78,8 +79,8 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
         let count = (observerCount[userId] ?? 0) + 1
         observerCount[userId] = count
 
-        // 注: 接続数カウンター機能は複雑さを避けるため無効化
-        // 必要に応じて将来再実装可能
+        // 接続数管理: .info/connectedを監視して自動的に接続数を管理
+        setupConnectionCounter(for: userId)
 
         return subject.eraseToAnyPublisher()
     }
@@ -104,6 +105,9 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
             // クリーンアップ
             heartbeatObserverHandles.removeValue(forKey: userId)
             observerCount.removeValue(forKey: userId)
+
+            // 接続数管理の監視を停止
+            removeConnectionCounter(for: userId)
         }
     }
 
@@ -166,6 +170,7 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
         }
 
         connectionCountHandles[userId] = handle
+        print("🔗 接続数の監視を開始: \(userId)")
 
         return subject.eraseToAnyPublisher()
     }
@@ -184,5 +189,109 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
 
         ref.removeObserver(withHandle: handle)
         connectionCountHandles.removeValue(forKey: userId)
+        print("🔗 接続数の監視を停止: \(userId)")
+    }
+
+    // MARK: - Private: Connection Counter Management
+
+    /// 接続数カウンターを設定
+    /// .info/connectedを監視し、接続時に+1、切断時に自動的に-1する
+    /// - Parameter userId: 対象ユーザーID
+    private func setupConnectionCounter(for userId: String) {
+        // 既に監視中の場合はスキップ
+        guard connectionHandles[userId] == nil else {
+            print("⚠️ 接続数カウンターは既に設定されています: \(userId)")
+            return
+        }
+
+        let connectedRef = Database.database().reference(withPath: ".info/connected")
+        let handle = connectedRef.observe(.value) { [weak self] snapshot in
+            guard let self = self,
+                let connected = snapshot.value as? Bool,
+                connected
+            else {
+                return
+            }
+
+            // 接続確立時の処理
+            let connectionsRef = self.database.reference()
+                .child("live_heartbeats")
+                .child(userId)
+                .child("connections")
+
+            // トランザクションで安全に接続数を+1
+            connectionsRef.runTransactionBlock { currentData in
+                var value = currentData.value as? Int ?? 0
+                value += 1
+                currentData.value = value
+                return TransactionResult.success(withValue: currentData)
+            } andCompletionBlock: { [weak self] error, committed, snapshot in
+                if let error = error {
+                    print("❌ 接続数の増加に失敗: \(error.localizedDescription)")
+                } else if committed {
+                    let count = snapshot?.value as? Int ?? 0
+                    print("✅ 接続数を増加: \(userId), 現在の接続数: \(count)")
+
+                    // 切断時に自動的に-1する設定
+                    self?.database.reference()
+                        .child("live_heartbeats")
+                        .child(userId)
+                        .child("connections")
+                        .onDisconnectSetValue(max(0, count - 1)) { error, _ in
+                            if let error = error {
+                                print("❌ onDisconnect設定に失敗: \(error.localizedDescription)")
+                            } else {
+                                print("✅ onDisconnect設定完了: 切断時は\(count - 1)に")
+                            }
+                        }
+                }
+            }
+        }
+
+        connectionHandles[userId] = handle
+        print("🔗 接続数カウンターを設定: \(userId)")
+    }
+
+    /// 接続数カウンターの監視を停止
+    /// - Parameter userId: 対象ユーザーID
+    private func removeConnectionCounter(for userId: String) {
+        guard let handle = connectionHandles[userId] else {
+            return
+        }
+
+        // .info/connectedの監視を停止
+        let connectedRef = Database.database().reference(withPath: ".info/connected")
+        connectedRef.removeObserver(withHandle: handle)
+        connectionHandles.removeValue(forKey: userId)
+
+        // 手動で接続数を-1
+        let connectionsRef = database.reference()
+            .child("live_heartbeats")
+            .child(userId)
+            .child("connections")
+
+        connectionsRef.runTransactionBlock { currentData in
+            var value = currentData.value as? Int ?? 0
+            value = max(0, value - 1)
+            currentData.value = value
+            return TransactionResult.success(withValue: currentData)
+        } andCompletionBlock: { error, committed, snapshot in
+            if let error = error {
+                print("❌ 接続数の減少に失敗: \(error.localizedDescription)")
+            } else if committed {
+                print("✅ 接続数を減少: \(userId), 現在の接続数: \(snapshot?.value ?? "unknown")")
+            }
+        }
+
+        // onDisconnect操作をキャンセル
+        connectionsRef.cancelDisconnectOperations { error, _ in
+            if let error = error {
+                print("❌ onDisconnectキャンセルに失敗: \(error.localizedDescription)")
+            } else {
+                print("✅ onDisconnectをキャンセル: \(userId)")
+            }
+        }
+
+        print("🔗 接続数カウンターを削除: \(userId)")
     }
 }
