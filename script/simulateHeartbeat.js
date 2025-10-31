@@ -155,10 +155,10 @@ async function startSimulation(userIds, intervalSeconds = 3) {
     await Promise.all(decrementPromises);
 
     // 最後にすべてのユーザーの心拍データを削除（オプション）
-    console.log('Cleaning up heartbeat data...');
-    const deletePromises = userIds.map(userId =>
-      database.ref(`live_heartbeats/${userId}`).remove()
-    );
+    // console.log('Cleaning up heartbeat data...');
+    // const deletePromises = userIds.map(userId =>
+    //   database.ref(`live_heartbeats/${userId}`).remove()
+    // );
     await Promise.all(deletePromises);
 
     console.log('Cleanup complete!');
@@ -173,8 +173,8 @@ async function startSimulation(userIds, intervalSeconds = 3) {
 // シミュレート対象のユーザーIDを設定
 // 実際のユーザーIDに置き換えてください
 const userIds = [
-  'Io3ANwnrAHTMU3PQPQBV4oLXC2t1',
-  // 'demo-user-2',
+  // 'Io3ANwnrAHTMU3PQPQBV4oLXC2t1',
+  'EKra5EuFx1cvy8d2LKV0gh2DfQE3',
   // 'demo-user-3'
 ];
 
