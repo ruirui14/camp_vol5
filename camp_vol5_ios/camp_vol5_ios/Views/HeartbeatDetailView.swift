@@ -42,6 +42,7 @@ struct HeartbeatDetailView: View {
 
     // MARK: - Dependencies
     private let persistenceManager = PersistenceManager.shared
+    @StateObject private var backgroundImageManager: BackgroundImageManager
     private let userIdParams: String
 
     init(
@@ -51,6 +52,7 @@ struct HeartbeatDetailView: View {
     ) {
         self.userIdParams = userId
         _viewModel = StateObject(wrappedValue: HeartbeatDetailViewModel(userId: userId))
+        _backgroundImageManager = StateObject(wrappedValue: BackgroundImageManager(userId: userId))
         _isStatusBarHidden = isStatusBarHidden
         _isPersistentSystemOverlaysHidden = isPersistentSystemOverlaysHidden
     }
@@ -63,6 +65,9 @@ struct HeartbeatDetailView: View {
         self.userIdParams = userWithHeartbeat.user.id
         _viewModel = StateObject(
             wrappedValue: HeartbeatDetailViewModel(userId: userWithHeartbeat.user.id)
+        )
+        _backgroundImageManager = StateObject(
+            wrappedValue: BackgroundImageManager(userId: userWithHeartbeat.user.id)
         )
         _isStatusBarHidden = isStatusBarHidden
         _isPersistentSystemOverlaysHidden = isPersistentSystemOverlaysHidden
@@ -287,11 +292,24 @@ struct HeartbeatDetailView: View {
     }
 
     private func resetBackgroundImage() {
+        // BackgroundImageManagerの状態をリセット（新システム）
+        backgroundImageManager.resetBackgroundImage()
+
+        // PersistenceManagerのデータもクリア（旧システム - ユーザーID別）
+        persistenceManager.clearAllData(userId: userIdParams)
+
+        // ローカルUIの状態をリセット
         selectedImage = nil
         editedImage = nil
+        backgroundImageData = nil
+        isAnimatedBackground = false
         imageOffset = CGSize.zero
         imageScale = 1.0
-        persistenceManager.clearAllData()
+        imageRotation = 0.0
+
+        // ハートの位置とサイズをリセット
+        heartOffset = CGSize.zero
+        heartSize = 105.0
     }
 
     private func handleOrientationChange(isFaceDown: Bool) {

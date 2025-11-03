@@ -178,7 +178,47 @@ class PersistenceManager {
         )
     }
 
-    // 保存されたデータをすべて削除
+    // 保存されたデータをすべて削除（ユーザーID別）
+    func clearAllData(userId: String) {
+        // 画像ファイルを削除（GIF/PNG両方）
+        if let documentsPath = FileManager.default.urls(
+            for: .documentDirectory, in: .userDomainMask
+        ).first {
+            let pngPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).png")
+            let gifPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).gif")
+            try? FileManager.default.removeItem(at: pngPath)
+            try? FileManager.default.removeItem(at: gifPath)
+        }
+
+        // UserDefaultsからユーザーID別のデータを削除
+        let offsetXKey = userSpecificKey(imageOffsetXKey, userId: userId)
+        let offsetYKey = userSpecificKey(imageOffsetYKey, userId: userId)
+        let scaleKey = userSpecificKey(imageScaleKey, userId: userId)
+        let rotationKey = userSpecificKey(imageRotationKey, userId: userId)
+        let heartXKey = userSpecificKey(heartOffsetXKey, userId: userId)
+        let heartYKey = userSpecificKey(heartOffsetYKey, userId: userId)
+        let sizeKey = userSpecificKey(heartSizeKey, userId: userId)
+        let colorRedKey = userSpecificKey(backgroundColorRedKey, userId: userId)
+        let colorGreenKey = userSpecificKey(backgroundColorGreenKey, userId: userId)
+        let colorBlueKey = userSpecificKey(backgroundColorBlueKey, userId: userId)
+        let colorAlphaKey = userSpecificKey(backgroundColorAlphaKey, userId: userId)
+        let animatedKey = userSpecificKey(isAnimatedImageKey, userId: userId)
+
+        userDefaults.removeObject(forKey: offsetXKey)
+        userDefaults.removeObject(forKey: offsetYKey)
+        userDefaults.removeObject(forKey: scaleKey)
+        userDefaults.removeObject(forKey: rotationKey)
+        userDefaults.removeObject(forKey: heartXKey)
+        userDefaults.removeObject(forKey: heartYKey)
+        userDefaults.removeObject(forKey: sizeKey)
+        userDefaults.removeObject(forKey: colorRedKey)
+        userDefaults.removeObject(forKey: colorGreenKey)
+        userDefaults.removeObject(forKey: colorBlueKey)
+        userDefaults.removeObject(forKey: colorAlphaKey)
+        userDefaults.removeObject(forKey: animatedKey)
+    }
+
+    // 保存されたデータをすべて削除（レガシー用）
     func clearAllData() {
         // 画像ファイルを削除
         if let documentsPath = FileManager.default.urls(
