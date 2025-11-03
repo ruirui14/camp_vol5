@@ -209,10 +209,13 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                     if let error = error {
                         promise(.failure(error))
                     } else if let documents = snapshot?.documents {
-                        let users = documents.compactMap { doc in
-                            self.fromFirestore(doc.data(), userId: doc.documentID)
+                        // データ変換をバックグラウンドで実行
+                        Task.detached(priority: .userInitiated) {
+                            let users = documents.compactMap { doc in
+                                self.fromFirestore(doc.data(), userId: doc.documentID)
+                            }
+                            promise(.success(users))
                         }
-                        promise(.success(users))
                     } else {
                         promise(.success([]))
                     }
@@ -308,15 +311,18 @@ class FirestoreUserRepository: UserRepositoryProtocol {
                         return
                     }
 
-                    let users = documents.compactMap { document -> User? in
-                        self.fromFirestore(document.data(), userId: document.documentID)
+                    // データ変換をバックグラウンドで実行
+                    Task.detached(priority: .userInitiated) {
+                        let users = documents.compactMap { document -> User? in
+                            self.fromFirestore(document.data(), userId: document.documentID)
+                        }
+
+                        print(
+                            "✅ ランキング取得成功: \(users.count)件 (クエリ時間: \(String(format: "%.2f", queryDuration * 1000))ms)"
+                        )
+
+                        promise(.success(users))
                     }
-
-                    print(
-                        "✅ ランキング取得成功: \(users.count)件 (クエリ時間: \(String(format: "%.2f", queryDuration * 1000))ms)"
-                    )
-
-                    promise(.success(users))
                 }
         }
         .eraseToAnyPublisher()

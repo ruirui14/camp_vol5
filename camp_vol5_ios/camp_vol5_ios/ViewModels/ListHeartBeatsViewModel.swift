@@ -272,16 +272,33 @@ class ListHeartBeatsViewModel: BaseViewModel {
     }
 
     private func handleLoadSuccess(_ usersWithHeartbeats: [UserWithHeartbeat]) {
-        followingUsersWithHeartbeats = sortUsers(usersWithHeartbeats, by: currentSortOption)
-        setLoading(false)
+        let sortOption = currentSortOption
+
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let sorted = await self?.sortUsers(usersWithHeartbeats, by: sortOption) ?? []
+
+            await MainActor.run {
+                self?.followingUsersWithHeartbeats = sorted
+                self?.setLoading(false)
+            }
+        }
     }
 
     private func applySorting() {
-        followingUsersWithHeartbeats = sortUsers(
-            followingUsersWithHeartbeats, by: currentSortOption)
+        // 大量データのソートをバックグラウンドで実行
+        let usersToSort = followingUsersWithHeartbeats
+        let sortOption = currentSortOption
+
+        Task.detached(priority: .userInitiated) { [weak self] in
+            let sorted = await self?.sortUsers(usersToSort, by: sortOption) ?? []
+
+            await MainActor.run {
+                self?.followingUsersWithHeartbeats = sorted
+            }
+        }
     }
 
-    private func sortUsers(_ users: [UserWithHeartbeat], by sortOption: SortOption)
+    private func sortUsers(_ users: [UserWithHeartbeat], by sortOption: SortOption) async
         -> [UserWithHeartbeat]
     {
         switch sortOption {
