@@ -137,6 +137,12 @@ class ColorThemeManager: ObservableObject {
                 name: ColorThemeManager.didResetToDefaultsNotification, object: nil)
         }
     }
+
+    /// メインカラーに応じた適切なアイコン色を返す
+    /// 白の場合はグレー、それ以外の場合はメインカラーをそのまま返す
+    var iconColor: Color {
+        mainColor.isWhite() ? .gray : mainColor
+    }
 }
 
 // MARK: - Color Extension for Hex Conversion
@@ -172,5 +178,42 @@ extension Color {
             brightness: Double(newBrightness),
             opacity: Double(alpha)
         )
+    }
+
+    /// 色の明度に基づいて、コントラストの高い色(黒または白)を返す
+    /// 明るい色の場合は黒、暗い色の場合は白を返す
+    func contrastingColor() -> Color {
+        guard let components = UIColor(self).cgColor.components else {
+            return .primary
+        }
+
+        // RGB値を取得
+        let red = components[0]
+        let green = components[1]
+        let blue = components[2]
+
+        // 相対輝度を計算 (ITU-R BT.709の係数を使用)
+        // 人間の目は緑に最も敏感、次に赤、青の順
+        let luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+        // 輝度が0.5以上の場合は明るい色とみなし、黒を返す
+        // それ以外は暗い色とみなし、白を返す
+        return luminance > 0.5 ? .black : .white
+    }
+
+    /// 色が白またはほぼ白かどうかを判定
+    /// RGB値が全て0.95以上の場合に白とみなす
+    func isWhite() -> Bool {
+        guard let components = UIColor(self).cgColor.components else {
+            return false
+        }
+
+        // RGB値を取得
+        let red = components[0]
+        let green = components[1]
+        let blue = components[2]
+
+        // RGB値が全て0.95以上の場合に白とみなす（少しの誤差を許容）
+        return red > 0.95 && green > 0.95 && blue > 0.95
     }
 }

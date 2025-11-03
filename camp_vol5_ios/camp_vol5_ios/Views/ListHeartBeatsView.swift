@@ -148,14 +148,14 @@ struct ListHeartBeatsView: View {
                         navigationPath.append(NavigationDestination.settings)
                     } label: {
                         Image(systemName: "gearshape")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
                     }
 
                     Button {
                         navigationPath.append(NavigationDestination.ranking)
                     } label: {
                         Image(systemName: "trophy.fill")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
                     }
                 }
 
@@ -176,7 +176,7 @@ struct ListHeartBeatsView: View {
                         }
                     } label: {
                         Image(systemName: isEditMode ? "checkmark" : "pencil")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
                     }
 
                     Menu {
@@ -194,14 +194,14 @@ struct ListHeartBeatsView: View {
                         }
                     } label: {
                         Image(systemName: "arrow.up.arrow.down")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
                     }
 
                     Button {
                         navigationPath.append(NavigationDestination.qrScanner)
                     } label: {
                         Image(systemName: "person.badge.plus")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
                     }
                 }
             }
