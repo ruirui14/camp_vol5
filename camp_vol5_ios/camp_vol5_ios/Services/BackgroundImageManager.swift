@@ -67,12 +67,16 @@ class BackgroundImageManager: ObservableObject {
         let screenSize = UIScreen.main.bounds.size
         let maxSize = CGSize(width: screenSize.width * 2, height: screenSize.height * 2)
 
-        guard let processedImage = image.downsample(to: maxSize) else {
-            return
-        }
+        Task {
+            guard let processedImage = await image.downsample(to: maxSize) else {
+                return
+            }
 
-        currentOriginalImage = processedImage
-        currentTransform = ImageTransform()
+            await MainActor.run {
+                currentOriginalImage = processedImage
+                currentTransform = ImageTransform()
+            }
+        }
     }
 
     func saveEditedResult(_ transform: ImageTransform) {
@@ -83,20 +87,18 @@ class BackgroundImageManager: ObservableObject {
         isSaving = true
         currentTransform = transform
 
-        DispatchQueue.global(qos: .background).async { [weak self] in
-            guard let self = self else { return }
-
+        Task {
             let screenSize = UIScreen.main.bounds.size
 
             guard
-                let persistentData = self.persistenceService.saveEditedImageSet(
+                let persistentData = await self.persistenceService.saveEditedImageSet(
                     originalImage: originalImage,
                     transform: transform,
                     userId: self.userId,
                     targetScreenSize: screenSize
                 )
             else {
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.isSaving = false
                 }
                 return
@@ -108,7 +110,7 @@ class BackgroundImageManager: ObservableObject {
                 fileName: persistentData.editedImageFileName
             )
 
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.currentEditedImage = editedImage
                 self.isSaving = false
             }

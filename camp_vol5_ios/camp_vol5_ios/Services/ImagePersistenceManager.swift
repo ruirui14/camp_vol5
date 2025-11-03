@@ -74,72 +74,91 @@ class ImageProcessingService {
     static let shared = ImageProcessingService()
     private init() {}
 
+    /// バックグラウンドで画像編集処理を実行
+    /// - Parameters:
+    ///   - originalImage: 元画像
+    ///   - transform: 変換情報
+    ///   - outputSize: 出力サイズ
+    /// - Returns: 編集済み画像（失敗時はnil）
     func createEditedImage(
         from originalImage: UIImage,
         transform: ImageTransform,
         outputSize: CGSize
-    ) -> UIImage? {
-        let renderer = UIGraphicsImageRenderer(size: outputSize)
+    ) async -> UIImage? {
+        await Task.detached(priority: .userInitiated) {
+            let renderer = UIGraphicsImageRenderer(size: outputSize)
 
-        return renderer.image { context in
-            let cgContext = context.cgContext
+            return renderer.image { context in
+                let cgContext = context.cgContext
 
-            // 背景をクリア
-            cgContext.clear(CGRect(origin: .zero, size: outputSize))
+                // 背景をクリア
+                cgContext.clear(CGRect(origin: .zero, size: outputSize))
 
-            // 背景色が指定されている場合は塗りつぶす
-            if let backgroundColor = transform.backgroundColor {
-                cgContext.setFillColor(backgroundColor.cgColor)
-                cgContext.fill(CGRect(origin: .zero, size: outputSize))
+                // 背景色が指定されている場合は塗りつぶす
+                if let backgroundColor = transform.backgroundColor {
+                    cgContext.setFillColor(backgroundColor.cgColor)
+                    cgContext.fill(CGRect(origin: .zero, size: outputSize))
+                }
+
+                // 画像のアスペクト比を維持してフィット
+                let imageSize = ImageProcessingService.shared.aspectFitSize(
+                    originalImage.size, in: outputSize)
+
+                // 中央配置の基準点を計算
+                let centerX = outputSize.width / 2
+                let centerY = outputSize.height / 2
+
+                // 正規化されたオフセットを実際のピクセル値に変換
+                let offsetX = transform.normalizedOffset.x * outputSize.width / 2
+                let offsetY = transform.normalizedOffset.y * outputSize.height / 2
+
+                // コンテキストの状態を保存
+                cgContext.saveGState()
+
+                // 回転の適用（中心点を基準に回転）
+                cgContext.translateBy(x: centerX + offsetX, y: centerY + offsetY)
+                cgContext.rotate(by: CGFloat(transform.rotation * .pi / 180))
+                cgContext.translateBy(x: -(centerX + offsetX), y: -(centerY + offsetY))
+
+                // 最終的な描画矩形を計算
+                let drawRect = CGRect(
+                    x: centerX - (imageSize.width * transform.scale) / 2 + offsetX,
+                    y: centerY - (imageSize.height * transform.scale) / 2 + offsetY,
+                    width: imageSize.width * transform.scale,
+                    height: imageSize.height * transform.scale
+                )
+
+                originalImage.draw(in: drawRect)
+
+                // コンテキストの状態を復元
+                cgContext.restoreGState()
             }
-
-            // 画像のアスペクト比を維持してフィット
-            let imageSize = aspectFitSize(originalImage.size, in: outputSize)
-
-            // 中央配置の基準点を計算
-            let centerX = outputSize.width / 2
-            let centerY = outputSize.height / 2
-
-            // 正規化されたオフセットを実際のピクセル値に変換
-            let offsetX = transform.normalizedOffset.x * outputSize.width / 2
-            let offsetY = transform.normalizedOffset.y * outputSize.height / 2
-
-            // コンテキストの状態を保存
-            cgContext.saveGState()
-
-            // 回転の適用（中心点を基準に回転）
-            cgContext.translateBy(x: centerX + offsetX, y: centerY + offsetY)
-            cgContext.rotate(by: CGFloat(transform.rotation * .pi / 180))
-            cgContext.translateBy(x: -(centerX + offsetX), y: -(centerY + offsetY))
-
-            // 最終的な描画矩形を計算
-            let drawRect = CGRect(
-                x: centerX - (imageSize.width * transform.scale) / 2 + offsetX,
-                y: centerY - (imageSize.height * transform.scale) / 2 + offsetY,
-                width: imageSize.width * transform.scale,
-                height: imageSize.height * transform.scale
-            )
-
-            originalImage.draw(in: drawRect)
-
-            // コンテキストの状態を復元
-            cgContext.restoreGState()
-        }
+        }.value
     }
 
+    /// バックグラウンドでフルサイズ画像編集処理を実行
+    /// - Parameters:
+    ///   - originalImage: 元画像
+    ///   - transform: 変換情報
+    ///   - targetScreenSize: ターゲット画面サイズ（2倍に拡大される）
+    /// - Returns: 高解像度編集済み画像（失敗時はnil）
     func createFullSizeEditedImage(
         from originalImage: UIImage,
         transform: ImageTransform,
         targetScreenSize: CGSize
-    ) -> UIImage? {
+    ) async -> UIImage? {
         let fullSize = CGSize(
             width: targetScreenSize.width * 2,
             height: targetScreenSize.height * 2
         )
-        return createEditedImage(from: originalImage, transform: transform, outputSize: fullSize)
+        return await createEditedImage(
+            from: originalImage,
+            transform: transform,
+            outputSize: fullSize
+        )
     }
 
-    private func aspectFitSize(_ imageSize: CGSize, in containerSize: CGSize) -> CGSize {
+    func aspectFitSize(_ imageSize: CGSize, in containerSize: CGSize) -> CGSize {
         let scale = min(
             containerSize.width / imageSize.width,
             containerSize.height / imageSize.height
@@ -163,43 +182,54 @@ class ImagePersistenceService {
         self.fileManager = FileManager.default
     }
 
+    /// バックグラウンドで画像セットの保存を実行
+    /// - Parameters:
+    ///   - originalImage: 元画像
+    ///   - transform: 変換情報
+    ///   - userId: ユーザーID
+    ///   - targetScreenSize: ターゲット画面サイズ
+    /// - Returns: 永続化データ（失敗時はnil）
     func saveEditedImageSet(
         originalImage: UIImage,
         transform: ImageTransform,
         userId: String,
         targetScreenSize: CGSize
-    ) -> EnhancedPersistentImageData? {
-        FileManager.ensureBackgroundImagesDirectory()
+    ) async -> EnhancedPersistentImageData? {
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self else { return nil }
 
-        let timestamp = UUID().uuidString
-        let originalFileName = "\(userId)_original_\(timestamp).png"
-        let editedFileName = "\(userId)_edited_\(timestamp).png"
+            FileManager.ensureBackgroundImagesDirectory()
 
-        guard saveImage(originalImage, fileName: originalFileName) else {
-            return nil
-        }
+            let timestamp = UUID().uuidString
+            let originalFileName = "\(userId)_original_\(timestamp).png"
+            let editedFileName = "\(userId)_edited_\(timestamp).png"
 
-        guard
-            let editedImage = imageProcessor.createFullSizeEditedImage(
-                from: originalImage,
+            guard self.saveImage(originalImage, fileName: originalFileName) else {
+                return nil
+            }
+
+            guard
+                let editedImage = await self.imageProcessor.createFullSizeEditedImage(
+                    from: originalImage,
+                    transform: transform,
+                    targetScreenSize: targetScreenSize
+                ), self.saveImage(editedImage, fileName: editedFileName)
+            else {
+                self.deleteImage(fileName: originalFileName)
+                return nil
+            }
+
+            let persistentData = EnhancedPersistentImageData(
+                originalImageFileName: originalFileName,
+                editedImageFileName: editedFileName,
                 transform: transform,
-                targetScreenSize: targetScreenSize
-            ), saveImage(editedImage, fileName: editedFileName)
-        else {
-            deleteImage(fileName: originalFileName)
-            return nil
-        }
+                createdAt: Date(),
+                userId: userId,
+                imageSize: editedImage.size
+            )
 
-        let persistentData = EnhancedPersistentImageData(
-            originalImageFileName: originalFileName,
-            editedImageFileName: editedFileName,
-            transform: transform,
-            createdAt: Date(),
-            userId: userId,
-            imageSize: editedImage.size
-        )
-
-        return persistentData
+            return persistentData
+        }.value
     }
 
     private func saveImage(_ image: UIImage, fileName: String) -> Bool {
@@ -366,32 +396,39 @@ extension FileManager {
 }
 
 extension UIImage {
-    func downsample(to pointSize: CGSize, scale: CGFloat = UIScreen.main.scale) -> UIImage? {
-        guard let data = pngData() else { return nil }
+    /// バックグラウンドでダウンサンプリング処理を実行
+    /// - Parameters:
+    ///   - pointSize: ターゲットサイズ（ポイント単位）
+    ///   - scale: スケール係数（デフォルトは画面スケール）
+    /// - Returns: ダウンサンプリング済み画像（失敗時はnil）
+    func downsample(to pointSize: CGSize, scale: CGFloat = UIScreen.main.scale) async -> UIImage? {
+        await Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self = self, let data = self.pngData() else { return nil }
 
-        let imageSourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
-        guard let imageSource = CGImageSourceCreateWithData(data as CFData, imageSourceOptions)
-        else {
-            return nil
-        }
+            let imageSourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+            guard let imageSource = CGImageSourceCreateWithData(data as CFData, imageSourceOptions)
+            else {
+                return nil
+            }
 
-        let maxDimensionInPixels = max(pointSize.width, pointSize.height) * scale
-        let downsampleOptions =
-            [
-                kCGImageSourceCreateThumbnailFromImageAlways: true,
-                kCGImageSourceShouldCacheImmediately: true,
-                kCGImageSourceCreateThumbnailWithTransform: true,
-                kCGImageSourceThumbnailMaxPixelSize: maxDimensionInPixels,
-            ] as CFDictionary
+            let maxDimensionInPixels = max(pointSize.width, pointSize.height) * scale
+            let downsampleOptions =
+                [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceShouldCacheImmediately: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                    kCGImageSourceThumbnailMaxPixelSize: maxDimensionInPixels,
+                ] as CFDictionary
 
-        guard
-            let downsampledImage = CGImageSourceCreateThumbnailAtIndex(
-                imageSource, 0, downsampleOptions
-            )
-        else {
-            return nil
-        }
+            guard
+                let downsampledImage = CGImageSourceCreateThumbnailAtIndex(
+                    imageSource, 0, downsampleOptions
+                )
+            else {
+                return nil
+            }
 
-        return UIImage(cgImage: downsampledImage)
+            return UIImage(cgImage: downsampledImage)
+        }.value
     }
 }

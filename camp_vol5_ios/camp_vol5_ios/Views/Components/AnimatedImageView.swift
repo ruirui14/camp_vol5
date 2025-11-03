@@ -1,6 +1,7 @@
 // Views/Components/AnimatedImageView.swift
 // アニメーションGIF表示用のUIViewRepresentableコンポーネント
 // UIImageViewをラップしてGIFアニメーションをSwiftUIで表示可能にする
+// バックグラウンド処理とキャッシュ機能により、パフォーマンスを最適化
 
 import ImageIO
 import SwiftUI
@@ -19,14 +20,29 @@ struct AnimatedImageView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UIImageView, context: Context) {
-        // GIFアニメーションを設定
-        if let animatedImage = createAnimatedImage(from: imageData) {
-            uiView.image = animatedImage
+        // キャッシュをチェック
+        let cacheKey = imageData.hashValue
+        if let cachedImage = AnimatedImageCache.shared.getImage(forKey: cacheKey) {
+            uiView.image = cachedImage
+            return
+        }
+
+        // バックグラウンドでGIFアニメーションを作成
+        Task.detached(priority: .userInitiated) {
+            let animatedImage = await createAnimatedImageAsync(from: imageData)
+
+            await MainActor.run {
+                // キャッシュに保存
+                if let animatedImage = animatedImage {
+                    AnimatedImageCache.shared.setImage(animatedImage, forKey: cacheKey)
+                    uiView.image = animatedImage
+                }
+            }
         }
     }
 
-    /// GIFデータからアニメーション付きUIImageを作成
-    private func createAnimatedImage(from data: Data) -> UIImage? {
+    /// バックグラウンドでGIFデータからアニメーション付きUIImageを作成
+    private func createAnimatedImageAsync(from data: Data) async -> UIImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
         }
@@ -77,5 +93,37 @@ struct AnimatedImageView: UIViewRepresentable {
         }
 
         return frameDuration
+    }
+}
+
+/// GIFアニメーション画像のキャッシュマネージャー
+/// メモリ効率のためNSCacheを使用
+class AnimatedImageCache {
+    static let shared = AnimatedImageCache()
+    private let cache = NSCache<NSNumber, UIImage>()
+
+    private init() {
+        // メモリ警告時にキャッシュをクリア
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(clearCache),
+            name: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil
+        )
+
+        // キャッシュの最大数を設定（約10個のGIF画像）
+        cache.countLimit = 10
+    }
+
+    func getImage(forKey key: Int) -> UIImage? {
+        return cache.object(forKey: NSNumber(value: key))
+    }
+
+    func setImage(_ image: UIImage, forKey key: Int) {
+        cache.setObject(image, forKey: NSNumber(value: key))
+    }
+
+    @objc private func clearCache() {
+        cache.removeAllObjects()
     }
 }
