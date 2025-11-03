@@ -208,10 +208,16 @@ struct StreamView: View {
     private var toolbarContent: some ToolbarContent {
         Group {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("戻る") {
+                Button(action: {
                     dismiss()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("戻る")
+                    }
                 }
                 .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {

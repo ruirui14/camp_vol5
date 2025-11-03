@@ -58,16 +58,12 @@ struct EmailAuthView: View {
                             dismiss()
                         }
                     }) {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .font(.body)
-                                .fontWeight(.semibold)
                             Text("戻る")
-                                .font(.body)
-                                .fontWeight(.medium)
                         }
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                     }
                 }
             }

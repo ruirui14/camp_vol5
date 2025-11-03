@@ -123,17 +123,16 @@ struct UserNameInputView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: { viewModel.goBackToAuth() }) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .medium))
                         Text("戻る")
-                            .font(.system(size: 16, weight: .medium))
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(Color.black.opacity(0.2))
                     .cornerRadius(20)
+                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                 }
             }
         }
