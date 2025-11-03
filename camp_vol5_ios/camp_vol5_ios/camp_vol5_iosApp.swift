@@ -89,6 +89,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     ) -> Bool {
         // Firebase設定は App struct の init() で行うため、ここでは不要
 
+        // Remote Configの初期化（バックグラウンドで実行）
+        Task {
+            do {
+                try await RemoteConfigManager.shared.fetchConfig()
+                print("✅ Remote Config初期化成功")
+            } catch {
+                print("⚠️ Remote Config初期化エラー: \(error.localizedDescription)")
+                // エラーでもアプリは起動する（キャッシュ値を使用）
+            }
+        }
+
         // プッシュ通知の設定
         UNUserNotificationCenter.current().delegate = self
         Messaging.messaging().delegate = self

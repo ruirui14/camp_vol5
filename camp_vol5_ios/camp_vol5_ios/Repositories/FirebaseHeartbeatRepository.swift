@@ -5,6 +5,7 @@
 import Combine
 import Firebase
 import FirebaseDatabase
+import FirebaseFirestore
 import FirebasePerformance
 import Foundation
 
@@ -232,6 +233,9 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
                     let count = snapshot?.value as? Int ?? 0
                     print("✅ 接続数を増加: \(userId), 現在の接続数: \(count)")
 
+                    // 最大接続数を更新
+                    self?.updateMaxConnectionsIfNeeded(userId: userId, currentCount: count)
+
                     // 切断時に自動的に-1する設定
                     self?.database.reference()
                         .child("live_heartbeats")
@@ -293,5 +297,43 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
         }
 
         print("🔗 接続数カウンターを削除: \(userId)")
+    }
+
+    /// 最大接続数を更新（現在の接続数が最大を超えた場合のみ）
+    /// - Parameters:
+    ///   - userId: ユーザーID
+    ///   - currentCount: 現在の接続数
+    private func updateMaxConnectionsIfNeeded(userId: String, currentCount: Int) {
+        print("☑️ updateMaxConnectionsIfNeeded: \(userId), currentCount: \(currentCount)")
+        let db = Firestore.firestore()
+        let userRef = db.collection("users").document(userId)
+
+        db.runTransaction({ transaction, errorPointer -> Any? in
+            let userDocument: DocumentSnapshot
+            do {
+                try userDocument = transaction.getDocument(userRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+
+            let currentMaxConnections = userDocument.data()?["maxConnections"] as? Int ?? 0
+
+            // 現在の接続数が最大接続数を超えた場合のみ更新
+            if currentCount > currentMaxConnections {
+                transaction.updateData(
+                    [
+                        "maxConnections": currentCount,
+                        "maxConnectionsUpdatedAt": FieldValue.serverTimestamp(),
+                    ], forDocument: userRef)
+                print("🏆 最大接続数を更新: \(userId), \(currentMaxConnections) → \(currentCount)")
+            }
+
+            return nil
+        }) { _, error in
+            if let error = error {
+                print("❌ 最大接続数の更新に失敗: \(error.localizedDescription)")
+            }
+        }
     }
 }

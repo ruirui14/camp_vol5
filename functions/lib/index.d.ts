@@ -12,4 +12,5 @@
  */
 export { onNotificationTrigger } from "./notificationTrigger";
 export { cleanupOldHeartbeats } from "./cleanupOldHeartbeats";
+export { syncRankingToRedis, initialSyncRankingToRedis } from "./syncRankingToRedis";
 //# sourceMappingURL=index.d.ts.map

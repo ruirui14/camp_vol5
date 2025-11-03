@@ -39,4 +39,9 @@ protocol UserRepositoryProtocol {
     /// - Parameter userIds: ユーザーIDの配列
     /// - Returns: Userの配列Publisher
     func fetchMultiple(userIds: [String]) -> AnyPublisher<[User], Error>
+
+    /// 最大接続数ランキングを取得
+    /// - Parameter limit: 取得件数
+    /// - Returns: ランキング順のUserの配列Publisher
+    func fetchMaxConnectionsRanking(limit: Int) -> AnyPublisher<[User], Error>
 }

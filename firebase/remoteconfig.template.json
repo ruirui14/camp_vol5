@@ -1,0 +1,28 @@
+{
+  "parameters": {
+    "REDIS_URL": {
+      "defaultValue": {
+        "value": "https://set-weasel-32328.upstash.io"
+      },
+      "description": "Upstash Redis REST API URL for ranking feature",
+      "valueType": "STRING"
+    },
+    "REDIS_TOKEN": {
+      "defaultValue": {
+        "value": "AX5IAAIncDJjM2UzNTFkMDU4OGY0MjI5ODI3M2YzM2Q2ZjM0OWJjM3AyMzIzMjg"
+      },
+      "description": "Upstash Redis REST API Token for ranking feature",
+      "valueType": "STRING"
+    }
+  },
+  "version": {
+    "versionNumber": "1",
+    "updateTime": "2025-11-03T00:00:00Z",
+    "updateUser": {
+      "email": "system@camp-vol5.com"
+    },
+    "description": "Initial Remote Config setup for Redis ranking credentials",
+    "updateOrigin": "CONSOLE",
+    "updateType": "INCREMENTAL_UPDATE"
+  }
+}

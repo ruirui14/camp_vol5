@@ -107,4 +107,9 @@ class ViewModelFactory: ObservableObject {
     {
         StreamViewModel(heartbeatDetailViewModel: heartbeatDetailViewModel)
     }
+
+    /// ConnectionsRankingViewModelを生成
+    func makeConnectionsRankingViewModel() -> ConnectionsRankingViewModel {
+        ConnectionsRankingViewModel(userService: userService)
+    }
 }

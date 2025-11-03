@@ -36,6 +36,7 @@ class PerformanceMonitor {
         case fetchMultipleUsers = "data_fetch_multiple_users"
         case subscribeHeartbeat = "data_subscribe_heartbeat"
         case saveHeartRate = "data_save_heart_rate"
+        case fetchMaxConnectionsRanking = "data_fetch_max_connections_ranking"
     }
 
     /// UI関連のトレース名
@@ -47,6 +48,7 @@ class PerformanceMonitor {
         case loadHeartbeatDetail = "ui_load_heartbeat_detail"
         case loadFollowingUsers = "ui_load_following_users"
         case imageProcessing = "ui_image_processing"
+        case loadConnectionsRanking = "ui_load_connections_ranking"
     }
 
     // MARK: - Trace Management

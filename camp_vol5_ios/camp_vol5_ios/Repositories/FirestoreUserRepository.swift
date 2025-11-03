@@ -245,6 +245,8 @@ class FirestoreUserRepository: UserRepositoryProtocol {
 
         let createdAt = (data["createdAt"] as? Timestamp)?.dateValue()
         let updatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
+        let maxConnections = data["maxConnections"] as? Int
+        let maxConnectionsUpdatedAt = (data["maxConnectionsUpdatedAt"] as? Timestamp)?.dateValue()
 
         return User(
             id: userId,
@@ -252,8 +254,72 @@ class FirestoreUserRepository: UserRepositoryProtocol {
             inviteCode: inviteCode,
             allowQRRegistration: allowQRRegistration,
             createdAt: createdAt,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            maxConnections: maxConnections,
+            maxConnectionsUpdatedAt: maxConnectionsUpdatedAt
         )
+    }
+
+    func fetchMaxConnectionsRanking(limit: Int) -> AnyPublisher<[User], Error> {
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.DataTrace.fetchMaxConnectionsRanking)
+
+        return Future { [weak self] promise in
+            guard let self = self else {
+                PerformanceMonitor.shared.stopTrace(trace)
+                promise(.failure(RepositoryError.serviceUnavailable))
+                return
+            }
+
+            let queryStartTime = Date()
+
+            self.db.collection("users")
+                .whereField("maxConnections", isGreaterThan: 0)
+                .order(by: "maxConnections", descending: true)
+                .limit(to: limit)
+                .getDocuments { snapshot, error in
+                    let queryDuration = Date().timeIntervalSince(queryStartTime)
+
+                    // クエリ実行時間をメトリクスに記録
+                    if let trace = trace {
+                        PerformanceMonitor.shared.setAttribute(
+                            trace,
+                            key: "limit",
+                            value: String(limit)
+                        )
+                        PerformanceMonitor.shared.incrementMetric(
+                            trace,
+                            key: "query_duration_ms",
+                            by: Int64(queryDuration * 1000)
+                        )
+                    }
+
+                    PerformanceMonitor.shared.stopTrace(trace)
+
+                    if let error = error {
+                        print("❌ ランキング取得エラー: \(error.localizedDescription)")
+                        promise(.failure(error))
+                        return
+                    }
+
+                    guard let documents = snapshot?.documents else {
+                        print("⚠️ ランキングデータが空です")
+                        promise(.success([]))
+                        return
+                    }
+
+                    let users = documents.compactMap { document -> User? in
+                        self.fromFirestore(document.data(), userId: document.documentID)
+                    }
+
+                    print(
+                        "✅ ランキング取得成功: \(users.count)件 (クエリ時間: \(String(format: "%.2f", queryDuration * 1000))ms)"
+                    )
+
+                    promise(.success(users))
+                }
+        }
+        .eraseToAnyPublisher()
     }
 }
 

@@ -184,10 +184,12 @@ struct SettingsNavigationSection: View {
 }
 
 #Preview {
-    NavigationStack {
+    let authManager = AuthenticationManager()
+
+    return NavigationStack {
         Form {
             SettingsNavigationSection(
-                viewModel: SettingsViewModel(authenticationManager: AuthenticationManager()),
+                viewModel: SettingsViewModel(authenticationManager: authManager),
                 autoLockManager: AutoLockManager.shared
             )
         }

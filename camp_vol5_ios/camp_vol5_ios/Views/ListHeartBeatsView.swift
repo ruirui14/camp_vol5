@@ -7,6 +7,7 @@ enum NavigationDestination: Hashable {
     case settings
     case qrScanner
     case heartbeatDetail(String)  // userIdを直接渡す
+    case ranking
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -17,12 +18,15 @@ enum NavigationDestination: Hashable {
         case .heartbeatDetail(let userId):
             hasher.combine("heartbeatDetail")
             hasher.combine(userId)
+        case .ranking:
+            hasher.combine("ranking")
         }
     }
 }
 
 struct ListHeartBeatsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @EnvironmentObject private var viewModelFactory: ViewModelFactory
     @StateObject private var viewModel = ListHeartBeatsViewModel()
     @StateObject private var backgroundImageCoordinator = BackgroundImageCoordinator()
     @ObservedObject private var themeManager = ColorThemeManager.shared
@@ -139,11 +143,18 @@ struct ListHeartBeatsView: View {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItemGroup(placement: .navigationBarLeading) {
                     Button {
                         navigationPath.append(NavigationDestination.settings)
                     } label: {
                         Image(systemName: "gearshape")
+                            .foregroundColor(themeManager.mainColor)
+                    }
+
+                    Button {
+                        navigationPath.append(NavigationDestination.ranking)
+                    } label: {
+                        Image(systemName: "trophy.fill")
                             .foregroundColor(themeManager.mainColor)
                     }
                 }
@@ -206,6 +217,9 @@ struct ListHeartBeatsView: View {
                         isStatusBarHidden: $isStatusBarHidden,
                         isPersistentSystemOverlaysHidden: $persistentSystemOverlaysVisibility
                     )
+                case .ranking:
+                    ConnectionsRankingView(viewModelFactory: viewModelFactory)
+                        .environmentObject(viewModelFactory)
                 }
             }
         }

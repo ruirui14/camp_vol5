@@ -16,6 +16,7 @@
 		D10CD8EF2E07363B00689536 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD8EE2E07363B00689536 /* GoogleSignIn */; };
 		D10CD8F12E07363B00689536 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD8F02E07363B00689536 /* GoogleSignInSwift */; };
 		D13E65FB2EAF4D6200BA2EEE /* YouTubePlayerKit in Frameworks */ = {isa = PBXBuildFile; productRef = D13E65FA2EAF4D6200BA2EEE /* YouTubePlayerKit */; };
+		D13E66072EB848F300BA2EEE /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = D13E66062EB848F300BA2EEE /* FirebaseRemoteConfig */; };
 		D1634E1E2E9D689F007D524F /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = D1634E1D2E9D689F007D524F /* FirebasePerformance */; };
 		D1B0E9522EA1321D006F3BDC /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = D1B0E9512EA1321D006F3BDC /* FirebaseMessaging */; };
 		D1B0F4CE2EA4BF9F006F3BDC /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = D1B0F4CD2EA4BF9F006F3BDC /* MarkdownUI */; };
@@ -80,6 +81,7 @@
 				D1EE64462E9CDFC20033CF92 /* FirebaseAppCheck in Frameworks */,
 				D10CD8EF2E07363B00689536 /* GoogleSignIn in Frameworks */,
 				D13E65FB2EAF4D6200BA2EEE /* YouTubePlayerKit in Frameworks */,
+				D13E66072EB848F300BA2EEE /* FirebaseRemoteConfig in Frameworks */,
 				D1634E1E2E9D689F007D524F /* FirebasePerformance in Frameworks */,
 				D1B0F4CE2EA4BF9F006F3BDC /* MarkdownUI in Frameworks */,
 				D10CD88B2E04843900689536 /* FirebaseAnalytics in Frameworks */,
@@ -171,6 +173,7 @@
 				D1B0E9512EA1321D006F3BDC /* FirebaseMessaging */,
 				D1B0F4CD2EA4BF9F006F3BDC /* MarkdownUI */,
 				D13E65FA2EAF4D6200BA2EEE /* YouTubePlayerKit */,
+				D13E66062EB848F300BA2EEE /* FirebaseRemoteConfig */,
 			);
 			productName = camp_vol5_ios;
 			productReference = B3D475C62E0406710045AD7A /* camp_vol5_ios.app */;
@@ -642,6 +645,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D13E65F92EAF4D6200BA2EEE /* XCRemoteSwiftPackageReference "YouTubePlayerKit" */;
 			productName = YouTubePlayerKit;
+		};
+		D13E66062EB848F300BA2EEE /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D10CD8892E04843900689536 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
 		};
 		D1634E1D2E9D689F007D524F /* FirebasePerformance */ = {
 			isa = XCSwiftPackageProductDependency;
