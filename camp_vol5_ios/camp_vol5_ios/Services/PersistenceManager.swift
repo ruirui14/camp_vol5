@@ -38,10 +38,14 @@ class PersistenceManager {
 
     // 画像をDocuments Directoryに保存（ユーザーID別）- GIF対応
     func saveBackgroundImage(_ image: UIImage, userId: String, imageData: Data? = nil) {
-        // GIFデータが渡された場合はそれを優先的に使用
-        if let gifData = imageData {
-            saveBackgroundImageData(gifData, userId: userId, isAnimated: true)
-            return
+        // GIFデータが渡された場合、実際にアニメーションGIFかどうかを判定
+        if let data = imageData {
+            // アニメーションGIFかどうかを判定
+            if isAnimatedGif(data: data) {
+                saveBackgroundImageData(data, userId: userId, isAnimated: true)
+                return
+            }
+            // 静止画像の場合はPNGとして保存（下に続く）
         }
 
         // 通常の画像として保存
@@ -50,6 +54,18 @@ class PersistenceManager {
         }
 
         saveBackgroundImageData(data, userId: userId, isAnimated: false)
+    }
+
+    // アニメーションGIFかどうかを判定するヘルパーメソッド
+    private func isAnimatedGif(data: Data) -> Bool {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return false
+        }
+
+        let frameCount = CGImageSourceGetCount(source)
+
+        // フレーム数が2以上の場合はアニメーションGIF
+        return frameCount > 1
     }
 
     // 画像データを保存するプライベートメソッド
@@ -171,9 +187,10 @@ class PersistenceManager {
         let scale = userDefaults.double(forKey: scaleKey)
         let rotation = userDefaults.double(forKey: rotationKey)
 
+        let finalScale = scale == 0 ? 1.0 : scale
         return (
             offset: CGSize(width: offsetX, height: offsetY),
-            scale: scale == 0 ? 1.0 : scale,
+            scale: CGFloat(finalScale),
             rotation: rotation
         )
     }

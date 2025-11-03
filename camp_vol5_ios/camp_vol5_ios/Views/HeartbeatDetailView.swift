@@ -196,15 +196,14 @@ struct HeartbeatDetailView: View {
         }
         .fullScreenCover(
             isPresented: $showingImageEditor,
-            onDismiss: {
-                refreshPersistedData()
-            }
         ) {
             ImageEditView(
                 image: $selectedImage,
                 imageOffset: $imageOffset,
                 imageScale: $imageScale,
                 imageRotation: $imageRotation,
+                heartOffset: $heartOffset,
+                heartSize: $heartSize,
                 onApply: {
                     showingImageEditor = false
                 },
@@ -335,6 +334,7 @@ struct HeartbeatDetailView: View {
 
         // 変形情報を再読み込み
         let transform = persistenceManager.loadImageTransform(userId: userIdParams)
+
         imageOffset = transform.offset
         imageScale = transform.scale
         imageRotation = transform.rotation
