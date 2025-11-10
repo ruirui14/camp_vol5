@@ -287,69 +287,28 @@ class UserDefaultsImageService {
     private let userBackgroundKey = "enhancedUserBackgroundImages"
 
     func saveBackgroundImageData(_ data: EnhancedPersistentImageData) {
-        print("=== UserDefaultsImageService.saveBackgroundImageData ===")
-        print("Saving data for userId: \(data.userId)")
-        print("Edited image filename: \(data.editedImageFileName)")
-
         var savedData = loadAllBackgroundImageData()
-        print("Current saved data count: \(savedData.count)")
-
-        for (index, savedItem) in savedData.enumerated() {
-            print(
-                "  [\(index)] UserId: \(savedItem.userId), EditedFile: \(savedItem.editedImageFileName)"
-            )
-        }
 
         if let existingIndex = savedData.firstIndex(where: { $0.userId == data.userId }) {
             let existingData = savedData[existingIndex]
-            print("Found existing data for \(data.userId) at index \(existingIndex)")
-            print("  Deleting old files: \(existingData.editedImageFileName)")
-            imagePersistenceService.deleteImageSet(existingData)
+
+            // 同じファイル名の場合は削除しない（上書き保存のため）
+            if existingData.editedImageFileName != data.editedImageFileName {
+                imagePersistenceService.deleteImageSet(existingData)
+            }
             savedData.remove(at: existingIndex)
-        } else {
-            print("No existing data found for \(data.userId)")
         }
 
         savedData.append(data)
-        print("After append, data count: \(savedData.count)")
-
-        for (index, savedItem) in savedData.enumerated() {
-            print(
-                "  [\(index)] UserId: \(savedItem.userId), EditedFile: \(savedItem.editedImageFileName)"
-            )
-        }
 
         if let encoded = try? JSONEncoder().encode(savedData) {
             UserDefaults.standard.set(encoded, forKey: userBackgroundKey)
-            print("Successfully saved to UserDefaults with key: \(userBackgroundKey)")
-        } else {
-            print("ERROR: Failed to encode data for UserDefaults")
         }
-        print("=== End saveBackgroundImageData ===")
     }
 
     func loadBackgroundImageData(for userId: String) -> EnhancedPersistentImageData? {
-        print("=== UserDefaultsImageService.loadBackgroundImageData ===")
-        print("Loading data for userId: \(userId)")
-
         let allData = loadAllBackgroundImageData()
-        print("Total data entries: \(allData.count)")
-
-        for (index, savedItem) in allData.enumerated() {
-            print(
-                "  [\(index)] UserId: \(savedItem.userId), EditedFile: \(savedItem.editedImageFileName)"
-            )
-        }
-
-        let result = allData.first { $0.userId == userId }
-        if let result = result {
-            print("Found data for \(userId): \(result.editedImageFileName)")
-        } else {
-            print("No data found for \(userId)")
-        }
-        print("=== End loadBackgroundImageData ===")
-
-        return result
+        return allData.first { $0.userId == userId }
     }
 
     private func loadAllBackgroundImageData() -> [EnhancedPersistentImageData] {
