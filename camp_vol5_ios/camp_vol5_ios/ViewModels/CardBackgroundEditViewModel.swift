@@ -65,29 +65,6 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         }
     }
 
-    /// 画像を写真ライブラリに保存
-    /// - Parameter image: 保存する画像
-    func saveImageToLibrary(_ image: UIImage) {
-        isSaving = true
-
-        // 写真ライブラリに保存
-        UIImageWriteToSavedPhotosAlbum(
-            image,
-            self,
-            #selector(saveToLibraryCompleted(_:didFinishSavingWithError:contextInfo:)),
-            nil
-        )
-    }
-
-    /// 写真ライブラリへの保存完了時のコールバック
-    @objc private func saveToLibraryCompleted(
-        _ image: UIImage,
-        didFinishSavingWithError error: Error?,
-        contextInfo: UnsafeRawPointer
-    ) {
-        isSaving = false
-    }
-
     /// キャプチャした画像を永続化
     /// - Parameter capturedImage: TransformableCardImageViewでキャプチャした編集済み画像
     func saveCapturedImageDirectly(_ capturedImage: UIImage) {
@@ -107,6 +84,9 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         if existingData == nil {
             saveOriginalImage(fileName: originalFileName)
         }
+
+        print("🔥 originalFileName: \(originalFileName)")
+        print("🔥 editedFileName: \(editedFileName)")
 
         // 変形状態のメタデータを作成・保存
         let transform = createTransform()
