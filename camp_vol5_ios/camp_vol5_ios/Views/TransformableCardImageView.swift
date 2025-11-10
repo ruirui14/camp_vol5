@@ -110,14 +110,18 @@ struct TransformableCardImageView: View {
     }
 
     /// 現在の変形状態で画像をキャプチャ
-    /// - Parameter backgroundColor: 背景色（デフォルトは白）
+    /// - Parameters:
+    ///   - backgroundColor: 背景色（デフォルトは白）
+    ///   - sourceImage: キャプチャする画像（nilの場合は初期化時の画像を使用）
     /// - Returns: レンダリングされた画像（失敗時はnil）
-    func captureImage(backgroundColor: Color = .white) -> UIImage? {
+    func captureImage(backgroundColor: Color = .white, sourceImage: UIImage? = nil) -> UIImage? {
+        let imageToCapture = sourceImage ?? image
+
         let renderer = ImageRenderer(
             content:
                 ZStack {
                     backgroundColor
-                    Image(uiImage: image)
+                    Image(uiImage: imageToCapture)
                         .resizable()
                         .scaledToFill()
                         .frame(width: cardSize.width * 2, height: cardSize.height * 2)

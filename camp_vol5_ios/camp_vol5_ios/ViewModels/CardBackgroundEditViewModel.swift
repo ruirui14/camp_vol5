@@ -24,6 +24,12 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
     /// 画像保存中フラグ
     @Published var isSaving = false
 
+    /// 新しい画像が選択されたかどうかのフラグ
+    private var isNewImageSelected = false
+
+    /// 画像復元中フラグ（復元時は新しい画像選択としてカウントしない）
+    private var isRestoringState = false
+
     private let backgroundImageManager: BackgroundImageManager
     private var cancellables = Set<AnyCancellable>()
 
@@ -56,6 +62,11 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
     func onSelectedImageChanged(newImage: UIImage?) {
         if let image = newImage {
             backgroundImageManager.setOriginalImage(image)
+
+            // 復元中でない場合のみ、新しい画像が選択されたとマーク
+            if !isRestoringState {
+                isNewImageSelected = true
+            }
         }
     }
 
@@ -65,29 +76,6 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         }
     }
 
-    /// 画像を写真ライブラリに保存
-    /// - Parameter image: 保存する画像
-    func saveImageToLibrary(_ image: UIImage) {
-        isSaving = true
-
-        // 写真ライブラリに保存
-        UIImageWriteToSavedPhotosAlbum(
-            image,
-            self,
-            #selector(saveToLibraryCompleted(_:didFinishSavingWithError:contextInfo:)),
-            nil
-        )
-    }
-
-    /// 写真ライブラリへの保存完了時のコールバック
-    @objc private func saveToLibraryCompleted(
-        _ image: UIImage,
-        didFinishSavingWithError error: Error?,
-        contextInfo: UnsafeRawPointer
-    ) {
-        isSaving = false
-    }
-
     /// キャプチャした画像を永続化
     /// - Parameter capturedImage: TransformableCardImageViewでキャプチャした編集済み画像
     func saveCapturedImageDirectly(_ capturedImage: UIImage) {
@@ -95,7 +83,7 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         let existingData = userDefaultsService.loadBackgroundImageData(
             for: backgroundImageManager.userIdForDebugging)
 
-        // ファイル名の決定（既存を再利用、なければ新規作成）
+        // ファイル名の決定（新しい画像なら新規作成、変形のみなら既存を再利用）
         let (editedFileName, originalFileName) = determineFileNames(existingData: existingData)
 
         // 編集済み画像を保存
@@ -103,8 +91,8 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
             return
         }
 
-        // オリジナル画像を保存（初回のみ）
-        if existingData == nil {
+        // オリジナル画像を保存（新しい画像または初回のみ）
+        if isNewImageSelected || existingData == nil {
             saveOriginalImage(fileName: originalFileName)
         }
 
@@ -124,21 +112,26 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
             editedImage: capturedImage,
             transform: transform
         )
+
+        // フラグをリセット
+        isNewImageSelected = false
     }
 
     /// ファイル名を決定（既存を再利用または新規作成）
     private func determineFileNames(
         existingData: EnhancedPersistentImageData?
     ) -> (editedFileName: String, originalFileName: String) {
-        if let existing = existingData {
-            return (existing.editedImageFileName, existing.originalImageFileName)
-        } else {
+        // 新しい画像が選択された場合は、常に新しいファイル名を生成
+        if isNewImageSelected || existingData == nil {
             let timestamp = UUID().uuidString
             let userId = backgroundImageManager.userIdForDebugging
             return (
                 editedFileName: "\(userId)_edited_\(timestamp).png",
                 originalFileName: "\(userId)_original_\(timestamp).png"
             )
+        } else {
+            // 変形のみの変更の場合は既存のファイル名を再利用
+            return (existingData!.editedImageFileName, existingData!.originalImageFileName)
         }
     }
 
@@ -218,9 +211,11 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
     /// 前回の編集状態を復元
     /// - BackgroundImageManagerから画像と変形情報を読み込む
     private func restoreEditingState() {
+        isRestoringState = true
         restoreImage()
         restoreTransform()
         restoreBackgroundColor()
+        isRestoringState = false
     }
 
     /// 画像を復元
