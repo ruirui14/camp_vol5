@@ -1,6 +1,6 @@
 // CardBackgroundEditView.swift
-// UserHeartbeatCardの背景画像を編集するビュー
-// 透過画像をドラッグ・ズームで配置し、カード範囲内では透過を解除
+// カード背景画像編集ビュー - MVVM設計
+// 責務: カード背景画像の選択、配置、色指定のUIを提供
 
 import PhotosUI
 import SwiftUI
@@ -9,9 +9,8 @@ struct CardBackgroundEditView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel: CardBackgroundEditViewModel
-    @State private var cardFrame: CGRect = .zero
+    @State private var transformableView: TransformableCardImageView?
 
-    // UserHeartbeatCardの設定（CardConstants使用）
     let userId: String
 
     init(userId: String) {
@@ -46,8 +45,11 @@ struct CardBackgroundEditView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("完了") {
-                        viewModel.saveImageConfiguration()
-                        dismiss()
+                        completeAndSave()
+                        // 保存処理完了を待ってから画面を閉じる
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            dismiss()
+                        }
                     }
                     .foregroundColor(.white)
                     .disabled(viewModel.isSaving || viewModel.selectedImage == nil)
@@ -71,74 +73,30 @@ struct CardBackgroundEditView: View {
     private var editingArea: some View {
         GeometryReader { geometry in
             let cardWidth = CardConstants.cardWidth(for: geometry.size.width)
+            let cardSize = CGSize(width: cardWidth, height: CardConstants.cardHeight)
 
             ZStack {
-                // 画像があるときだけ背景画像を表示
-                if let image = viewModel.selectedImage {
-                    ZStack {
-                        // 背景色（カード範囲のみ）
-                        if viewModel.selectedBackgroundColor != Color.clear {
-                            viewModel.selectedBackgroundColor
-                                .mask(
-                                    RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
-                                        .fill(Color.black)
-                                        .frame(width: cardWidth, height: CardConstants.cardHeight)
-                                )
-                        }
-
-                        // 背景画像（透過）
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(image.size, contentMode: .fit)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .opacity(0.5)
-                            .offset(viewModel.imageOffset)
-                            .scaleEffect(viewModel.imageScale)
-
-                        // 背景画像（カード範囲のみ不透明）
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(image.size, contentMode: .fit)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .opacity(1.0)
-                            .offset(viewModel.imageOffset)
-                            .scaleEffect(viewModel.imageScale)
-                            .mask(
-                                RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
-                                    .fill(Color.black)
-                                    .frame(width: cardWidth, height: CardConstants.cardHeight)
-                            )
-                    }
-                    .gesture(
-                        SimultaneousGesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    viewModel.updateImageOffset(translation: value.translation)
-                                }
-                                .onEnded { _ in
-                                    viewModel.finalizeImageOffset()
-                                },
-                            MagnificationGesture()
-                                .onChanged { value in
-                                    viewModel.updateImageScale(magnification: value)
-                                }
-                                .onEnded { _ in
-                                    viewModel.finalizeImageScale()
-                                }
-                        )
-                    )
-                }
-
-                // 背景色のみの場合のプレビュー
-                if viewModel.selectedImage == nil
-                    && viewModel.selectedBackgroundColor != Color.clear
-                {
+                // 背景色（カード範囲のみ）
+                if viewModel.selectedBackgroundColor != Color.clear {
                     viewModel.selectedBackgroundColor
                         .mask(
                             RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
                                 .fill(Color.black)
                                 .frame(width: cardWidth, height: CardConstants.cardHeight)
                         )
+                }
+
+                // 画像があるときはTransformableCardImageViewを使用
+                if let image = viewModel.selectedImage {
+                    let view = TransformableCardImageView(
+                        image: image,
+                        cardSize: cardSize,
+                        transformState: viewModel.transformState
+                    )
+                    view
+                        .onAppear {
+                            transformableView = view
+                        }
                 }
 
                 // 画像の有無に関わらずカードを中央に表示
@@ -260,17 +218,19 @@ struct CardBackgroundEditView: View {
         }
     }
 
-    private var isImageInCardBounds: Bool {
-        // 画像がカード範囲内にあるかを簡易判定
-        let imageCenter = CGPoint(
-            x: cardFrame.midX + viewModel.imageOffset.width,
-            y: cardFrame.midY + viewModel.imageOffset.height
-        )
+    /// 完了ボタンの処理：画像をキャプチャして永続化
+    private func completeAndSave() {
+        guard
+            let capturedImage = transformableView?.captureImage(
+                backgroundColor: viewModel.selectedBackgroundColor
+            )
+        else {
+            return
+        }
 
-        return cardFrame.contains(imageCenter)
+        viewModel.saveCapturedImageDirectly(capturedImage)
     }
 }
-
 struct PhotoPicker: UIViewControllerRepresentable {
     @Binding var selectedImage: UIImage?
     @Environment(\.dismiss) private var dismiss

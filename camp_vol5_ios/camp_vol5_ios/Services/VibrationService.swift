@@ -13,6 +13,9 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
     @Published var isVibrating = false
     @Published var isEnabled = true  // 振動機能の有効/無効状態
     private var vibrationTimer: Timer?
+    private var lastVibrationTime: Date?  // 最後の振動発生時刻
+    private let minimumVibrationInterval: TimeInterval = 0.3  // 最小振動間隔（秒）
+    private var pendingBPM: Int?  // 次のサイクルで適用する予定のBPM
 
     /// UIアニメーションと同期するためのパブリッシャー
     let heartbeatTrigger = PassthroughSubject<Void, Never>()
@@ -33,19 +36,24 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
             return
         }
 
-        // 既に同じBPMで振動中の場合でも再設定する
-        let needsRestart = !isVibrating || currentBPM != bpm
-
-        if needsRestart {
-            stopVibration()
-        } else {
+        // 同じBPMの場合は何もしない
+        if isVibrating && currentBPM == bpm {
             return
         }
 
-        isVibrating = true
-        let interval = 60.0 / Double(bpm)  // BPMから間隔を計算
+        // 振動中で異なるBPMの場合は、次のサイクルで適用する
+        if isVibrating && currentBPM != bpm {
+            pendingBPM = bpm
+            print("📱 BPM変更を予約: \(currentBPM) → \(bpm)")
+            return
+        }
 
+        // 振動していない場合は即座に開始
+        isVibrating = true
         currentBPM = bpm
+        pendingBPM = nil
+
+        let interval = 60.0 / Double(bpm)  // BPMから間隔を計算
 
         vibrationTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) {
             [weak self] _ in
@@ -64,12 +72,25 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
         vibrationTimer?.invalidate()
         vibrationTimer = nil
         currentBPM = 0
+        pendingBPM = nil  // 保留中のBPM変更もクリア
+        lastVibrationTime = nil  // クールダウンタイマーもリセット
     }
 
     // MARK: - Private Methods
 
     /// 心拍の「ドクン」パターンを再現する振動
     private func triggerHeartbeatPattern() {
+        // クールダウン期間中は振動をスキップ
+        if let lastTime = lastVibrationTime {
+            let timeSinceLastVibration = Date().timeIntervalSince(lastTime)
+            if timeSinceLastVibration < minimumVibrationInterval {
+                return
+            }
+        }
+
+        // 最後の振動時刻を更新
+        lastVibrationTime = Date()
+
         // UIアニメーションのトリガーを送信
         heartbeatTrigger.send()
 
@@ -83,6 +104,32 @@ class VibrationService: ObservableObject, VibrationServiceProtocol {
             let mediumImpact = UIImpactFeedbackGenerator(style: .medium)
             mediumImpact.prepare()
             mediumImpact.impactOccurred()
+        }
+
+        // 振動完了後、保留中のBPM変更があれば適用
+        checkAndApplyPendingBPMChange()
+    }
+
+    /// 保留中のBPM変更を適用
+    private func checkAndApplyPendingBPMChange() {
+        guard let newBPM = pendingBPM else { return }
+
+        print("📱 BPM変更を適用: \(currentBPM) → \(newBPM)")
+
+        // 現在のタイマーを停止
+        vibrationTimer?.invalidate()
+        vibrationTimer = nil
+
+        // 新しいBPMでタイマーを再設定
+        currentBPM = newBPM
+        pendingBPM = nil
+
+        let interval = 60.0 / Double(newBPM)
+        vibrationTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) {
+            [weak self] _ in
+            Task { @MainActor in
+                self?.triggerHeartbeatPattern()
+            }
         }
     }
 

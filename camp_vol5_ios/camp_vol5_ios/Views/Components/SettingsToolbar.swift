@@ -9,10 +9,14 @@ struct SettingsToolbar: ToolbarContent {
 
     var body: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
-            Button("戻る") {
-                onDismiss()
+            Button(action: onDismiss) {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                    Text("戻る")
+                }
             }
             .foregroundColor(.white)
+            .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
         }
 
         ToolbarItem(placement: .principal) {

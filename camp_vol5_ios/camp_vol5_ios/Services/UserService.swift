@@ -21,6 +21,7 @@ protocol UserServiceProtocol {
     func updateFollowingNotificationSetting(
         currentUserId: String, targetUserId: String, enabled: Bool
     ) -> AnyPublisher<Void, Error>
+    func getMaxConnectionsRanking(limit: Int, forceRefresh: Bool) -> AnyPublisher<[User], Error>
 }
 
 // MARK: - UserService Errors
@@ -56,7 +57,8 @@ class UserService: UserServiceProtocol {
             followerRepository: followerRepository,
             followingRepository: FirestoreFollowingRepository(),
             followRepository: FirestoreFollowRepository(),
-            notificationService: notificationService
+            notificationService: notificationService,
+            redisRankingRepository: RedisRankingRepository()
         )
     }()
 
@@ -65,20 +67,28 @@ class UserService: UserServiceProtocol {
     private let followingRepository: FollowingRepositoryProtocol
     private let followRepository: FollowRepositoryProtocol
     private let notificationService: NotificationServiceProtocol
+    private let redisRankingRepository: RedisRankingRepository
     private let logger = FirebaseLogger.shared
+
+    // ランキングキャッシュ
+    private var rankingCache: [User]?
+    private var rankingCacheTimestamp: Date?
+    private let cacheValidityDuration: TimeInterval = 300  // 5分
 
     init(
         repository: UserRepositoryProtocol,
         followerRepository: FollowerRepositoryProtocol,
         followingRepository: FollowingRepositoryProtocol,
         followRepository: FollowRepositoryProtocol,
-        notificationService: NotificationServiceProtocol
+        notificationService: NotificationServiceProtocol,
+        redisRankingRepository: RedisRankingRepository
     ) {
         self.repository = repository
         self.followerRepository = followerRepository
         self.followingRepository = followingRepository
         self.followRepository = followRepository
         self.notificationService = notificationService
+        self.redisRankingRepository = redisRankingRepository
     }
 
     // MARK: - User Management
@@ -232,5 +242,72 @@ class UserService: UserServiceProtocol {
             }
         )
         .eraseToAnyPublisher()
+    }
+
+    // MARK: - Ranking
+
+    /// 最大接続数ランキングを取得
+    /// - Parameters:
+    ///   - limit: 取得件数
+    ///   - forceRefresh: キャッシュを無視して強制的に取得する場合true
+    /// - Returns: ランキング順のUserの配列Publisher
+    func getMaxConnectionsRanking(limit: Int, forceRefresh: Bool = false) -> AnyPublisher<
+        [User], Error
+    > {
+        // キャッシュチェック
+        if !forceRefresh,
+            let cache = rankingCache,
+            let timestamp = rankingCacheTimestamp
+        {
+            let elapsed = Date().timeIntervalSince(timestamp)
+            if elapsed < cacheValidityDuration {
+                logger.log("📦 キャッシュから返却 (経過時間: \(Int(elapsed))秒)")
+                return Just(cache)
+                    .setFailureType(to: Error.self)
+                    .eraseToAnyPublisher()
+            } else {
+                logger.log("⏰ キャッシュ有効期限切れ (経過時間: \(Int(elapsed))秒)")
+            }
+        }
+
+        if forceRefresh {
+            logger.log("🔄 forceRefresh: キャッシュをスキップ")
+        }
+
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.DataTrace.fetchMaxConnectionsRanking)
+
+        // Cloud Functions経由でランキング取得（オンメモリキャッシュ付き）
+        return redisRankingRepository.fetchRanking(limit: limit)
+            .handleEvents(
+                receiveOutput: { [weak self] users in
+                    // キャッシュ更新
+                    self?.rankingCache = users
+                    self?.rankingCacheTimestamp = Date()
+                    self?.logger.log("💾 ランキングキャッシュ更新: \(users.count)件")
+
+                    // メトリクスに結果件数を記録
+                    if let trace = trace {
+                        PerformanceMonitor.shared.incrementMetric(
+                            trace,
+                            key: "result_count",
+                            by: Int64(users.count)
+                        )
+                    }
+
+                    self?.logger.log("Fetched max connections ranking: \(users.count) users")
+                },
+                receiveCompletion: { [weak self] completion in
+                    // トレースを停止
+                    PerformanceMonitor.shared.stopTrace(trace)
+
+                    if case let .failure(error) = completion {
+                        self?.logger.error(
+                            "Failed to fetch max connections ranking: \(error.localizedDescription)"
+                        )
+                    }
+                }
+            )
+            .eraseToAnyPublisher()
     }
 }

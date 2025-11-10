@@ -13,6 +13,8 @@ struct User: Codable, Identifiable, Equatable {
     let allowQRRegistration: Bool
     let createdAt: Date?
     let updatedAt: Date?
+    let maxConnections: Int?
+    let maxConnectionsUpdatedAt: Date?
 
     // MARK: - Initialization
 
@@ -23,7 +25,9 @@ struct User: Codable, Identifiable, Equatable {
         inviteCode: String,
         allowQRRegistration: Bool,
         createdAt: Date? = nil,
-        updatedAt: Date? = nil
+        updatedAt: Date? = nil,
+        maxConnections: Int? = nil,
+        maxConnectionsUpdatedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
@@ -31,6 +35,8 @@ struct User: Codable, Identifiable, Equatable {
         self.allowQRRegistration = allowQRRegistration
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.maxConnections = maxConnections
+        self.maxConnectionsUpdatedAt = maxConnectionsUpdatedAt
     }
 
     // MARK: - Convenience Initializers

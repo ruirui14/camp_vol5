@@ -6,6 +6,8 @@ struct ImageEditView: View {
     @Binding var imageOffset: CGSize
     @Binding var imageScale: CGFloat
     @Binding var imageRotation: Double
+    @Binding var heartOffset: CGSize
+    @Binding var heartSize: CGFloat
     let onApply: () -> Void
     let userId: String
     @State private var tempOffset = CGSize.zero
@@ -14,14 +16,16 @@ struct ImageEditView: View {
     @State private var lastScale: CGFloat = 1.0
     @State private var tempRotation: Double = 0.0
     @State private var lastRotation: Double = 0.0
-    @State private var heartOffset = CGSize.zero
+    @State private var tempHeartOffset = CGSize.zero
     @State private var lastHeartOffset = CGSize.zero
-    @State private var heartSize: CGFloat = 105.0
+    @State private var tempHeartSize: CGFloat = 105.0
     @State private var showingPhotoPicker = false
     @State private var showingHeartSizeSlider = false
     @State private var selectedBackgroundColor: Color = .clear
     @Environment(\.presentationMode) var presentationMode
     @State private var tempColor: Color = .clear
+    @State private var imageData: Data?
+    @State private var isAnimatedImage: Bool = false
 
     private let persistenceManager = PersistenceManager.shared
 
@@ -36,8 +40,32 @@ struct ImageEditView: View {
                     MainAccentGradient()
                 }
 
-                // 画像表示とジェスチャー
-                if let image = image {
+                // 画像表示とジェスチャー（GIF対応）
+                if let data = imageData, isAnimatedImage {
+                    // GIFアニメーションの場合
+                    ZStack {
+                        AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
+                            .scaleEffect(tempScale)
+                            .rotationEffect(.degrees(tempRotation))
+                            .offset(tempOffset)
+                            .ignoresSafeArea()
+
+                        // ジェスチャー用の透明レイヤー
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .ignoresSafeArea()
+                            .gesture(
+                                SimultaneousGesture(
+                                    SimultaneousGesture(
+                                        dragGesture,
+                                        magnificationGesture
+                                    ),
+                                    rotationGesture
+                                )
+                            )
+                    }
+                } else if let image = image {
+                    // 通常の画像の場合
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -81,23 +109,23 @@ struct ImageEditView: View {
                     if image != nil {
                         HeartAnimationView(
                             bpm: 0,  // 編集画面では静止
-                            heartSize: heartSize,
+                            heartSize: tempHeartSize,
                             showBPM: true,
                             enableHaptic: false,
                             heartColor: .red
                         )
-                        .offset(heartOffset)
+                        .offset(tempHeartOffset)
                         .ignoresSafeArea()
                         .gesture(
                             DragGesture()
                                 .onChanged { value in
-                                    heartOffset = CGSize(
+                                    tempHeartOffset = CGSize(
                                         width: lastHeartOffset.width + value.translation.width,
                                         height: lastHeartOffset.height + value.translation.height
                                     )
                                 }
                                 .onEnded { _ in
-                                    lastHeartOffset = heartOffset
+                                    lastHeartOffset = tempHeartOffset
                                 }
                         )
                     }
@@ -124,11 +152,10 @@ struct ImageEditView: View {
                                             color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1
                                         )
 
-                                    Slider(value: $heartSize, in: 60...200, step: 5)
+                                    Slider(value: $tempHeartSize, in: 60...200, step: 5)
                                         .accentColor(.white)
-                                        .onChange(of: heartSize) { _, newSize in
-                                            persistenceManager.saveHeartSize(
-                                                newSize, userId: userId)
+                                        .onChange(of: tempHeartSize) { _, _ in
+                                            // 一時的な値として保持するのみ（適用時に保存）
                                         }
 
                                     Text("大")
@@ -138,7 +165,7 @@ struct ImageEditView: View {
                                         )
                                 }
 
-                                Text("サイズ: \(Int(heartSize))")
+                                Text("サイズ: \(Int(tempHeartSize))")
                                     .font(.caption)
                                     .foregroundColor(.white)
                                     .shadow(color: Color.black.opacity(0.5), radius: 1, x: 0, y: 1)
@@ -189,8 +216,15 @@ struct ImageEditView: View {
                         imageScale = tempScale
                         imageRotation = tempRotation
 
+                        // ハートの位置とサイズを適用
+                        heartOffset = tempHeartOffset
+                        heartSize = tempHeartSize
+
                         // ハートの位置を保存
-                        persistenceManager.saveHeartPosition(heartOffset, userId: userId)
+                        persistenceManager.saveHeartPosition(tempHeartOffset, userId: userId)
+
+                        // ハートのサイズを保存
+                        persistenceManager.saveHeartSize(tempHeartSize, userId: userId)
 
                         // 画像の変形情報を直接保存（回転も含む）
                         persistenceManager.saveImageTransform(
@@ -200,7 +234,17 @@ struct ImageEditView: View {
                             userId: userId
                         )
 
+                        // 背景色を保存
                         persistenceManager.saveBackgroundColor(tempColor, userId: userId)
+
+                        // 画像データを保存（GIF対応）
+                        if let image = image {
+                            persistenceManager.saveBackgroundImage(
+                                image,
+                                userId: userId,
+                                imageData: imageData
+                            )
+                        }
 
                         onApply()
                     }
@@ -212,48 +256,53 @@ struct ImageEditView: View {
             }
         }
         .sheet(isPresented: $showingPhotoPicker) {
-            PhotoPicker(selectedImage: $image)
+            GifPhotoPickerView(selectedImage: $image, selectedImageData: $imageData)
         }
         .onAppear {
-            // ハートのサイズを読み込み
-            heartSize = persistenceManager.loadHeartSize(userId: userId)
-
             // 背景色を読み込み
             selectedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userId)
 
-            // Bindingから渡された値を優先し、無ければ永続化データから読み込み
-            if imageOffset != .zero || imageScale != 1.0 || imageRotation != 0.0 {
-                // HeartbeatDetailViewから渡された値を使用
-                tempOffset = imageOffset
-                lastOffset = imageOffset
-                tempScale = imageScale
-                lastScale = imageScale
-                tempRotation = imageRotation
-                lastRotation = imageRotation
-            } else if image != nil {
-                // 永続化されたデータを再読み込み
-                let transform = persistenceManager.loadImageTransform(userId: userId)
-                imageOffset = transform.offset
-                imageScale = transform.scale
-                imageRotation = transform.rotation
+            // アニメーション画像かどうかを確認
+            isAnimatedImage = persistenceManager.isAnimatedImage(userId: userId)
 
-                // 現在の状態を編集画面に反映
-                tempOffset = transform.offset
-                lastOffset = transform.offset
-                tempScale = transform.scale
-                lastScale = transform.scale
-                tempRotation = transform.rotation
-                lastRotation = transform.rotation
+            // 画像データを読み込み（GIF対応）
+            // 画像が既に選択されている場合のみ読み込む（新規選択時は不要）
+            if image != nil, isAnimatedImage {
+                if let data = persistenceManager.loadBackgroundImageData(userId: userId) {
+                    imageData = data
+                }
+            } else {
+                // アニメーション画像でない場合はimageDataをクリア
+                imageData = nil
             }
 
-            // ハートの位置を読み込み
-            let heartPosition = persistenceManager.loadHeartPosition(userId: userId)
-            heartOffset = heartPosition
-            lastHeartOffset = heartPosition
+            // 常にBindingから渡された値を使用する
+            // これにより、HeartbeatDetailViewから渡された現在の状態が正しく反映される
+            tempOffset = imageOffset
+            lastOffset = imageOffset
+            tempScale = imageScale
+            lastScale = imageScale
+            tempRotation = imageRotation
+            lastRotation = imageRotation
+
+            // ハートの位置とサイズをtempに初期化
+            tempHeartOffset = heartOffset
+            lastHeartOffset = heartOffset
+            tempHeartSize = heartSize
         }
         .onChange(of: selectedBackgroundColor) { _, newColor in
             // 背景色が変更されたときに仮保存
             tempColor = newColor
+        }
+        .onChange(of: imageData) { _, newData in
+            // 画像データが変更されたときにGIFかどうかを判定
+            if let data = newData, data.count > 3 {
+                // GIFのマジックナンバーをチェック（"GIF"）
+                let header = [UInt8](data.prefix(3))
+                isAnimatedImage = (header == [0x47, 0x49, 0x46])
+            } else {
+                isAnimatedImage = false
+            }
         }
     }
 
@@ -406,7 +455,7 @@ struct ImageEditView: View {
             lastScale = 1.0
             tempRotation = 0.0
             lastRotation = 0.0
-            heartOffset = .zero
+            tempHeartOffset = .zero
             lastHeartOffset = .zero
         }
     }
@@ -450,90 +499,4 @@ struct ImageEditView: View {
                 lastRotation = tempRotation
             }
     }
-}
-
-// MARK: - Color Palette View
-
-struct ColorPaletteView: View {
-    @ObservedObject private var themeManager = ColorThemeManager.shared
-    @Binding var selectedColor: Color
-    @Environment(\.presentationMode) var presentationMode
-
-    private let colors: [Color] = [
-        .clear, .red, .orange, .yellow, .green, .mint, .teal, .cyan,
-        .blue, .indigo, .purple, .pink, .brown, .gray, .black, .white,
-    ]
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 20) {
-                Text("背景色を選択")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .padding(.top)
-
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
-                    ForEach(colors, id: \.self) { color in
-                        Button(action: {
-                            selectedColor = color
-                            presentationMode.wrappedValue.dismiss()
-                        }) {
-                            RoundedRectangle(cornerRadius: 15)
-                                .fill(
-                                    color == .clear
-                                        ? LinearGradient(
-                                            colors: [
-                                                themeManager.mainColor, themeManager.accentColor,
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                        : LinearGradient(
-                                            colors: [color], startPoint: .center, endPoint: .center
-                                        )
-                                )
-                                .frame(width: 60, height: 60)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 15)
-                                        .stroke(
-                                            selectedColor == color
-                                                ? Color.blue : Color.gray.opacity(0.3),
-                                            lineWidth: selectedColor == color ? 3 : 1
-                                        )
-                                )
-                                .overlay(
-                                    color == .clear
-                                        ? Text("デフォルト")
-                                            .font(.caption)
-                                            .foregroundColor(.white)
-                                            .shadow(color: .black, radius: 1) : nil
-                                )
-                        }
-                    }
-                }
-                .padding(.horizontal)
-
-                Spacer()
-            }
-            .navigationTitle("カラーパレット")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                trailing:
-                    Button("キャンセル") {
-                        presentationMode.wrappedValue.dismiss()
-                    }
-            )
-        }
-    }
-}
-
-#Preview {
-    ImageEditView(
-        image: .constant(UIImage(systemName: "photo")),
-        imageOffset: .constant(CGSize.zero),
-        imageScale: .constant(1.0),
-        imageRotation: .constant(0.0),
-        onApply: {},
-        userId: "preview_user"
-    )
 }

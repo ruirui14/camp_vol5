@@ -25,6 +25,7 @@ class PersistenceManager {
     private let backgroundColorGreenKey = "backgroundColorGreen"
     private let backgroundColorBlueKey = "backgroundColorBlue"
     private let backgroundColorAlphaKey = "backgroundColorAlpha"
+    private let isAnimatedImageKey = "isAnimatedImage"
 
     private init() {}
 
@@ -33,66 +34,131 @@ class PersistenceManager {
         return "\(baseKey)_\(userId)"
     }
 
-    // 画像をDocuments Directoryに保存（ユーザーID別）
-    func saveBackgroundImage(_ image: UIImage, userId: String) {
-        print("=== PersistenceManager.saveBackgroundImage ===")
-        print("UserId: \(userId)")
+    // MARK: - Background Image Management (GIF対応)
 
+    // 画像をDocuments Directoryに保存（ユーザーID別）- GIF対応
+    func saveBackgroundImage(_ image: UIImage, userId: String, imageData: Data? = nil) {
+        // GIFデータが渡された場合、実際にアニメーションGIFかどうかを判定
+        if let data = imageData {
+            // アニメーションGIFかどうかを判定
+            if isAnimatedGif(data: data) {
+                saveBackgroundImageData(data, userId: userId, isAnimated: true)
+                return
+            }
+            // 静止画像の場合はPNGとして保存（下に続く）
+        }
+
+        // 通常の画像として保存
         guard let data = image.pngData() else {
-            print("ERROR: Failed to convert image to PNG data")
             return
         }
 
-        if let documentsPath = FileManager.default.urls(
-            for: .documentDirectory, in: .userDomainMask
-        ).first {
-            let fileName = "backgroundImage_\(userId).png"
-            let imagePath = documentsPath.appendingPathComponent(fileName)
-            print("Saving image to: \(imagePath.path)")
-
-            do {
-                try data.write(to: imagePath)
-                print("Successfully saved image with size: \(data.count) bytes")
-            } catch {
-                print("ERROR: Failed to save image: \(error)")
-            }
-        } else {
-            print("ERROR: Failed to get documents directory")
-        }
-        print("=== End saveBackgroundImage ===")
+        saveBackgroundImageData(data, userId: userId, isAnimated: false)
     }
 
-    // 保存された画像を読み込み（ユーザーID別）
-    func loadBackgroundImage(userId: String) -> UIImage? {
-        print("=== PersistenceManager.loadBackgroundImage ===")
-        print("UserId: \(userId)")
+    // アニメーションGIFかどうかを判定するヘルパーメソッド
+    private func isAnimatedGif(data: Data) -> Bool {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return false
+        }
 
+        let frameCount = CGImageSourceGetCount(source)
+
+        // フレーム数が2以上の場合はアニメーションGIF
+        return frameCount > 1
+    }
+
+    // 画像データを保存するプライベートメソッド
+    private func saveBackgroundImageData(_ data: Data, userId: String, isAnimated: Bool) {
         guard
             let documentsPath = FileManager.default.urls(
                 for: .documentDirectory, in: .userDomainMask
             ).first
         else {
-            print("ERROR: Failed to get documents directory")
-            return nil
+            return
         }
 
-        let fileName = "backgroundImage_\(userId).png"
+        // ファイル拡張子を決定
+        let fileExtension = isAnimated ? "gif" : "png"
+        let fileName = "backgroundImage_\(userId).\(fileExtension)"
         let imagePath = documentsPath.appendingPathComponent(fileName)
-        print("Looking for image at: \(imagePath.path)")
 
-        if FileManager.default.fileExists(atPath: imagePath.path) {
-            print("File exists, loading image...")
-            if let image = UIImage(contentsOfFile: imagePath.path) {
-                print("Successfully loaded image with size: \(image.size)")
-                return image
-            } else {
-                print("ERROR: Failed to create UIImage from file")
-                return nil
-            }
-        } else {
-            print("File does not exist")
+        do {
+            // 古いファイルを削除（異なる拡張子の可能性があるため）
+            let oldPngPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).png")
+            let oldGifPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).gif")
+            try? FileManager.default.removeItem(at: oldPngPath)
+            try? FileManager.default.removeItem(at: oldGifPath)
+
+            // 新しいファイルを保存
+            try data.write(to: imagePath)
+
+            // アニメーション画像かどうかを保存
+            let isAnimatedKey = userSpecificKey(isAnimatedImageKey, userId: userId)
+            userDefaults.set(isAnimated, forKey: isAnimatedKey)
+        } catch {
+            // エラーは無視（デバッグ時に必要であればログを追加）
+        }
+    }
+
+    // 保存された画像を読み込み（ユーザーID別）- GIF対応
+    func loadBackgroundImage(userId: String) -> UIImage? {
+        guard
+            let documentsPath = FileManager.default.urls(
+                for: .documentDirectory, in: .userDomainMask
+            ).first
+        else {
             return nil
         }
+
+        // GIFファイルを優先的に探す
+        let gifPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).gif")
+        if FileManager.default.fileExists(atPath: gifPath.path) {
+            if let data = try? Data(contentsOf: gifPath),
+                let image = UIImage(data: data)
+            {
+                return image
+            }
+        }
+
+        // PNG画像を探す
+        let pngPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).png")
+        if FileManager.default.fileExists(atPath: pngPath.path) {
+            return UIImage(contentsOfFile: pngPath.path)
+        }
+
+        return nil
+    }
+
+    // 保存された画像データを読み込み（GIF対応）
+    func loadBackgroundImageData(userId: String) -> Data? {
+        guard
+            let documentsPath = FileManager.default.urls(
+                for: .documentDirectory, in: .userDomainMask
+            ).first
+        else {
+            return nil
+        }
+
+        // GIFファイルを優先的に探す
+        let gifPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).gif")
+        if FileManager.default.fileExists(atPath: gifPath.path) {
+            return try? Data(contentsOf: gifPath)
+        }
+
+        // PNG画像を探す
+        let pngPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).png")
+        if FileManager.default.fileExists(atPath: pngPath.path) {
+            return try? Data(contentsOf: pngPath)
+        }
+
+        return nil
+    }
+
+    // アニメーション画像かどうかを確認
+    func isAnimatedImage(userId: String) -> Bool {
+        let isAnimatedKey = userSpecificKey(isAnimatedImageKey, userId: userId)
+        return userDefaults.bool(forKey: isAnimatedKey)
     }
 
     // 画像の位置とスケール情報を保存（ユーザーID別）
@@ -121,14 +187,55 @@ class PersistenceManager {
         let scale = userDefaults.double(forKey: scaleKey)
         let rotation = userDefaults.double(forKey: rotationKey)
 
+        let finalScale = scale == 0 ? 1.0 : scale
         return (
             offset: CGSize(width: offsetX, height: offsetY),
-            scale: scale == 0 ? 1.0 : scale,
+            scale: CGFloat(finalScale),
             rotation: rotation
         )
     }
 
-    // 保存されたデータをすべて削除
+    // 保存されたデータをすべて削除（ユーザーID別）
+    func clearAllData(userId: String) {
+        // 画像ファイルを削除（GIF/PNG両方）
+        if let documentsPath = FileManager.default.urls(
+            for: .documentDirectory, in: .userDomainMask
+        ).first {
+            let pngPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).png")
+            let gifPath = documentsPath.appendingPathComponent("backgroundImage_\(userId).gif")
+            try? FileManager.default.removeItem(at: pngPath)
+            try? FileManager.default.removeItem(at: gifPath)
+        }
+
+        // UserDefaultsからユーザーID別のデータを削除
+        let offsetXKey = userSpecificKey(imageOffsetXKey, userId: userId)
+        let offsetYKey = userSpecificKey(imageOffsetYKey, userId: userId)
+        let scaleKey = userSpecificKey(imageScaleKey, userId: userId)
+        let rotationKey = userSpecificKey(imageRotationKey, userId: userId)
+        let heartXKey = userSpecificKey(heartOffsetXKey, userId: userId)
+        let heartYKey = userSpecificKey(heartOffsetYKey, userId: userId)
+        let sizeKey = userSpecificKey(heartSizeKey, userId: userId)
+        let colorRedKey = userSpecificKey(backgroundColorRedKey, userId: userId)
+        let colorGreenKey = userSpecificKey(backgroundColorGreenKey, userId: userId)
+        let colorBlueKey = userSpecificKey(backgroundColorBlueKey, userId: userId)
+        let colorAlphaKey = userSpecificKey(backgroundColorAlphaKey, userId: userId)
+        let animatedKey = userSpecificKey(isAnimatedImageKey, userId: userId)
+
+        userDefaults.removeObject(forKey: offsetXKey)
+        userDefaults.removeObject(forKey: offsetYKey)
+        userDefaults.removeObject(forKey: scaleKey)
+        userDefaults.removeObject(forKey: rotationKey)
+        userDefaults.removeObject(forKey: heartXKey)
+        userDefaults.removeObject(forKey: heartYKey)
+        userDefaults.removeObject(forKey: sizeKey)
+        userDefaults.removeObject(forKey: colorRedKey)
+        userDefaults.removeObject(forKey: colorGreenKey)
+        userDefaults.removeObject(forKey: colorBlueKey)
+        userDefaults.removeObject(forKey: colorAlphaKey)
+        userDefaults.removeObject(forKey: animatedKey)
+    }
+
+    // 保存されたデータをすべて削除（レガシー用）
     func clearAllData() {
         // 画像ファイルを削除
         if let documentsPath = FileManager.default.urls(

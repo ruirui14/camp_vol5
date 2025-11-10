@@ -7,6 +7,7 @@ enum NavigationDestination: Hashable {
     case settings
     case qrScanner
     case heartbeatDetail(String)  // userIdを直接渡す
+    case ranking
 
     func hash(into hasher: inout Hasher) {
         switch self {
@@ -17,12 +18,15 @@ enum NavigationDestination: Hashable {
         case .heartbeatDetail(let userId):
             hasher.combine("heartbeatDetail")
             hasher.combine(userId)
+        case .ranking:
+            hasher.combine("ranking")
         }
     }
 }
 
 struct ListHeartBeatsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @EnvironmentObject private var viewModelFactory: ViewModelFactory
     @StateObject private var viewModel = ListHeartBeatsViewModel()
     @StateObject private var backgroundImageCoordinator = BackgroundImageCoordinator()
     @ObservedObject private var themeManager = ColorThemeManager.shared
@@ -32,6 +36,7 @@ struct ListHeartBeatsView: View {
     @State private var hasAppearedOnce = false
     @State private var isEditMode = false
     @State private var selectedThemeColor: Color = ColorThemeManager.shared.mainColor
+    @State private var ignoreColorChange = false
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -110,6 +115,18 @@ struct ListHeartBeatsView: View {
                 backgroundImageCoordinator.loadBackgroundImages(
                     for: viewModel.followingUsersWithHeartbeats)
             }
+            .onReceive(
+                NotificationCenter.default.publisher(
+                    for: ColorThemeManager.didResetToDefaultsNotification
+                )
+            ) { _ in
+                // カラーテーマがリセットされた時にColorPickerも同期
+                ignoreColorChange = true
+                selectedThemeColor = themeManager.mainColor
+                DispatchQueue.main.async {
+                    ignoreColorChange = false
+                }
+            }
             .onReceive(viewModel.$followingUsersWithHeartbeats) { usersWithHeartbeats in
                 // フォローユーザーのデータが更新された時に背景画像を更新
                 if !usersWithHeartbeats.isEmpty
@@ -126,12 +143,19 @@ struct ListHeartBeatsView: View {
                 }
             }
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItemGroup(placement: .navigationBarLeading) {
                     Button {
                         navigationPath.append(NavigationDestination.settings)
                     } label: {
                         Image(systemName: "gearshape")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
+                    }
+
+                    Button {
+                        navigationPath.append(NavigationDestination.ranking)
+                    } label: {
+                        Image(systemName: "trophy.fill")
+                            .foregroundColor(themeManager.iconColor)
                     }
                 }
 
@@ -139,6 +163,8 @@ struct ListHeartBeatsView: View {
                     ColorPicker("", selection: $selectedThemeColor)
                         .labelsHidden()
                         .onChange(of: selectedThemeColor) { _, newColor in
+                            // 初期化時やプログラムからの変更時は無視
+                            guard !ignoreColorChange else { return }
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 themeManager.updateMainColor(newColor)
                             }
@@ -150,7 +176,7 @@ struct ListHeartBeatsView: View {
                         }
                     } label: {
                         Image(systemName: isEditMode ? "checkmark" : "pencil")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
                     }
 
                     Menu {
@@ -168,14 +194,14 @@ struct ListHeartBeatsView: View {
                         }
                     } label: {
                         Image(systemName: "arrow.up.arrow.down")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
                     }
 
                     Button {
                         navigationPath.append(NavigationDestination.qrScanner)
                     } label: {
                         Image(systemName: "person.badge.plus")
-                            .foregroundColor(themeManager.mainColor)
+                            .foregroundColor(themeManager.iconColor)
                     }
                 }
             }
@@ -191,6 +217,9 @@ struct ListHeartBeatsView: View {
                         isStatusBarHidden: $isStatusBarHidden,
                         isPersistentSystemOverlaysHidden: $persistentSystemOverlaysVisibility
                     )
+                case .ranking:
+                    ConnectionsRankingView(viewModelFactory: viewModelFactory)
+                        .environmentObject(viewModelFactory)
                 }
             }
         }

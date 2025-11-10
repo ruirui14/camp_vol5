@@ -24,6 +24,13 @@ service cloud.firestore {
         && request.resource.data.allowQRRegistration is bool;
     }
 
+    // maxConnectionsフィールドの更新かどうかをチェック
+    function isMaxConnectionsUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['maxConnections', 'maxConnectionsUpdatedAt'])
+        && request.resource.data.maxConnections is int
+        && request.resource.data.maxConnections >= 0;
+    }
+
     // デフォルトルール: すべて拒否
     match /{document=**} {
       allow read, write: if false;
@@ -31,10 +38,12 @@ service cloud.firestore {
 
     // users コレクション
     // ユーザードキュメント直下は誰でも読み取り可能、書き込みは本人のみ
+    // maxConnectionsの更新は認証済みユーザー全員が可能（他ユーザーが心拍を閲覧時に更新される）
     match /users/{userId} {
       allow read: if true;
       allow create: if isUserAuthenticated(userId) && isValidUserData();
-      allow update: if isUserAuthenticated(userId) && isValidUserData();
+      allow update: if (isUserAuthenticated(userId) && isValidUserData())
+                    || (isAuthenticated() && isMaxConnectionsUpdate());
       allow delete: if isUserAuthenticated(userId);
 
       // private サブコレクション: 本人のみアクセス可能

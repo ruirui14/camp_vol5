@@ -1,5 +1,5 @@
 {
-  "originHash" : "eb016f8903b4e3f6db486c96993410aa3f8ebc3b8b38ba8839f392ca5fce85ea",
+  "originHash" : "b009982cb1c1c156c854f9ea02ff68eab4b672fc9499405d6148831c0e1f3ece",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -188,6 +188,15 @@
       "state" : {
         "revision" : "102a647b573f60f73afdce5613a51d71349fe507",
         "version" : "1.30.0"
+      }
+    },
+    {
+      "identity" : "youtubeplayerkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SvenTiigi/YouTubePlayerKit.git",
+      "state" : {
+        "revision" : "0f9a98c58462686afc7d3a1355baf21f07e5d330",
+        "version" : "2.0.4"
       }
     }
   ],

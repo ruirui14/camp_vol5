@@ -20,18 +20,11 @@ struct EmailAuthView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 適度な明るさのグラデーション背景
-                LinearGradient(
-                    colors: [
-                        Color(hex: "FFB7C5"),  // ライトピンク
-                        Color(hex: "E8A0BF"),  // ソフトローズ
-                        Color(hex: "D4A5D4"),  // ラベンダー
-                        Color(hex: "B8B8DC"),  // ペールパープル
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // 背景グラデーション
+                MainAccentGradient()
+
+                // 浮遊する円（背景装飾）
+                FloatingCircles()
 
                 ScrollView {
                     VStack(spacing: 24) {
@@ -58,16 +51,12 @@ struct EmailAuthView: View {
                             dismiss()
                         }
                     }) {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .font(.body)
-                                .fontWeight(.semibold)
                             Text("戻る")
-                                .font(.body)
-                                .fontWeight(.medium)
                         }
                         .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                     }
                 }
             }
@@ -373,49 +362,6 @@ struct EmailAuthView: View {
                             .underline()
                     }
                 }
-
-                // または区切り線
-                HStack(spacing: 16) {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.3))
-                        .frame(height: 1)
-
-                    Text("または")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white.opacity(0.8))
-
-                    Rectangle()
-                        .fill(Color.white.opacity(0.3))
-                        .frame(height: 1)
-                }
-                .padding(.vertical, 8)
-
-                // Sign in with Apple ボタン（標準デザイン）
-                Button(action: {
-                    authenticationManager.signInWithApple()
-                }) {
-                    HStack(spacing: 12) {
-                        if authenticationManager.isLoading {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Image(systemName: "apple.logo")
-                                .font(.title2)
-                                .foregroundColor(.white)
-                        }
-
-                        Text("Appleでサインイン")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.black)
-                    .cornerRadius(12)
-                }
-                .disabled(authenticationManager.isLoading)
             }
 
             // エラーメッセージ
@@ -654,18 +600,11 @@ struct PasswordResetView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 適度な明るさのグラデーション背景
-                LinearGradient(
-                    colors: [
-                        Color(hex: "FFB7C5"),  // ライトピンク
-                        Color(hex: "E8A0BF"),  // ソフトローズ
-                        Color(hex: "D4A5D4"),  // ラベンダー
-                        Color(hex: "B8B8DC"),  // ペールパープル
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // 背景グラデーション
+                MainAccentGradient()
+
+                // 浮遊する円（背景装飾）
+                FloatingCircles()
 
                 ScrollView {
                     VStack(spacing: 28) {

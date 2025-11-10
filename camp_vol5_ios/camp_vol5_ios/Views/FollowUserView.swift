@@ -37,10 +37,16 @@ struct FollowUserView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("戻る") {
+                    Button(action: {
                         presentationMode.wrappedValue.dismiss()
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text("戻る")
+                        }
                     }
                     .foregroundColor(.white)
+                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                 }
 
                 ToolbarItem(placement: .principal) {
