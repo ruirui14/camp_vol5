@@ -19,4 +19,4 @@ admin.initializeApp();
 // 各Cloud Functionをエクスポート
 export { onNotificationTrigger } from "./notificationTrigger";
 export { cleanupOldHeartbeats } from "./cleanupOldHeartbeats";
-export { syncRankingToRedis, initialSyncRankingToRedis } from "./syncRankingToRedis";
+export { updateRankingScheduled, initialSyncRankingToRedis } from "./syncRankingToRedis";
