@@ -2,7 +2,8 @@
  * Cloud Functions - Get Ranking with Cache
  *
  * ランキングデータをオンメモリキャッシュ付きで取得
- * Upstash Redisへの読み取り回数を削減するため、5分間キャッシュ
+ * Upstash Redisへの読み取り回数を削減
+ * ランキングは毎時59分に更新されるため、時が変わったらキャッシュを無効化
  */
 
 import * as functions from "firebase-functions";
@@ -20,8 +21,6 @@ const getRedisConfig = () => {
 const redis = new Redis(getRedisConfig());
 
 const RANKING_KEY = "ranking:maxConnections";
-const RANKING_UPDATED_AT_KEY = "ranking:maxConnections:updatedAt";
-const CACHE_DURATION_MS = 5 * 60 * 1000; // 5分
 
 // オンメモリキャッシュ（グローバル変数）
 interface RankingCache {
@@ -117,21 +116,23 @@ export const getRanking = functions
     try {
       const limit = parseInt(req.query["limit"] as string) || 100;
 
-      // Redisから最終更新タイムスタンプを取得
-      const redisUpdatedAt = (await redis.get(RANKING_UPDATED_AT_KEY)) as number | null;
-
-      // キャッシュチェック（Redisの更新時刻も考慮）
+      // キャッシュチェック（時刻ベース）
       if (rankingCache) {
-        const elapsed = Date.now() - rankingCache.timestamp;
+        const cacheDate = new Date(rankingCache.timestamp);
+        const currentDate = new Date();
+        const cacheHour = cacheDate.getHours();
+        const currentHour = currentDate.getHours();
 
-        // Redisの更新がキャッシュより新しい場合はキャッシュを無効化
-        if (redisUpdatedAt && redisUpdatedAt > rankingCache.timestamp) {
+        // 時が変わっていたらキャッシュを無効化（毎時59分に更新されるため）
+        if (cacheHour !== currentHour) {
           console.log(
-            `[getRanking] 🔄 Cache invalidated: Redis updated at ${new Date(redisUpdatedAt).toISOString()}, cache from ${new Date(rankingCache.timestamp).toISOString()}`
+            `[getRanking] 🔄 Cache invalidated: hour changed (cache: ${cacheHour}:xx, current: ${currentHour}:xx)`
           );
           rankingCache = null; // キャッシュを無効化
-        } else if (elapsed < CACHE_DURATION_MS) {
-          console.log(`[getRanking] ✅ Cache hit (age: ${Math.floor(elapsed / 1000)}s)`);
+        } else {
+          // 同じ時間内ならキャッシュヒット
+          const elapsed = Date.now() - rankingCache.timestamp;
+          console.log(`[getRanking] ✅ Cache hit (age: ${Math.floor(elapsed / 1000)}s, hour: ${currentHour})`);
           const result = rankingCache.data.slice(0, limit);
           res.status(200).json({
             users: result,
@@ -139,8 +140,6 @@ export const getRanking = functions
             cacheAge: Math.floor(elapsed / 1000),
           });
           return;
-        } else {
-          console.log(`[getRanking] ⏰ Cache expired (age: ${Math.floor(elapsed / 1000)}s)`);
         }
       }
 

@@ -2,7 +2,8 @@
  * Cloud Functions - Get Ranking with Cache
  *
  * ランキングデータをオンメモリキャッシュ付きで取得
- * Upstash Redisへの読み取り回数を削減するため、5分間キャッシュ
+ * Upstash Redisへの読み取り回数を削減
+ * ランキングは毎時59分に更新されるため、時が変わったらキャッシュを無効化
  */
 import * as functions from "firebase-functions";
 /**

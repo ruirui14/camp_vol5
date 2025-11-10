@@ -1,8 +1,9 @@
 /**
  * Cloud Functions - Ranking Sync to Upstash Redis
  *
- * 1時間に1回、Firestoreから全ユーザーのmaxConnectionsを取得してRedisに同期
+ * 毎時00分にFirestoreから全ユーザーのmaxConnectionsを取得してRedisに同期
  * Redis Sorted Setを使用して高速なランキング取得を実現
+ * 読み取り側は時刻ベースでキャッシュ無効化（Redisへの余計な読み取り不要）
  */
 
 import * as functions from "firebase-functions";
@@ -21,7 +22,6 @@ const getRedisConfig = () => {
 const redis = new Redis(getRedisConfig());
 
 const RANKING_KEY = "ranking:maxConnections";
-const RANKING_UPDATED_AT_KEY = "ranking:maxConnections:updatedAt";
 
 /**
  * 共通の同期ロジック: FirestoreからRedisへ全データを同期
@@ -64,28 +64,56 @@ async function syncAllRankingToRedis(): Promise<number> {
 
   await pipeline.exec();
 
-  // 最終更新タイムスタンプを保存（Unix timestamp in milliseconds）
-  const updatedAt = Date.now();
-  await redis.set(RANKING_UPDATED_AT_KEY, updatedAt);
-
-  console.log(`[Redis Sync] ✅ Synced ${count} users to Redis (updatedAt: ${updatedAt})`);
+  console.log(`[Redis Sync] ✅ Synced ${count} users to Redis`);
   return count;
 }
 
 /**
- * 定期実行: 1時間に1回、FirestoreからRedisへ全データを同期
+ * キャッシュをウォームアップ（getRanking関数を呼び出してキャッシュを事前作成）
+ * 00分以降の大量リクエスト時にthundering herd problemを防ぐ
+ */
+async function warmupCache(): Promise<void> {
+  const getRankingURL = "https://asia-northeast1-heart-beat-23158.cloudfunctions.net/getRanking";
+
+  try {
+    console.log("[Cache Warmup] Calling getRanking to warmup cache...");
+
+    const response = await fetch(`${getRankingURL}?limit=100`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+
+    const data = (await response.json()) as { users?: unknown[]; cached?: boolean };
+    console.log(
+      `[Cache Warmup] ✅ Cache warmed up successfully (${data.users?.length || 0} users, cached: ${data.cached})`
+    );
+  } catch (error) {
+    // キャッシュウォームアップに失敗してもエラーにしない（次回リクエスト時に取得される）
+    console.error("[Cache Warmup] ⚠️ Failed to warmup cache:", error);
+  }
+}
+
+/**
+ * 定期実行: 毎時59分にFirestoreからRedisへ全データを同期
  * Cloud Scheduler経由で自動実行
+ * 同期完了後、キャッシュをウォームアップして00分以降のリクエストに備える
  */
 export const updateRankingScheduled = functions
   .region("asia-northeast1")
-  .pubsub.schedule("every 1 hours")
+  .pubsub.schedule("59 * * * *") // 毎時59分（cron形式）
   .timeZone("Asia/Tokyo")
   .onRun(async () => {
     console.log("[Scheduled Ranking Sync] Starting scheduled ranking sync...");
 
     try {
+      // Redisにランキングデータを同期
       const count = await syncAllRankingToRedis();
       console.log(`[Scheduled Ranking Sync] ✅ Successfully synced ${count} users`);
+
+      // キャッシュをウォームアップ（00分以降のthundering herd problem対策）
+      await warmupCache();
+
       return null;
     } catch (error) {
       console.error("[Scheduled Ranking Sync] ❌ Error:", error);
@@ -113,7 +141,11 @@ export const initialSyncRankingToRedis = functions
     try {
       const count = await syncAllRankingToRedis();
       console.log(`[Manual Ranking Sync] ✅ Successfully synced ${count} users`);
-      res.status(200).send(`Successfully synced ${count} users to Redis`);
+
+      // キャッシュをウォームアップ
+      await warmupCache();
+
+      res.status(200).send(`Successfully synced ${count} users to Redis and warmed up cache`);
     } catch (error) {
       console.error("[Manual Ranking Sync] ❌ Error:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
