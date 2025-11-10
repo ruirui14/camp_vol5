@@ -10,6 +10,7 @@ struct CardBackgroundEditView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @StateObject private var viewModel: CardBackgroundEditViewModel
     @State private var transformableView: TransformableCardImageView?
+    @State private var currentImage: UIImage?
 
     let userId: String
 
@@ -52,7 +53,7 @@ struct CardBackgroundEditView: View {
                         }
                     }
                     .foregroundColor(.white)
-                    .disabled(viewModel.isSaving || viewModel.selectedImage == nil)
+                    .disabled(viewModel.isSaving || currentImage == nil)
                 }
             }
         }
@@ -61,12 +62,17 @@ struct CardBackgroundEditView: View {
         }
         .onAppear {
             viewModel.onAppear()
+            currentImage = viewModel.selectedImage
         }
         .onChange(of: viewModel.isLoading) { _, isLoading in
             viewModel.onLoadingChanged(isLoading: isLoading)
+            if !isLoading {
+                currentImage = viewModel.selectedImage
+            }
         }
         .onChange(of: viewModel.selectedImage) { _, newImage in
             viewModel.onSelectedImageChanged(newImage: newImage)
+            currentImage = newImage
         }
     }
 
@@ -87,7 +93,7 @@ struct CardBackgroundEditView: View {
                 }
 
                 // 画像があるときはTransformableCardImageViewを使用
-                if let image = viewModel.selectedImage {
+                if let image = currentImage {
                     let view = TransformableCardImageView(
                         image: image,
                         cardSize: cardSize,
@@ -212,9 +218,9 @@ struct CardBackgroundEditView: View {
                         .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
                         .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                 )
-                .opacity(viewModel.selectedImage != nil ? 1.0 : 0.5)
+                .opacity(currentImage != nil ? 1.0 : 0.5)
             }
-            .disabled(viewModel.selectedImage == nil)
+            .disabled(currentImage == nil)
         }
     }
 
@@ -222,7 +228,8 @@ struct CardBackgroundEditView: View {
     private func completeAndSave() {
         guard
             let capturedImage = transformableView?.captureImage(
-                backgroundColor: viewModel.selectedBackgroundColor
+                backgroundColor: viewModel.selectedBackgroundColor,
+                sourceImage: currentImage
             )
         else {
             return
