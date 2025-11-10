@@ -277,22 +277,8 @@ class UserService: UserServiceProtocol {
         let trace = PerformanceMonitor.shared.startTrace(
             PerformanceMonitor.DataTrace.fetchMaxConnectionsRanking)
 
-        // Redis → Firestoreフォールバック
+        // Cloud Functions経由でランキング取得（オンメモリキャッシュ付き）
         return redisRankingRepository.fetchRanking(limit: limit)
-            .flatMap { [weak self] userIds -> AnyPublisher<[User], Error> in
-                guard let self = self else {
-                    return Fail(error: UserServiceError.serviceUnavailable).eraseToAnyPublisher()
-                }
-
-                // ユーザーIDからUserオブジェクトを取得
-                return self.repository.fetchMultiple(userIds: userIds)
-                    .map { users in
-                        // Redis Sorted Setの順序を保持
-                        let userDict = Dictionary(uniqueKeysWithValues: users.map { ($0.id, $0) })
-                        return userIds.compactMap { userDict[$0] }
-                    }
-                    .eraseToAnyPublisher()
-            }
             .handleEvents(
                 receiveOutput: { [weak self] users in
                     // キャッシュ更新

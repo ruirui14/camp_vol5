@@ -1,65 +1,59 @@
 // Repositories/RedisRankingRepository.swift
-// Upstash Redis REST APIを使用したランキングデータ取得
-// 従量課金プラン使用（フォールバックなし）
-// Firebase Remote Configから認証情報を取得
+// Cloud Functions経由でランキングデータ取得（オンメモリキャッシュ付き）
+// Firebase FunctionsのgetRanking HTTPS Functionを呼び出し
+// Upstashへの読み取り回数を削減（Functions側で5分間キャッシュ）
 
 import Combine
 import Foundation
 
-/// Upstash Redisベースのランキングリポジトリ
+/// Cloud Functions経由のランキングリポジトリ
 class RedisRankingRepository {
     // MARK: - Properties
 
-    private let remoteConfigManager: RemoteConfigManager
+    private let functionURL =
+        "https://asia-northeast1-heart-beat-23158.cloudfunctions.net/getRanking"
 
     // MARK: - Initialization
 
-    init(remoteConfigManager: RemoteConfigManager = .shared) {
-        self.remoteConfigManager = remoteConfigManager
-    }
+    init() {}
 
     // MARK: - Public Methods
 
-    /// ランキングデータを取得（Redisのみ）
+    /// ランキングデータを取得（Cloud Functions経由）
     /// - Parameter limit: 取得件数
-    /// - Returns: ユーザーIDの配列Publisher
-    func fetchRanking(limit: Int) -> AnyPublisher<[String], Error> {
-        return fetchFromRedis(limit: limit)
+    /// - Returns: User全体の配列Publisher
+    func fetchRanking(limit: Int) -> AnyPublisher<[User], Error> {
+        return fetchFromCloudFunction(limit: limit)
             .eraseToAnyPublisher()
     }
 
     // MARK: - Private Methods
 
-    /// Upstash Redisから取得
-    private func fetchFromRedis(limit: Int) -> AnyPublisher<[String], Error> {
+    /// Cloud Functionsから取得
+    private func fetchFromCloudFunction(limit: Int) -> AnyPublisher<[User], Error> {
         return Future { [weak self] promise in
             guard let self = self else {
                 promise(.failure(RepositoryError.serviceUnavailable))
                 return
             }
 
-            // Remote Configから認証情報を取得
-            let redisURL = self.remoteConfigManager.redisURL
-            let redisToken = self.remoteConfigManager.redisToken
-
-            // 認証情報が未設定の場合はエラー
-            guard !redisURL.isEmpty, !redisToken.isEmpty else {
-                print("❌ Redis認証情報が未設定です。Remote Configを確認してください。")
-                promise(.failure(RepositoryError.serviceUnavailable))
+            // Cloud Functions URL
+            guard var urlComponents = URLComponents(string: self.functionURL) else {
+                promise(.failure(RepositoryError.dataCorrupted))
                 return
             }
 
-            // Upstash Redis REST API
-            // ZREVRANGE ranking:maxConnections 0 (limit-1)
-            let urlString = "\(redisURL)/zrevrange/ranking:maxConnections/0/\(limit - 1)"
-            guard let url = URL(string: urlString) else {
+            urlComponents.queryItems = [
+                URLQueryItem(name: "limit", value: String(limit))
+            ]
+
+            guard let url = urlComponents.url else {
                 promise(.failure(RepositoryError.dataCorrupted))
                 return
             }
 
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
-            request.setValue("Bearer \(redisToken)", forHTTPHeaderField: "Authorization")
 
             let task = URLSession.shared.dataTask(with: request) { data, response, error in
                 if let error = error {
@@ -73,8 +67,8 @@ class RedisRankingRepository {
                 }
 
                 guard (200...299).contains(httpResponse.statusCode) else {
-                    print("⚠️ Redis HTTPエラー: \(httpResponse.statusCode)")
-                    promise(.failure(RedisError.httpError(httpResponse.statusCode)))
+                    print("⚠️ Cloud Functions HTTPエラー: \(httpResponse.statusCode)")
+                    promise(.failure(RankingError.httpError(httpResponse.statusCode)))
                     return
                 }
 
@@ -84,11 +78,38 @@ class RedisRankingRepository {
                 }
 
                 do {
-                    // Upstash ResponseはJSON {"result": ["userId1", "userId2", ...]}
-                    let response = try JSONDecoder().decode(UpstashResponse.self, from: data)
-                    print("✅ Redis取得成功: \(response.result.count)件")
-                    promise(.success(response.result))
+                    // Cloud Functions Response
+                    let decoder = JSONDecoder()
+                    decoder.keyDecodingStrategy = .convertFromSnakeCase
+                    let response = try decoder.decode(CloudFunctionResponse.self, from: data)
+
+                    // RankingUserをUserに変換
+                    let users = response.users.map { rankingUser in
+                        User(
+                            id: rankingUser.id,
+                            name: rankingUser.name,
+                            inviteCode: "",  // ランキングでは不要
+                            allowQRRegistration: false,
+                            createdAt: nil,
+                            updatedAt: nil,
+                            maxConnections: rankingUser.maxConnections,
+                            maxConnectionsUpdatedAt: rankingUser.maxConnectionsUpdatedAt.map {
+                                Date(timeIntervalSince1970: TimeInterval($0) / 1000)
+                            }
+                        )
+                    }
+
+                    if response.cached {
+                        print(
+                            "✅ Cloud Functions取得成功（キャッシュ）: \(users.count)件 (age: \(response.cacheAge)秒)"
+                        )
+                    } else {
+                        print("✅ Cloud Functions取得成功（新規）: \(users.count)件")
+                    }
+
+                    promise(.success(users))
                 } catch {
+                    print("❌ レスポンスのパースエラー: \(error)")
                     promise(.failure(error))
                 }
             }
@@ -101,19 +122,29 @@ class RedisRankingRepository {
 
 // MARK: - Supporting Types
 
-/// Upstash Redis REST APIレスポンス
-struct UpstashResponse: Codable {
-    let result: [String]
+/// Cloud Functions getRankingレスポンス
+struct CloudFunctionResponse: Codable {
+    let users: [RankingUser]
+    let cached: Bool
+    let cacheAge: Int
 }
 
-/// Redisエラー
-enum RedisError: LocalizedError {
+/// ランキング用のUser情報
+struct RankingUser: Codable {
+    let id: String
+    let name: String
+    let maxConnections: Int
+    let maxConnectionsUpdatedAt: Int?  // Unix timestamp (ms)
+}
+
+/// ランキングエラー
+enum RankingError: LocalizedError {
     case httpError(Int)  // HTTPエラー
 
     var errorDescription: String? {
         switch self {
         case .httpError(let code):
-            return "Redis HTTPエラー: \(code)"
+            return "Cloud Functions HTTPエラー: \(code)"
         }
     }
 }

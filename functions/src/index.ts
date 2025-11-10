@@ -20,3 +20,4 @@ admin.initializeApp();
 export { onNotificationTrigger } from "./notificationTrigger";
 export { cleanupOldHeartbeats } from "./cleanupOldHeartbeats";
 export { updateRankingScheduled, initialSyncRankingToRedis } from "./syncRankingToRedis";
+export { getRanking } from "./getRanking";

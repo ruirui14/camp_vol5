@@ -21,6 +21,7 @@ const getRedisConfig = () => {
 const redis = new Redis(getRedisConfig());
 
 const RANKING_KEY = "ranking:maxConnections";
+const RANKING_UPDATED_AT_KEY = "ranking:maxConnections:updatedAt";
 
 /**
  * 共通の同期ロジック: FirestoreからRedisへ全データを同期
@@ -63,7 +64,11 @@ async function syncAllRankingToRedis(): Promise<number> {
 
   await pipeline.exec();
 
-  console.log(`[Redis Sync] ✅ Synced ${count} users to Redis`);
+  // 最終更新タイムスタンプを保存（Unix timestamp in milliseconds）
+  const updatedAt = Date.now();
+  await redis.set(RANKING_UPDATED_AT_KEY, updatedAt);
+
+  console.log(`[Redis Sync] ✅ Synced ${count} users to Redis (updatedAt: ${updatedAt})`);
   return count;
 }
 
