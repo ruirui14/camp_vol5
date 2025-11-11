@@ -89,26 +89,16 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         let existingData = userDefaultsService.loadBackgroundImageData(
             for: backgroundImageManager.userIdForDebugging)
 
-        // ファイル名の決定（新しい画像なら新規作成、変形のみなら既存を再利用）
+        // ファイル名の決定
         let (editedFileName, originalFileName) = determineFileNames(existingData: existingData)
 
-        // 編集済み画像を保存
-        guard saveImage(capturedImage, fileName: editedFileName) else {
+        // 画像ファイルを保存
+        guard saveEditedImage(capturedImage, fileName: editedFileName) else {
             return
         }
+        saveOriginalImageIfNeeded(originalFileName: originalFileName, existingData: existingData)
 
-        // オリジナル画像を保存（新しい画像または初回のみ）
-        if isNewImageSelected || existingData == nil {
-            if let imageData = selectedImageData, isAnimated {
-                // GIFデータを保存
-                _ = saveImageData(imageData, fileName: originalFileName)
-            } else if let originalImage = selectedImage {
-                // 静止画を保存
-                _ = saveImage(originalImage, fileName: originalFileName)
-            }
-        }
-
-        // 変形状態のメタデータを作成・保存
+        // メタデータを作成して保存
         let transform = createTransform()
         let persistentData = createPersistentData(
             originalFileName: originalFileName,
@@ -117,7 +107,6 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
             imageSize: capturedImage.size,
             isAnimated: isAnimated
         )
-
         userDefaultsService.saveBackgroundImageData(persistentData)
 
         // BackgroundImageManagerの状態を同期
@@ -132,12 +121,34 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         isNewImageSelected = false
     }
 
+    /// 編集済み画像を保存
+    private func saveEditedImage(_ image: UIImage, fileName: String) -> Bool {
+        return saveImage(image, fileName: fileName)
+    }
+
+    /// オリジナル画像を必要に応じて保存
+    private func saveOriginalImageIfNeeded(
+        originalFileName: String, existingData: EnhancedPersistentImageData?
+    ) {
+        guard isNewImageSelected || existingData == nil else { return }
+
+        if let imageData = selectedImageData, isAnimated {
+            // GIFデータを保存
+            _ = saveImageData(imageData, fileName: originalFileName)
+        } else if let originalImage = selectedImage {
+            // 静止画を保存
+            _ = saveImage(originalImage, fileName: originalFileName)
+        }
+    }
+
+    // MARK: - ファイル保存
+
     /// ファイル名を決定（既存を再利用または新規作成）
     private func determineFileNames(
         existingData: EnhancedPersistentImageData?
     ) -> (editedFileName: String, originalFileName: String) {
-        // 新しい画像が選択された場合は、常に新しいファイル名を生成
         if isNewImageSelected || existingData == nil {
+            // 新しい画像が選択された場合は、新しいファイル名を生成
             let timestamp = UUID().uuidString
             let userId = backgroundImageManager.userIdForDebugging
             return (
@@ -150,33 +161,19 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         }
     }
 
-    /// 画像をファイルに保存
-    /// - Parameters:
-    ///   - image: 保存する画像
-    ///   - fileName: ファイル名
-    /// - Returns: 成功したかどうか
+    /// 画像をPNG形式で保存
     private func saveImage(_ image: UIImage, fileName: String) -> Bool {
-        FileManager.ensureBackgroundImagesDirectory()
-        let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
-
-        guard let imageData = image.pngData() else {
-            return false
-        }
-
-        do {
-            try imageData.write(to: fileURL)
-            return true
-        } catch {
-            return false
-        }
+        guard let imageData = image.pngData() else { return false }
+        return saveData(imageData, fileName: fileName)
     }
 
     /// 画像データをファイルに保存（GIF対応）
-    /// - Parameters:
-    ///   - data: 保存するデータ
-    ///   - fileName: ファイル名
-    /// - Returns: 成功したかどうか
     private func saveImageData(_ data: Data, fileName: String) -> Bool {
+        return saveData(data, fileName: fileName)
+    }
+
+    /// データをファイルに保存（共通処理）
+    private func saveData(_ data: Data, fileName: String) -> Bool {
         FileManager.ensureBackgroundImagesDirectory()
         let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
 
@@ -188,7 +185,10 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - メタデータ作成
+
     /// 現在の変形状態からImageTransformを作成
+    /// オフセットは画面サイズで正規化して保存
     private func createTransform() -> ImageTransform {
         let screenSize = UIScreen.main.bounds.size
         let normalizedOffset = CGPoint(
@@ -215,7 +215,7 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         imageSize: CGSize,
         isAnimated: Bool
     ) -> EnhancedPersistentImageData {
-        return EnhancedPersistentImageData(
+        EnhancedPersistentImageData(
             originalImageFileName: originalFileName,
             editedImageFileName: editedFileName,
             transform: transform,
@@ -240,14 +240,17 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         backgroundImageManager.currentTransform = transform
     }
 
+    // MARK: - 編集状態の復元
+
     /// 前回の編集状態を復元
-    /// - BackgroundImageManagerから画像と変形情報を読み込む
+    /// BackgroundImageManagerから画像、変形情報、背景色を読み込む
     private func restoreEditingState() {
         isRestoringState = true
+        defer { isRestoringState = false }
+
         restoreImage()
         restoreTransform()
         restoreBackgroundColor()
-        isRestoringState = false
     }
 
     /// 画像を復元（GIF対応）
@@ -257,28 +260,23 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         isAnimated = backgroundImageManager.isAnimated
     }
 
-    /// 変形状態を復元
+    /// 変形状態を復元（正規化されたオフセットを画面サイズに合わせて変換）
     private func restoreTransform() {
         let transform = backgroundImageManager.currentTransform
         let screenSize = UIScreen.main.bounds.size
 
-        // 正規化されたオフセットを実際のサイズに変換
-        let restoredOffset = CGSize(
+        transformState.currentOffset = CGSize(
             width: transform.normalizedOffset.x * screenSize.width,
             height: transform.normalizedOffset.y * screenSize.height
         )
-
-        transformState.currentOffset = restoredOffset
         transformState.currentScale = transform.scale
         transformState.currentAngle = Angle(degrees: transform.rotation)
     }
 
     /// 背景色を復元
     private func restoreBackgroundColor() {
-        if let backgroundColor = backgroundImageManager.currentTransform.backgroundColor {
-            selectedBackgroundColor = Color(backgroundColor)
-        } else {
-            selectedBackgroundColor = .clear
-        }
+        selectedBackgroundColor =
+            backgroundImageManager.currentTransform.backgroundColor
+            .map { Color($0) } ?? .clear
     }
 }

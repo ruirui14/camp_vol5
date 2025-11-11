@@ -113,52 +113,51 @@ struct TransformableCardImageView: View {
                 .fill(Color.gray.opacity(0.1))
                 .frame(width: cardSize.width, height: cardSize.height)
 
-            // カード範囲外の画像（半透明で表示）- GIF対応
-            Group {
-                if let data = imageData, isAnimated {
-                    AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
-                } else {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                }
-            }
-            .frame(width: cardSize.width * 2, height: cardSize.height * 2)
-            .scaleEffect(transformState.currentScale * gestureScale)
-            .rotationEffect(transformState.currentAngle + gestureAngle)
-            .offset(
-                x: transformState.currentOffset.width + gestureOffset.width,
-                y: transformState.currentOffset.height + gestureOffset.height
-            )
-            .frame(width: cardSize.width, height: cardSize.height)
-            .opacity(0.3)  // カード範囲外を半透明で表示
+            // カード範囲外の画像（半透明で表示）
+            transformedImageView
+                .frame(width: cardSize.width, height: cardSize.height)
+                .opacity(0.3)
 
-            // カード範囲内の画像（通常表示）- GIF対応
-            Group {
-                if let data = imageData, isAnimated {
-                    AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
-                } else {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                }
-            }
-            .frame(width: cardSize.width * 2, height: cardSize.height * 2)
-            .scaleEffect(transformState.currentScale * gestureScale)
-            .rotationEffect(transformState.currentAngle + gestureAngle)
-            .offset(
-                x: transformState.currentOffset.width + gestureOffset.width,
-                y: transformState.currentOffset.height + gestureOffset.height
-            )
-            .frame(width: cardSize.width, height: cardSize.height)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))  // カード形状に切り抜き
+            // カード範囲内の画像（通常表示、カード形状に切り抜き）
+            transformedImageView
+                .frame(width: cardSize.width, height: cardSize.height)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
 
             // カード形状の境界線
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .stroke(Color.white, lineWidth: 3)
-                .frame(width: cardSize.width, height: cardSize.height)
-                .shadow(color: .black.opacity(0.3), radius: 5)
+            cardBorderView
         }
+    }
+
+    /// 変形が適用された画像ビュー（GIF対応）
+    private var transformedImageView: some View {
+        createImageView()
+            .frame(width: cardSize.width * 2, height: cardSize.height * 2)
+            .scaleEffect(transformState.currentScale * gestureScale)
+            .rotationEffect(transformState.currentAngle + gestureAngle)
+            .offset(
+                x: transformState.currentOffset.width + gestureOffset.width,
+                y: transformState.currentOffset.height + gestureOffset.height
+            )
+    }
+
+    /// 画像ビューを作成（GIF対応）
+    @ViewBuilder
+    private func createImageView() -> some View {
+        if let data = imageData, isAnimated {
+            AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
+        } else {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+        }
+    }
+
+    /// カード形状の境界線
+    private var cardBorderView: some View {
+        RoundedRectangle(cornerRadius: cornerRadius)
+            .stroke(Color.white, lineWidth: 3)
+            .frame(width: cardSize.width, height: cardSize.height)
+            .shadow(color: .black.opacity(0.3), radius: 5)
     }
 
     /// 現在の変形状態で画像をキャプチャ
