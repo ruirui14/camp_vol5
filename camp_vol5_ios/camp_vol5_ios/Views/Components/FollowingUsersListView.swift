@@ -20,9 +20,9 @@ struct FollowingUsersListView: View {
                     ZStack(alignment: .topLeading) {
                         UserHeartbeatCard(
                             userWithHeartbeat: userWithHeartbeat,
-                            customBackgroundImage:
+                            backgroundImageManager:
                                 backgroundImageCoordinator.backgroundImageManagers[
-                                    userWithHeartbeat.user.id]?.currentEditedImage
+                                    userWithHeartbeat.user.id]
                         )
                         .contentShape(Rectangle())
                         .allowsHitTesting(!isEditMode)

@@ -6,26 +6,88 @@
 import SwiftUI
 
 struct UserHeartbeatCard: View {
-    @StateObject private var viewModel: UserHeartbeatCardViewModel
+    let userWithHeartbeat: UserWithHeartbeat?
+    let backgroundImageManager: BackgroundImageManager?
     let customBackgroundImage: UIImage?
+    let displayName: String?
+    let displayBPM: String?
 
     init(
         userWithHeartbeat: UserWithHeartbeat? = nil,
+        backgroundImageManager: BackgroundImageManager? = nil,
         customBackgroundImage: UIImage? = nil,
         displayName: String? = nil,
         displayBPM: String? = nil
     ) {
+        self.userWithHeartbeat = userWithHeartbeat
+        self.backgroundImageManager = backgroundImageManager
         self.customBackgroundImage = customBackgroundImage
+        self.displayName = displayName
+        self.displayBPM = displayBPM
+    }
+
+    var body: some View {
+        if let manager = backgroundImageManager {
+            // BackgroundImageManagerがある場合は@ObservedObjectで監視
+            UserHeartbeatCardWithObservedManager(
+                userWithHeartbeat: userWithHeartbeat,
+                backgroundImageManager: manager,
+                customBackgroundImage: customBackgroundImage,
+                displayName: displayName,
+                displayBPM: displayBPM
+            )
+        } else {
+            // BackgroundImageManagerがない場合は直接表示
+            UserHeartbeatCardContent(
+                userWithHeartbeat: userWithHeartbeat,
+                backgroundImage: customBackgroundImage,
+                displayName: displayName,
+                displayBPM: displayBPM
+            )
+        }
+    }
+}
+
+// BackgroundImageManagerを@ObservedObjectとして監視する内部ビュー
+private struct UserHeartbeatCardWithObservedManager: View {
+    let userWithHeartbeat: UserWithHeartbeat?
+    @ObservedObject var backgroundImageManager: BackgroundImageManager
+    let customBackgroundImage: UIImage?
+    let displayName: String?
+    let displayBPM: String?
+
+    var body: some View {
+        UserHeartbeatCardContent(
+            userWithHeartbeat: userWithHeartbeat,
+            backgroundImage: backgroundImageManager.currentEditedImage ?? customBackgroundImage,
+            displayName: displayName,
+            displayBPM: displayBPM
+        )
+    }
+}
+
+// カードの実際のUI実装
+private struct UserHeartbeatCardContent: View {
+    @StateObject private var viewModel: UserHeartbeatCardViewModel
+    let backgroundImage: UIImage?
+
+    init(
+        userWithHeartbeat: UserWithHeartbeat?,
+        backgroundImage: UIImage?,
+        displayName: String?,
+        displayBPM: String?
+    ) {
+        self.backgroundImage = backgroundImage
 
         if let userWithHeartbeat = userWithHeartbeat {
             self._viewModel = StateObject(
                 wrappedValue: UserHeartbeatCardViewModel(
                     userWithHeartbeat: userWithHeartbeat,
-                    customBackgroundImage: customBackgroundImage))
+                    customBackgroundImage: backgroundImage))
         } else {
             self._viewModel = StateObject(
                 wrappedValue: UserHeartbeatCardViewModel(
-                    customBackgroundImage: customBackgroundImage,
+                    customBackgroundImage: backgroundImage,
                     displayName: displayName,
                     displayBPM: displayBPM
                 )
@@ -40,8 +102,8 @@ struct UserHeartbeatCard: View {
 
             ZStack(alignment: .bottomLeading) {
                 // 背景画像の表示
-                if let customImage = customBackgroundImage {
-                    Image(uiImage: customImage)
+                if let backgroundImage = backgroundImage {
+                    Image(uiImage: backgroundImage)
                         .resizable()
                         .scaledToFill()
                         .frame(width: cardWidth, height: CardConstants.cardHeight)
