@@ -84,62 +84,6 @@ class BackgroundImageManager: ObservableObject {
         }
     }
 
-    /// 編集結果を保存（フルサイズ画像生成を含む）
-    /// - Parameter transform: 変形情報
-    func saveEditedResult(_ transform: ImageTransform) {
-        guard let originalImage = currentOriginalImage else {
-            return
-        }
-
-        isSaving = true
-        currentTransform = transform
-
-        Task {
-            let screenSize = UIScreen.main.bounds.size
-
-            guard
-                let persistentData = await self.persistenceService.saveEditedImageSet(
-                    originalImage: originalImage,
-                    transform: transform,
-                    userId: self.userId,
-                    targetScreenSize: screenSize
-                )
-            else {
-                await MainActor.run {
-                    self.isSaving = false
-                }
-                return
-            }
-
-            self.userDefaultsService.saveBackgroundImageData(persistentData)
-
-            let editedImage = self.persistenceService.loadImage(
-                fileName: persistentData.editedImageFileName
-            )
-
-            await MainActor.run {
-                self.currentEditedImage = editedImage
-                self.isSaving = false
-            }
-        }
-    }
-
-    /// 編集状態を保存（画像と変形情報）
-    /// - Parameters:
-    ///   - selectedImage: 選択された画像
-    ///   - transform: 変形情報
-    func saveEditingState(selectedImage: UIImage?, transform: ImageTransform) {
-        if let newImage = selectedImage {
-            setOriginalImage(newImage)
-        }
-
-        currentTransform = transform
-
-        if currentOriginalImage != nil {
-            saveEditedResult(transform)
-        }
-    }
-
     /// 背景画像をリセット（ファイルとメタデータを削除）
     func resetBackgroundImage() {
         if let savedData = userDefaultsService.loadBackgroundImageData(for: userId) {
