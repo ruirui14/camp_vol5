@@ -9,6 +9,12 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
     /// 選択された画像（編集前のオリジナル）
     @Published var selectedImage: UIImage?
 
+    /// 選択された画像データ（GIF対応）
+    @Published var selectedImageData: Data?
+
+    /// アニメーション画像かどうか
+    @Published var isAnimated: Bool = false
+
     /// 写真ピッカーの表示状態
     @Published var showingPhotoPicker = false
 
@@ -76,7 +82,7 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         }
     }
 
-    /// キャプチャした画像を永続化
+    /// キャプチャした画像を永続化（GIF対応）
     /// - Parameter capturedImage: TransformableCardImageViewでキャプチャした編集済み画像
     func saveCapturedImageDirectly(_ capturedImage: UIImage) {
         let userDefaultsService = UserDefaultsImageService.shared
@@ -92,8 +98,14 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         }
 
         // オリジナル画像を保存（新しい画像または初回のみ）
-        if isNewImageSelected || existingData == nil, let originalImage = selectedImage {
-            _ = saveImage(originalImage, fileName: originalFileName)
+        if isNewImageSelected || existingData == nil {
+            if let imageData = selectedImageData, isAnimated {
+                // GIFデータを保存
+                _ = saveImageData(imageData, fileName: originalFileName)
+            } else if let originalImage = selectedImage {
+                // 静止画を保存
+                _ = saveImage(originalImage, fileName: originalFileName)
+            }
         }
 
         // 変形状態のメタデータを作成・保存
@@ -102,7 +114,8 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
             originalFileName: originalFileName,
             editedFileName: editedFileName,
             transform: transform,
-            imageSize: capturedImage.size
+            imageSize: capturedImage.size,
+            isAnimated: isAnimated
         )
 
         userDefaultsService.saveBackgroundImageData(persistentData)
@@ -110,6 +123,8 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         // BackgroundImageManagerの状態を同期
         updateBackgroundImageManagerState(
             editedImage: capturedImage,
+            imageData: isAnimated ? selectedImageData : nil,
+            isAnimated: isAnimated,
             transform: transform
         )
 
@@ -156,6 +171,23 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         }
     }
 
+    /// 画像データをファイルに保存（GIF対応）
+    /// - Parameters:
+    ///   - data: 保存するデータ
+    ///   - fileName: ファイル名
+    /// - Returns: 成功したかどうか
+    private func saveImageData(_ data: Data, fileName: String) -> Bool {
+        FileManager.ensureBackgroundImagesDirectory()
+        let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
+
+        do {
+            try data.write(to: fileURL)
+            return true
+        } catch {
+            return false
+        }
+    }
+
     /// 現在の変形状態からImageTransformを作成
     private func createTransform() -> ImageTransform {
         let screenSize = UIScreen.main.bounds.size
@@ -175,12 +207,13 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         )
     }
 
-    /// 永続化データを作成
+    /// 永続化データを作成（GIF対応）
     private func createPersistentData(
         originalFileName: String,
         editedFileName: String,
         transform: ImageTransform,
-        imageSize: CGSize
+        imageSize: CGSize,
+        isAnimated: Bool
     ) -> EnhancedPersistentImageData {
         return EnhancedPersistentImageData(
             originalImageFileName: originalFileName,
@@ -188,17 +221,22 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
             transform: transform,
             createdAt: Date(),
             userId: backgroundImageManager.userIdForDebugging,
-            imageSize: imageSize
+            imageSize: imageSize,
+            isAnimated: isAnimated
         )
     }
 
-    /// BackgroundImageManagerの状態を更新
+    /// BackgroundImageManagerの状態を更新（GIF対応）
     private func updateBackgroundImageManagerState(
         editedImage: UIImage,
+        imageData: Data?,
+        isAnimated: Bool,
         transform: ImageTransform
     ) {
         backgroundImageManager.currentEditedImage = editedImage
         backgroundImageManager.currentOriginalImage = selectedImage
+        backgroundImageManager.currentImageData = imageData
+        backgroundImageManager.isAnimated = isAnimated
         backgroundImageManager.currentTransform = transform
     }
 
@@ -212,9 +250,11 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         isRestoringState = false
     }
 
-    /// 画像を復元
+    /// 画像を復元（GIF対応）
     private func restoreImage() {
         selectedImage = backgroundImageManager.currentOriginalImage
+        selectedImageData = backgroundImageManager.currentImageData
+        isAnimated = backgroundImageManager.isAnimated
     }
 
     /// 変形状態を復元

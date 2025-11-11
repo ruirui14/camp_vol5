@@ -1,10 +1,16 @@
 import SwiftUI
 
-/// カード背景画像を変形可能にするビュー
+/// カード背景画像を変形可能にするビュー（GIF対応）
 /// ピンチ、回転、ドラッグのマルチタッチジェスチャーに対応
 struct TransformableCardImageView: View {
     /// 表示する画像
     let image: UIImage
+
+    /// 画像データ（GIF対応）
+    let imageData: Data?
+
+    /// アニメーション画像かどうか
+    let isAnimated: Bool
 
     /// カードのサイズ（幅と高さ）
     let cardSize: CGSize
@@ -29,6 +35,20 @@ struct TransformableCardImageView: View {
 
     /// カードの角丸半径（CardConstantsから取得）
     private let cornerRadius: CGFloat = CardConstants.cornerRadius
+
+    init(
+        image: UIImage,
+        imageData: Data? = nil,
+        isAnimated: Bool = false,
+        cardSize: CGSize,
+        transformState: CardImageTransformState
+    ) {
+        self.image = image
+        self.imageData = imageData
+        self.isAnimated = isAnimated
+        self.cardSize = cardSize
+        self.transformState = transformState
+    }
 
     var body: some View {
         // ピンチジェスチャー（拡大縮小）
@@ -66,40 +86,72 @@ struct TransformableCardImageView: View {
             .simultaneously(with: rotationGesture)
             .simultaneously(with: dragGesture)
 
+        // GIFの場合と通常の画像で異なる処理
+        // ImageEditViewの実装を参考に、GIFの場合のみ透明レイヤーを使用
+        if isAnimated {
+            // GIFの場合：透明レイヤーを最上層に追加してジェスチャーを受け取る
+            ZStack {
+                mainContent
+
+                // 透明なジェスチャー受付レイヤー（GIF専用）
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(combinedGesture)
+            }
+        } else {
+            // 通常の画像の場合：ZStack全体にジェスチャーを適用（元の実装）
+            mainContent
+                .gesture(combinedGesture)
+        }
+    }
+
+    /// メインコンテンツ（画像表示部分）
+    private var mainContent: some View {
         ZStack {
             // 背景（編集中であることを示すグリッド）
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(Color.gray.opacity(0.1))
                 .frame(width: cardSize.width, height: cardSize.height)
 
-            // カード範囲外の画像（半透明で表示）
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: cardSize.width * 2, height: cardSize.height * 2)
-                .scaleEffect(transformState.currentScale * gestureScale)
-                .rotationEffect(transformState.currentAngle + gestureAngle)
-                .offset(
-                    x: transformState.currentOffset.width + gestureOffset.width,
-                    y: transformState.currentOffset.height + gestureOffset.height
-                )
-                .frame(width: cardSize.width, height: cardSize.height)
-                .opacity(0.3)  // カード範囲外を半透明で表示
+            // カード範囲外の画像（半透明で表示）- GIF対応
+            Group {
+                if let data = imageData, isAnimated {
+                    AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
+                } else {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                }
+            }
+            .frame(width: cardSize.width * 2, height: cardSize.height * 2)
+            .scaleEffect(transformState.currentScale * gestureScale)
+            .rotationEffect(transformState.currentAngle + gestureAngle)
+            .offset(
+                x: transformState.currentOffset.width + gestureOffset.width,
+                y: transformState.currentOffset.height + gestureOffset.height
+            )
+            .frame(width: cardSize.width, height: cardSize.height)
+            .opacity(0.3)  // カード範囲外を半透明で表示
 
-            // カード範囲内の画像（通常表示）
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: cardSize.width * 2, height: cardSize.height * 2)
-                .scaleEffect(transformState.currentScale * gestureScale)
-                .rotationEffect(transformState.currentAngle + gestureAngle)
-                .offset(
-                    x: transformState.currentOffset.width + gestureOffset.width,
-                    y: transformState.currentOffset.height + gestureOffset.height
-                )
-                .frame(width: cardSize.width, height: cardSize.height)
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius))  // カード形状に切り抜き
-                .gesture(combinedGesture)
+            // カード範囲内の画像（通常表示）- GIF対応
+            Group {
+                if let data = imageData, isAnimated {
+                    AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
+                } else {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                }
+            }
+            .frame(width: cardSize.width * 2, height: cardSize.height * 2)
+            .scaleEffect(transformState.currentScale * gestureScale)
+            .rotationEffect(transformState.currentAngle + gestureAngle)
+            .offset(
+                x: transformState.currentOffset.width + gestureOffset.width,
+                y: transformState.currentOffset.height + gestureOffset.height
+            )
+            .frame(width: cardSize.width, height: cardSize.height)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))  // カード形状に切り抜き
 
             // カード形状の境界線
             RoundedRectangle(cornerRadius: cornerRadius)

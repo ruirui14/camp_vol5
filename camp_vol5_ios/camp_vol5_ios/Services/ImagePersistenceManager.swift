@@ -66,6 +66,39 @@ struct EnhancedPersistentImageData: Codable {
     let createdAt: Date
     let userId: String
     let imageSize: CGSize
+    let isAnimated: Bool  // GIFアニメーション画像かどうか
+
+    // 後方互換性のための初期化
+    init(
+        originalImageFileName: String,
+        editedImageFileName: String,
+        transform: ImageTransform,
+        createdAt: Date,
+        userId: String,
+        imageSize: CGSize,
+        isAnimated: Bool = false
+    ) {
+        self.originalImageFileName = originalImageFileName
+        self.editedImageFileName = editedImageFileName
+        self.transform = transform
+        self.createdAt = createdAt
+        self.userId = userId
+        self.imageSize = imageSize
+        self.isAnimated = isAnimated
+    }
+
+    // デコード時の後方互換性
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        originalImageFileName = try container.decode(String.self, forKey: .originalImageFileName)
+        editedImageFileName = try container.decode(String.self, forKey: .editedImageFileName)
+        transform = try container.decode(ImageTransform.self, forKey: .transform)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        userId = try container.decode(String.self, forKey: .userId)
+        imageSize = try container.decode(CGSize.self, forKey: .imageSize)
+        // 古いデータにはisAnimatedがないので、デフォルトfalse
+        isAnimated = try container.decodeIfPresent(Bool.self, forKey: .isAnimated) ?? false
+    }
 }
 
 // MARK: - 画像永続化サービス
@@ -92,6 +125,26 @@ class ImagePersistenceService {
         }
 
         return image
+    }
+
+    /// 画像データを読み込み（GIF対応）
+    func loadImageData(fileName: String) -> Data? {
+        let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
+
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+
+        return try? Data(contentsOf: fileURL)
+    }
+
+    /// 画像データがアニメーション画像かどうか判定
+    func isAnimatedImage(data: Data) -> Bool {
+        guard let imageSource = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return false
+        }
+        let frameCount = CGImageSourceGetCount(imageSource)
+        return frameCount > 1
     }
 
     func deleteImage(fileName: String) {

@@ -1,7 +1,7 @@
 // UserHeartbeatCard.swift
 // フォローユーザーの心拍数情報を表示するカードコンポーネント
 // NavigationLinkの中で使用されるリスト項目として設計
-// 背景画像カスタマイズ対応
+// 背景画像カスタマイズ対応（GIF対応）
 
 import SwiftUI
 
@@ -28,7 +28,7 @@ struct UserHeartbeatCard: View {
 
     var body: some View {
         if let manager = backgroundImageManager {
-            // BackgroundImageManagerがある場合は@ObservedObjectで監視
+            // BackgroundImageManagerがある場合は@ObservedObjectで監視（GIF対応）
             UserHeartbeatCardWithObservedManager(
                 userWithHeartbeat: userWithHeartbeat,
                 backgroundImageManager: manager,
@@ -41,6 +41,8 @@ struct UserHeartbeatCard: View {
             UserHeartbeatCardContent(
                 userWithHeartbeat: userWithHeartbeat,
                 backgroundImage: customBackgroundImage,
+                backgroundImageData: nil,
+                isAnimated: false,
                 displayName: displayName,
                 displayBPM: displayBPM
             )
@@ -48,7 +50,7 @@ struct UserHeartbeatCard: View {
     }
 }
 
-// BackgroundImageManagerを@ObservedObjectとして監視する内部ビュー
+// BackgroundImageManagerを@ObservedObjectとして監視する内部ビュー（GIF対応）
 private struct UserHeartbeatCardWithObservedManager: View {
     let userWithHeartbeat: UserWithHeartbeat?
     @ObservedObject var backgroundImageManager: BackgroundImageManager
@@ -60,24 +62,37 @@ private struct UserHeartbeatCardWithObservedManager: View {
         UserHeartbeatCardContent(
             userWithHeartbeat: userWithHeartbeat,
             backgroundImage: backgroundImageManager.currentEditedImage ?? customBackgroundImage,
+            backgroundImageData: backgroundImageManager.currentImageData,
+            isAnimated: backgroundImageManager.isAnimated,
+            transform: backgroundImageManager.isAnimated
+                ? backgroundImageManager.currentTransform : nil,
             displayName: displayName,
             displayBPM: displayBPM
         )
     }
 }
 
-// カードの実際のUI実装
+// カードの実際のUI実装（GIF対応）
 private struct UserHeartbeatCardContent: View {
     @StateObject private var viewModel: UserHeartbeatCardViewModel
     let backgroundImage: UIImage?
+    let backgroundImageData: Data?
+    let isAnimated: Bool
+    let transform: ImageTransform?
 
     init(
         userWithHeartbeat: UserWithHeartbeat?,
         backgroundImage: UIImage?,
+        backgroundImageData: Data?,
+        isAnimated: Bool,
+        transform: ImageTransform? = nil,
         displayName: String?,
         displayBPM: String?
     ) {
         self.backgroundImage = backgroundImage
+        self.backgroundImageData = backgroundImageData
+        self.isAnimated = isAnimated
+        self.transform = transform
 
         if let userWithHeartbeat = userWithHeartbeat {
             self._viewModel = StateObject(
@@ -101,8 +116,37 @@ private struct UserHeartbeatCardContent: View {
             let heartRightOffset = CardConstants.heartRightOffset(for: cardWidth)
 
             ZStack(alignment: .bottomLeading) {
-                // 背景画像の表示
-                if let backgroundImage = backgroundImage {
+                // 背景画像の表示（GIF対応、transform適用）
+                if let imageData = backgroundImageData, isAnimated, let transform = transform {
+                    // GIFアニメーションの場合（transform適用）
+                    ZStack {
+                        // 背景色
+                        if let bgColor = transform.backgroundColor {
+                            RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
+                                .fill(Color(bgColor))
+                        }
+
+                        // GIF画像
+                        AnimatedImageView(imageData: imageData, contentMode: .scaleAspectFit)
+                            .frame(width: cardWidth * 2, height: CardConstants.cardHeight * 2)
+                            .scaleEffect(transform.scale)
+                            .rotationEffect(Angle(degrees: transform.rotation))
+                            .offset(
+                                x: transform.normalizedOffset.x * UIScreen.main.bounds.width,
+                                y: transform.normalizedOffset.y * UIScreen.main.bounds.height
+                            )
+                            .frame(width: cardWidth, height: CardConstants.cardHeight)
+                            .clipShape(RoundedRectangle(cornerRadius: CardConstants.cornerRadius))
+                    }
+                    .frame(width: cardWidth, height: CardConstants.cardHeight)
+                } else if let imageData = backgroundImageData, isAnimated {
+                    // GIFアニメーションの場合（transformなし）
+                    AnimatedImageView(imageData: imageData, contentMode: .scaleAspectFit)
+                        .frame(width: cardWidth, height: CardConstants.cardHeight)
+                        .clipped()
+                        .cornerRadius(CardConstants.cornerRadius)
+                } else if let backgroundImage = backgroundImage {
+                    // 静止画像の場合（背景色は既に含まれている）
                     Image(uiImage: backgroundImage)
                         .resizable()
                         .scaledToFill()

@@ -58,7 +58,18 @@ struct CardBackgroundEditView: View {
             }
         }
         .sheet(isPresented: $viewModel.showingPhotoPicker) {
-            PhotoPicker(selectedImage: $viewModel.selectedImage)
+            GifPhotoPickerView(
+                selectedImage: $viewModel.selectedImage,
+                selectedImageData: $viewModel.selectedImageData
+            )
+        }
+        .onChange(of: viewModel.selectedImageData) { _, newData in
+            // 画像データが変更されたときにGIFかどうかを判定
+            if let data = newData {
+                viewModel.isAnimated = ImagePersistenceService.shared.isAnimatedImage(data: data)
+            } else {
+                viewModel.isAnimated = false
+            }
         }
         .onAppear {
             viewModel.onAppear()
@@ -92,10 +103,12 @@ struct CardBackgroundEditView: View {
                         )
                 }
 
-                // 画像があるときはTransformableCardImageViewを使用
+                // 画像があるときはTransformableCardImageViewを使用（GIF対応）
                 if let image = currentImage {
                     let view = TransformableCardImageView(
                         image: image,
+                        imageData: viewModel.selectedImageData,
+                        isAnimated: viewModel.isAnimated,
                         cardSize: cardSize,
                         transformState: viewModel.transformState
                     )
