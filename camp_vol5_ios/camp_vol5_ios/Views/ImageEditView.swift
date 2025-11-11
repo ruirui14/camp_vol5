@@ -310,137 +310,38 @@ struct ImageEditView: View {
 
     private var controlButtons: some View {
         HStack(alignment: .top, spacing: 20) {
-            Button(action: {
+            Button {
                 showingPhotoPicker = true
-            }) {
-                VStack(spacing: 8) {
-                    Image(systemName: "photo.on.rectangle.angled")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                    Text("写真を選択")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.white)
-                }
-                .frame(minWidth: 50)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.pink.opacity(0.8),
-                                    Color.purple.opacity(0.7),
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                )
+            } label: {
+                IconLabelButtonContent(icon: "photo.on.rectangle.angled", label: "写真を選択")
             }
+            .gradientButtonStyle(colors: [Color.pink.opacity(0.8), Color.purple.opacity(0.7)])
 
-            Button(action: {
+            Button {
                 showingHeartSizeSlider = true
-            }) {
-                VStack(spacing: 8) {
-                    Image(systemName: "heart.text.square")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                    Text("サイズ調整")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.white)
-                }
-                .frame(minWidth: 50)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.red.opacity(0.8),
-                                    Color.orange.opacity(0.7),
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                )
-                .opacity(image != nil ? 1.0 : 0.5)
+            } label: {
+                IconLabelButtonContent(icon: "heart.text.square", label: "サイズ調整")
             }
+            .gradientButtonStyle(
+                colors: [Color.red.opacity(0.8), Color.orange.opacity(0.7)],
+                isDisabled: image == nil
+            )
             .disabled(image == nil)
 
             Button(action: resetImagePosition) {
-                VStack(spacing: 8) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                    Text("位置リセット")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.white)
-                }
-                .frame(minWidth: 50)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.blue.opacity(0.8),
-                                    Color.cyan.opacity(0.7),
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                )
-                .opacity(image != nil ? 1.0 : 0.5)
+                IconLabelButtonContent(icon: "arrow.counterclockwise", label: "位置リセット")
             }
+            .gradientButtonStyle(
+                colors: [Color.blue.opacity(0.8), Color.cyan.opacity(0.7)],
+                isDisabled: image == nil
+            )
             .disabled(image == nil)
 
-            ZStack {
-                Button(action: {}) {
-                    VStack(spacing: 8) {
-                        Image(systemName: "paintpalette")
-                            .foregroundColor(.white)
-                            .font(.title3)
-                        Text("背景色")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(.white)
-                    }
-                    .frame(minWidth: 50)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 25)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.yellow.opacity(0.8),
-                                        Color.orange.opacity(0.7),
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                    )
-                }
-                .disabled(true)
-
-                ColorPicker("", selection: $selectedBackgroundColor)
-                    .labelsHidden()
-                    .scaleEffect(CGSize(width: 2, height: 2))
-                    .opacity(0.011)
-                    .allowsHitTesting(true)
+            ColorPickerButtonOverlay(
+                selectedColor: $selectedBackgroundColor,
+                gradientColors: [Color.yellow.opacity(0.8), Color.orange.opacity(0.7)]
+            ) {
+                IconLabelButtonContent(icon: "paintpalette", label: "背景色")
             }
         }
     }

@@ -87,13 +87,13 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         let (editedFileName, originalFileName) = determineFileNames(existingData: existingData)
 
         // 編集済み画像を保存
-        guard saveEditedImage(capturedImage, fileName: editedFileName) else {
+        guard saveImage(capturedImage, fileName: editedFileName) else {
             return
         }
 
         // オリジナル画像を保存（新しい画像または初回のみ）
-        if isNewImageSelected || existingData == nil {
-            saveOriginalImage(fileName: originalFileName)
+        if isNewImageSelected || existingData == nil, let originalImage = selectedImage {
+            _ = saveImage(originalImage, fileName: originalFileName)
         }
 
         // 変形状態のメタデータを作成・保存
@@ -135,8 +135,12 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
         }
     }
 
-    /// 編集済み画像をファイルに保存
-    private func saveEditedImage(_ image: UIImage, fileName: String) -> Bool {
+    /// 画像をファイルに保存
+    /// - Parameters:
+    ///   - image: 保存する画像
+    ///   - fileName: ファイル名
+    /// - Returns: 成功したかどうか
+    private func saveImage(_ image: UIImage, fileName: String) -> Bool {
         FileManager.ensureBackgroundImagesDirectory()
         let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
 
@@ -149,16 +153,6 @@ class CardBackgroundEditViewModel: NSObject, ObservableObject {
             return true
         } catch {
             return false
-        }
-    }
-
-    /// オリジナル画像をファイルに保存
-    private func saveOriginalImage(fileName: String) {
-        guard let originalImage = selectedImage else { return }
-
-        let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
-        if let imageData = originalImage.pngData() {
-            try? imageData.write(to: fileURL)
         }
     }
 

@@ -188,14 +188,9 @@ struct QRCodeShareView: View {
         Button(action: {
             viewModel.generateNewInviteCode()
         }) {
-            VStack(spacing: 8) {
-                Image(systemName: "arrow.clockwise")
-                    .foregroundColor(.text)
-                    .font(.title3)
-                Text("更新")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.text)
-            }
+            IconLabelButtonContent(
+                icon: "arrow.clockwise", label: "更新", iconColor: .text, labelColor: .text
+            )
             .frame(minWidth: 60)
         }
         .disabled(viewModel.isGeneratingQRCode || viewModel.isLoading)
@@ -205,14 +200,9 @@ struct QRCodeShareView: View {
         Button(action: {
             UIPasteboard.general.string = inviteCode
         }) {
-            VStack(spacing: 8) {
-                Image(systemName: "link")
-                    .foregroundColor(.text)
-                    .font(.title3)
-                Text("IDをコピー")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(.text)
-            }
+            IconLabelButtonContent(
+                icon: "link", label: "IDをコピー", iconColor: .text, labelColor: .text
+            )
             .frame(minWidth: 60)
         }
     }
@@ -236,14 +226,9 @@ struct QRCodeShareView: View {
                     isShowingShareSheet = true
                 }
             } else {
-                VStack(spacing: 8) {
-                    Image(systemName: "square.and.arrow.up")
-                        .foregroundColor(.gray)
-                        .font(.title3)
-                    Text("シェア")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.gray)
-                }
+                IconLabelButtonContent(
+                    icon: "square.and.arrow.up", label: "シェア", iconColor: .gray, labelColor: .gray
+                )
                 .frame(minWidth: 60)
             }
         }
@@ -253,14 +238,12 @@ struct QRCodeShareView: View {
         Button(action: {
             viewModel.saveQRCodeToPhotos()
         }) {
-            VStack(spacing: 8) {
-                Image(systemName: "arrow.down.to.line")
-                    .foregroundColor(viewModel.qrCodeImage != nil ? .text : .gray)
-                    .font(.title3)
-                Text("画像を保存")
-                    .font(.caption.weight(.semibold))
-                    .foregroundColor(viewModel.qrCodeImage != nil ? .text : .gray)
-            }
+            IconLabelButtonContent(
+                icon: "arrow.down.to.line",
+                label: "画像を保存",
+                iconColor: viewModel.qrCodeImage != nil ? .text : .gray,
+                labelColor: viewModel.qrCodeImage != nil ? .text : .gray
+            )
             .frame(minWidth: 60)
         }
         .disabled(viewModel.qrCodeImage == nil || viewModel.isGeneratingQRCode)

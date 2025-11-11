@@ -122,104 +122,27 @@ struct CardBackgroundEditView: View {
 
     private var controlButtons: some View {
         HStack(alignment: .top, spacing: 20) {
-            Button(
-                action: {
-                    viewModel.showingPhotoPicker = true
-                },
-                label: {
-                    VStack(spacing: 8) {
-                        Image(systemName: "photo.on.rectangle.angled")
-                            .foregroundColor(.white)
-                            .font(.title3)
-                        Text("写真を選択")
-                            .font(.caption.weight(.semibold))
-                            .foregroundColor(.white)
-                    }
-                    .frame(minWidth: 50)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                }
-            )
-            .background(
-                RoundedRectangle(cornerRadius: 25)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.pink.opacity(0.8),
-                                Color.purple.opacity(0.7),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                    .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-            )
+            Button {
+                viewModel.showingPhotoPicker = true
+            } label: {
+                IconLabelButtonContent(icon: "photo.on.rectangle.angled", label: "写真を選択")
+            }
+            .gradientButtonStyle(colors: [Color.pink.opacity(0.8), Color.purple.opacity(0.7)])
 
-            ZStack {
-                VStack(spacing: 8) {
-                    Image(systemName: "paintpalette")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                    Text("背景色")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.white)
-                }
-                .frame(minWidth: 50)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.yellow.opacity(0.8),
-                                    Color.orange.opacity(0.7),
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                )
-
-                ColorPicker("", selection: $viewModel.selectedBackgroundColor)
-                    .labelsHidden()
-                    .scaleEffect(CGSize(width: 2, height: 2))
-                    .opacity(0.011)
-                    .allowsHitTesting(true)
+            ColorPickerButtonOverlay(
+                selectedColor: $viewModel.selectedBackgroundColor,
+                gradientColors: [Color.yellow.opacity(0.8), Color.orange.opacity(0.7)]
+            ) {
+                IconLabelButtonContent(icon: "paintpalette", label: "背景色")
             }
 
             Button(action: viewModel.resetImagePosition) {
-                VStack(spacing: 8) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .foregroundColor(.white)
-                        .font(.title3)
-                    Text("リセット")
-                        .font(.caption.weight(.semibold))
-                        .foregroundColor(.white)
-                }
-                .frame(minWidth: 50)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 25)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color.blue.opacity(0.8),
-                                    Color.cyan.opacity(0.7),
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: .white.opacity(0.5), radius: 2, x: 0, y: 0)
-                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                )
-                .opacity(currentImage != nil ? 1.0 : 0.5)
+                IconLabelButtonContent(icon: "arrow.counterclockwise", label: "リセット")
             }
+            .gradientButtonStyle(
+                colors: [Color.blue.opacity(0.8), Color.cyan.opacity(0.7)],
+                isDisabled: currentImage == nil
+            )
             .disabled(currentImage == nil)
         }
     }
