@@ -137,7 +137,7 @@ struct CardBackgroundEditView: View {
             }
 
             Button(action: viewModel.resetImagePosition) {
-                IconLabelButtonContent(icon: "arrow.counterclockwise", label: "リセット")
+                IconLabelButtonContent(icon: "arrow.counterclockwise", label: "位置をリセット")
             }
             .gradientButtonStyle(
                 colors: [Color.blue.opacity(0.8), Color.cyan.opacity(0.7)],
