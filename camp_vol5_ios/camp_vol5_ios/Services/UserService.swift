@@ -21,7 +21,7 @@ protocol UserServiceProtocol {
     func updateFollowingNotificationSetting(
         currentUserId: String, targetUserId: String, enabled: Bool
     ) -> AnyPublisher<Void, Error>
-    func getMaxConnectionsRanking(limit: Int, forceRefresh: Bool) -> AnyPublisher<[User], Error>
+    func getMaxConnectionsRanking(offset: Int, limit: Int) -> AnyPublisher<[User], Error>
 }
 
 // MARK: - UserService Errors
@@ -69,11 +69,6 @@ class UserService: UserServiceProtocol {
     private let notificationService: NotificationServiceProtocol
     private let redisRankingRepository: RedisRankingRepository
     private let logger = FirebaseLogger.shared
-
-    // ランキングキャッシュ
-    private var rankingCache: [User]?
-    private var rankingCacheTimestamp: Date?
-    private let cacheValidityDuration: TimeInterval = 300  // 5分
 
     init(
         repository: UserRepositoryProtocol,
@@ -248,44 +243,19 @@ class UserService: UserServiceProtocol {
 
     /// 最大接続数ランキングを取得
     /// - Parameters:
+    ///   - offset: 取得開始位置（0から始まる）
     ///   - limit: 取得件数
-    ///   - forceRefresh: キャッシュを無視して強制的に取得する場合true
     /// - Returns: ランキング順のUserの配列Publisher
-    func getMaxConnectionsRanking(limit: Int, forceRefresh: Bool = false) -> AnyPublisher<
-        [User], Error
-    > {
-        // キャッシュチェック
-        if !forceRefresh,
-            let cache = rankingCache,
-            let timestamp = rankingCacheTimestamp
-        {
-            let elapsed = Date().timeIntervalSince(timestamp)
-            if elapsed < cacheValidityDuration {
-                logger.log("📦 キャッシュから返却 (経過時間: \(Int(elapsed))秒)")
-                return Just(cache)
-                    .setFailureType(to: Error.self)
-                    .eraseToAnyPublisher()
-            } else {
-                logger.log("⏰ キャッシュ有効期限切れ (経過時間: \(Int(elapsed))秒)")
-            }
-        }
-
-        if forceRefresh {
-            logger.log("🔄 forceRefresh: キャッシュをスキップ")
-        }
-
+    func getMaxConnectionsRanking(offset: Int, limit: Int) -> AnyPublisher<[User], Error> {
         let trace = PerformanceMonitor.shared.startTrace(
             PerformanceMonitor.DataTrace.fetchMaxConnectionsRanking)
 
-        // Cloud Functions経由でランキング取得（オンメモリキャッシュ付き）
-        return redisRankingRepository.fetchRanking(limit: limit)
+        logger.log("Fetching ranking: offset=\(offset), limit=\(limit)")
+
+        // Cloud Functions経由でランキング取得（サーバー側でキャッシュ管理）
+        return redisRankingRepository.fetchRanking(offset: offset, limit: limit)
             .handleEvents(
                 receiveOutput: { [weak self] users in
-                    // キャッシュ更新
-                    self?.rankingCache = users
-                    self?.rankingCacheTimestamp = Date()
-                    self?.logger.log("💾 ランキングキャッシュ更新: \(users.count)件")
-
                     // メトリクスに結果件数を記録
                     if let trace = trace {
                         PerformanceMonitor.shared.incrementMetric(

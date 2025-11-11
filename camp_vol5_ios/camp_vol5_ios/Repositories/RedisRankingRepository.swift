@@ -20,17 +20,19 @@ class RedisRankingRepository {
     // MARK: - Public Methods
 
     /// ランキングデータを取得（Cloud Functions経由）
-    /// - Parameter limit: 取得件数
+    /// - Parameters:
+    ///   - offset: 取得開始位置（0から始まる）
+    ///   - limit: 取得件数
     /// - Returns: User全体の配列Publisher
-    func fetchRanking(limit: Int) -> AnyPublisher<[User], Error> {
-        return fetchFromCloudFunction(limit: limit)
+    func fetchRanking(offset: Int, limit: Int) -> AnyPublisher<[User], Error> {
+        return fetchFromCloudFunction(offset: offset, limit: limit)
             .eraseToAnyPublisher()
     }
 
     // MARK: - Private Methods
 
     /// Cloud Functionsから取得
-    private func fetchFromCloudFunction(limit: Int) -> AnyPublisher<[User], Error> {
+    private func fetchFromCloudFunction(offset: Int, limit: Int) -> AnyPublisher<[User], Error> {
         return Future { [weak self] promise in
             guard let self = self else {
                 promise(.failure(RepositoryError.serviceUnavailable))
@@ -44,7 +46,8 @@ class RedisRankingRepository {
             }
 
             urlComponents.queryItems = [
-                URLQueryItem(name: "limit", value: String(limit))
+                URLQueryItem(name: "offset", value: String(offset)),
+                URLQueryItem(name: "limit", value: String(limit)),
             ]
 
             guard let url = urlComponents.url else {

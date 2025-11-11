@@ -40,14 +40,16 @@ let rankingCache: RankingCache | null = null;
 /**
  * RedisからユーザーIDリストを取得
  */
-async function fetchUserIdsFromRedis(limit: number): Promise<string[]> {
+async function fetchUserIdsFromRedis(offset: number, limit: number): Promise<string[]> {
   const config = getRedisConfig();
   if (!config.url || !config.token) {
     throw new Error("Upstash Redis credentials not configured");
   }
 
-  // Redis Sorted Setから取得（降順）
-  const userIds = await redis.zrange(RANKING_KEY, 0, limit - 1, { rev: true });
+  // Redis Sorted Setから取得（降順、offset対応）
+  const start = offset;
+  const end = offset + limit - 1;
+  const userIds = await redis.zrange(RANKING_KEY, start, end, { rev: true });
   return userIds as string[];
 }
 
@@ -114,10 +116,11 @@ export const getRanking = functions
     }
 
     try {
-      const limit = parseInt(req.query["limit"] as string) || 100;
+      const limit = parseInt(req.query["limit"] as string) || 20;
+      const offset = parseInt(req.query["offset"] as string) || 0;
 
-      // キャッシュチェック（時刻ベース）
-      if (rankingCache) {
+      // キャッシュは offset=0 の場合のみ有効（ページング対応）
+      if (offset === 0 && rankingCache) {
         const cacheDate = new Date(rankingCache.timestamp);
         const currentDate = new Date();
         const cacheHour = cacheDate.getHours();
@@ -143,23 +146,25 @@ export const getRanking = functions
         }
       }
 
-      // キャッシュミス: Redisから取得
-      console.log(`[getRanking] 🔍 Fetching from Redis (limit: ${limit})`);
-      const userIds = await fetchUserIdsFromRedis(limit);
+      // キャッシュミスまたは offset > 0: Redisから取得
+      console.log(`[getRanking] 🔍 Fetching from Redis (offset: ${offset}, limit: ${limit})`);
+      const userIds = await fetchUserIdsFromRedis(offset, limit);
       console.log(`[getRanking] Found ${userIds.length} user IDs from Redis`);
 
       // Firestoreからユーザー詳細を取得
       const users = await fetchUsersFromFirestore(userIds);
       console.log(`[getRanking] Fetched ${users.length} users from Firestore`);
 
-      // キャッシュ更新
-      rankingCache = {
-        data: users,
-        timestamp: Date.now(),
-      };
+      // offset=0 の場合のみキャッシュ更新
+      if (offset === 0) {
+        rankingCache = {
+          data: users,
+          timestamp: Date.now(),
+        };
+      }
 
       res.status(200).json({
-        users: users.slice(0, limit),
+        users: users,
         cached: false,
         cacheAge: 0,
       });
