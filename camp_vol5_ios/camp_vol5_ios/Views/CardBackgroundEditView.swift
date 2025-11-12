@@ -128,6 +128,7 @@ struct CardBackgroundEditView: View {
                     )
                     Spacer()
                 }
+                .allowsHitTesting(false)  // プレビューカードの下の画像を操作可能にする
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
