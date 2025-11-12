@@ -2,6 +2,7 @@
 // 心拍詳細画面の背景コンポーネント - 背景色と背景画像（GIF対応）の表示を担当
 // SwiftUIベストプラクティスに従い、再利用可能なコンポーネントとして設計
 
+import SDWebImageSwiftUI
 import SwiftUI
 
 struct HeartbeatDetailBackground: View {
@@ -24,9 +25,11 @@ struct HeartbeatDetailBackground: View {
             }
 
             // 背景画像（ある場合のみオーバーレイ）
-            // GIFアニメーションの場合はAnimatedImageViewを使用
+            // GIFアニメーションの場合はSDWebImageSwiftUIを使用
             if let imageData = backgroundImageData, isAnimated {
-                AnimatedImageView(imageData: imageData, contentMode: .scaleAspectFit)
+                AnimatedImage(data: imageData)
+                    .resizable()
+                    .scaledToFit()
                     .scaleEffect(imageScale)
                     .rotationEffect(.degrees(imageRotation))
                     .offset(imageOffset)

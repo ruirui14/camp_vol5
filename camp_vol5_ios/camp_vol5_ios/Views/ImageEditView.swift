@@ -1,4 +1,5 @@
 import PhotosUI
+import SDWebImageSwiftUI
 import SwiftUI
 
 struct ImageEditView: View {
@@ -44,7 +45,9 @@ struct ImageEditView: View {
                 if let data = imageData, isAnimatedImage {
                     // GIFアニメーションの場合
                     ZStack {
-                        AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
+                        AnimatedImage(data: data)
+                            .resizable()
+                            .scaledToFit()
                             .scaleEffect(tempScale)
                             .rotationEffect(.degrees(tempRotation))
                             .offset(tempOffset)

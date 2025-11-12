@@ -17,6 +17,7 @@
 		D10CD8F12E07363B00689536 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = D10CD8F02E07363B00689536 /* GoogleSignInSwift */; };
 		D13E65FB2EAF4D6200BA2EEE /* YouTubePlayerKit in Frameworks */ = {isa = PBXBuildFile; productRef = D13E65FA2EAF4D6200BA2EEE /* YouTubePlayerKit */; };
 		D13E66072EB848F300BA2EEE /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = D13E66062EB848F300BA2EEE /* FirebaseRemoteConfig */; };
+		D15BF8BA2EC45CA100E7C2F0 /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = SD1234572EBD456700ABCDEF /* SDWebImageSwiftUI */; };
 		D1634E1E2E9D689F007D524F /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = D1634E1D2E9D689F007D524F /* FirebasePerformance */; };
 		D1B0E9522EA1321D006F3BDC /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = D1B0E9512EA1321D006F3BDC /* FirebaseMessaging */; };
 		D1B0F4CE2EA4BF9F006F3BDC /* MarkdownUI in Frameworks */ = {isa = PBXBuildFile; productRef = D1B0F4CD2EA4BF9F006F3BDC /* MarkdownUI */; };
@@ -78,6 +79,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D15BF8BA2EC45CA100E7C2F0 /* SDWebImageSwiftUI in Frameworks */,
 				D1EE64462E9CDFC20033CF92 /* FirebaseAppCheck in Frameworks */,
 				D10CD8EF2E07363B00689536 /* GoogleSignIn in Frameworks */,
 				D13E65FB2EAF4D6200BA2EEE /* YouTubePlayerKit in Frameworks */,
@@ -174,6 +176,7 @@
 				D1B0F4CD2EA4BF9F006F3BDC /* MarkdownUI */,
 				D13E65FA2EAF4D6200BA2EEE /* YouTubePlayerKit */,
 				D13E66062EB848F300BA2EEE /* FirebaseRemoteConfig */,
+				SD1234572EBD456700ABCDEF /* SDWebImageSwiftUI */,
 			);
 			productName = camp_vol5_ios;
 			productReference = B3D475C62E0406710045AD7A /* camp_vol5_ios.app */;
@@ -212,6 +215,7 @@
 				7238E54F2E93F53300C7D704 /* XCRemoteSwiftPackageReference "rive-ios" */,
 				D1B0F4CC2EA4BF9F006F3BDC /* XCRemoteSwiftPackageReference "swift-markdown-ui" */,
 				D13E65F92EAF4D6200BA2EEE /* XCRemoteSwiftPackageReference "YouTubePlayerKit" */,
+				SD1234562EBD456700ABCDEF /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B3D475C72E0406710045AD7A /* Products */;
@@ -603,6 +607,14 @@
 				minimumVersion = 2.4.1;
 			};
 		};
+		SD1234562EBD456700ABCDEF /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageSwiftUI.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -675,6 +687,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D10CD8892E04843900689536 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		SD1234572EBD456700ABCDEF /* SDWebImageSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = SD1234562EBD456700ABCDEF /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImageSwiftUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

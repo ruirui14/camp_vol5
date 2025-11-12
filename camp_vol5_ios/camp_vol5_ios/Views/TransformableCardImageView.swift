@@ -1,3 +1,4 @@
+import SDWebImageSwiftUI
 import SwiftUI
 
 /// カード背景画像を変形可能にするビュー（GIF対応）
@@ -144,7 +145,9 @@ struct TransformableCardImageView: View {
     @ViewBuilder
     private func createImageView() -> some View {
         if let data = imageData, isAnimated {
-            AnimatedImageView(imageData: data, contentMode: .scaleAspectFit)
+            AnimatedImage(data: data)
+                .resizable()
+                .scaledToFit()
         } else {
             Image(uiImage: image)
                 .resizable()

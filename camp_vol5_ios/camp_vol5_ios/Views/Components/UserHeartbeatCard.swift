@@ -3,6 +3,7 @@
 // NavigationLinkの中で使用されるリスト項目として設計
 // 背景画像カスタマイズ対応（GIF対応）
 
+import SDWebImageSwiftUI
 import SwiftUI
 
 struct UserHeartbeatCard: View {
@@ -188,7 +189,9 @@ private struct UserHeartbeatCardContent: View {
             }
 
             // GIF画像
-            AnimatedImageView(imageData: imageData, contentMode: .scaleAspectFit)
+            AnimatedImage(data: imageData)
+                .resizable()
+                .scaledToFit()
                 .frame(width: cardWidth * 2, height: CardConstants.cardHeight * 2)
                 .scaleEffect(transform.scale)
                 .rotationEffect(Angle(degrees: transform.rotation))
@@ -204,7 +207,9 @@ private struct UserHeartbeatCardContent: View {
 
     /// シンプルGIF背景（transformなし）
     private func simpleAnimatedGifView(imageData: Data, cardWidth: CGFloat) -> some View {
-        AnimatedImageView(imageData: imageData, contentMode: .scaleAspectFit)
+        AnimatedImage(data: imageData)
+            .resizable()
+            .scaledToFit()
             .frame(width: cardWidth, height: CardConstants.cardHeight)
             .clipped()
             .cornerRadius(CardConstants.cornerRadius)
