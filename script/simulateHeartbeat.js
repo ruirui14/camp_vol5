@@ -26,7 +26,7 @@ const database = admin.database();
  * - ゆっくりとした変化を実現するため、前回の値を考慮
  */
 class HeartbeatSimulator {
-  constructor(userId, baseBpm = 70, variationRange = 10) {
+  constructor(userId, baseBpm = 90, variationRange = 10) {
     this.userId = userId;
     this.baseBpm = baseBpm;
     this.variationRange = variationRange;
