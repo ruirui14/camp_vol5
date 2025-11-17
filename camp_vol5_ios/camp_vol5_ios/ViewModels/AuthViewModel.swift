@@ -122,23 +122,23 @@ class AuthViewModel: BaseViewModel {
             return
         }
 
-        if !isValidEmail(email) {
-            authenticationManager.errorMessage = "有効なメールアドレスを入力してください"
-            return
-        }
-
         if password.isEmpty {
             authenticationManager.errorMessage = "パスワードを入力してください"
             return
         }
 
-        if password.count < 8 {
-            authenticationManager.errorMessage = "パスワードは8文字以上で入力してください"
-            return
-        }
-
         // 新規登録時はパスワード確認が必要
         if isSignUp {
+            if !isValidEmail(email) {
+                authenticationManager.errorMessage = "有効なメールアドレスを入力してください"
+                return
+            }
+
+            if password.count < 8 {
+                authenticationManager.errorMessage = "パスワードは8文字以上で入力してください"
+                return
+            }
+
             if confirmPassword.isEmpty {
                 authenticationManager.errorMessage = "確認用パスワードを入力してください"
                 return
@@ -209,6 +209,10 @@ class AuthViewModel: BaseViewModel {
 
     var isAuthenticated: Bool {
         authenticationManager.isAuthenticated
+    }
+
+    var isAnonymousLoading: Bool {
+        authenticationManager.isLoading && selectedAuthMethod == .anonymous
     }
 
     var isGoogleLoading: Bool {

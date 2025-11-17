@@ -89,14 +89,13 @@ struct AuthView: View {
 
                         // 匿名認証ボタン（標準デザイン）
                         AnonymousSignInButton(
-                            isLoading: viewModel.isLoading
-                                && viewModel.selectedAuthMethod == .anonymous
+                            isLoading: viewModel.isAnonymousLoading
                         ) {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                                 viewModel.signInAnonymously()
                             }
                         }
-                        .disabled(viewModel.isLoading)
+                        .disabled(authenticationManager.isLoading)
 
                         // Google認証ボタン（標準デザイン）
                         GoogleSignInButton(
@@ -106,7 +105,7 @@ struct AuthView: View {
                                 viewModel.signInWithGoogle()
                             }
                         }
-                        .disabled(viewModel.isLoading)
+                        .disabled(authenticationManager.isLoading)
 
                         // Apple認証ボタン（標準デザイン）
                         AppleSignInButton(
@@ -116,7 +115,7 @@ struct AuthView: View {
                                 viewModel.signInWithApple()
                             }
                         }
-                        .disabled(viewModel.isLoading)
+                        .disabled(authenticationManager.isLoading)
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 20)
@@ -184,7 +183,7 @@ struct AuthView: View {
                     viewModel.checkEmailVerification()
                 }) {
                     HStack(spacing: 6) {
-                        if viewModel.isLoading {
+                        if viewModel.isAnonymousLoading {
                             ProgressView()
                                 .tint(.white)
                                 .scaleEffect(0.8)
@@ -204,7 +203,7 @@ struct AuthView: View {
                     )
                     .foregroundColor(.white)
                 }
-                .disabled(viewModel.isLoading)
+                .disabled(authenticationManager.isLoading)
 
                 Button(action: {
                     viewModel.sendVerificationEmail()
@@ -224,7 +223,7 @@ struct AuthView: View {
                     )
                     .foregroundColor(.white)
                 }
-                .disabled(viewModel.isLoading)
+                .disabled(authenticationManager.isLoading)
             }
         }
         .padding(.horizontal, 8)
@@ -311,7 +310,7 @@ struct AuthView: View {
                     .cornerRadius(12)
                     .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
                 }
-                .disabled(viewModel.isLoading || !viewModel.isFormValid)
+                .disabled(authenticationManager.isLoading)
                 .opacity(viewModel.isFormValid ? 1.0 : 0.6)
 
                 // サブボタン（小さめ）
@@ -339,6 +338,52 @@ struct AuthView: View {
                                 .underline()
                         }
                     }
+                }
+
+                // エラーメッセージ
+                if let errorMessage = viewModel.errorMessage {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(Color(hex: "FF6B6B"))
+                            .font(.callout)
+
+                        Text(errorMessage)
+                            .font(.callout)
+                            .foregroundColor(.white)
+                            .lineLimit(3)
+
+                        Spacer()
+
+                        Button(action: {
+                            viewModel.clearError()
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.white.opacity(0.7))
+                                .font(.callout)
+                        }
+                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(hex: "FF6B6B").opacity(0.4),
+                                        Color(hex: "EE5A6F").opacity(0.3),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .background(.ultraThinMaterial.opacity(0.7))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(hex: "FF6B6B").opacity(0.5), lineWidth: 1)
+                    )
+                    .shadow(color: Color(hex: "FF6B6B").opacity(0.3), radius: 8, x: 0, y: 4)
+                    .transition(.opacity.combined(with: .scale))
                 }
             }
         }
@@ -441,7 +486,7 @@ struct AuthView: View {
                 viewModel.sendPasswordResetEmail()
             }) {
                 HStack(spacing: 12) {
-                    if viewModel.isLoading {
+                    if viewModel.isEmailLoading {
                         ProgressView()
                             .tint(Color(hex: "4ECDC4"))
                     } else {
@@ -450,7 +495,7 @@ struct AuthView: View {
                             .foregroundColor(.accent)
                     }
 
-                    Text(viewModel.isLoading ? "送信中..." : "リセットメールを送信")
+                    Text(viewModel.isEmailLoading ? "送信中..." : "リセットメールを送信")
                         .font(.headline)
                         .fontWeight(.semibold)
                         .foregroundColor(.text)
@@ -461,7 +506,7 @@ struct AuthView: View {
                 .cornerRadius(12)
                 .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
             }
-            .disabled(viewModel.isLoading || viewModel.resetEmail.isEmpty)
+            .disabled(authenticationManager.isLoading || viewModel.resetEmail.isEmpty)
             .opacity((viewModel.resetEmail.isEmpty || viewModel.isLoading) ? 0.6 : 1.0)
 
             // エラーメッセージ
