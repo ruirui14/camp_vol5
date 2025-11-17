@@ -542,7 +542,7 @@ struct AuthView: View {
                     .font(.system(size: 70, weight: .medium))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [Color(hex: "4ECDC4"), Color(hex: "44A08D")],
+                            colors: [.green, .green.opacity(0.8)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -566,7 +566,7 @@ struct AuthView: View {
             // 注意事項
             GlassInfoCard(
                 icon: "info.circle.fill",
-                iconColor: Color(hex: "4ECDC4"),
+                iconColor: .green,
                 title: "メールが届かない場合",
                 items: [
                     "迷惑メールフォルダを確認してください",
