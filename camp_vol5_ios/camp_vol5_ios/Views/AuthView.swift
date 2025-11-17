@@ -285,7 +285,7 @@ struct AuthView: View {
                     HStack(spacing: 12) {
                         if viewModel.isEmailLoading {
                             ProgressView()
-                                .tint(Color(hex: "4ECDC4"))
+                                .tint(.blue)
                         } else {
                             Image(
                                 systemName: viewModel.isSignUp
@@ -306,7 +306,7 @@ struct AuthView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
-                    .background(Color(hex: "f2f2f2"))
+                    .background(.base)
                     .cornerRadius(12)
                     .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
                 }
@@ -488,7 +488,7 @@ struct AuthView: View {
                 HStack(spacing: 12) {
                     if viewModel.isEmailLoading {
                         ProgressView()
-                            .tint(Color(hex: "4ECDC4"))
+                            .tint(.blue)
                     } else {
                         Image(systemName: "paperplane.fill")
                             .font(.title2)
@@ -502,7 +502,7 @@ struct AuthView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(Color(hex: "f2f2f2"))
+                .background(.base)
                 .cornerRadius(12)
                 .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 2)
             }
@@ -837,7 +837,7 @@ struct GoogleSignInButton: View {
             HStack(spacing: 12) {
                 if isLoading {
                     ProgressView()
-                        .tint(Color(hex: "4285F4"))
+                        .tint(.blue)
                 } else {
                     Image("GoogleLogo")
                         .padding(.trailing, -15)
@@ -878,7 +878,7 @@ struct AppleSignInButton: View {
             HStack(spacing: 12) {
                 if isLoading {
                     ProgressView()
-                        .tint(.white)
+                        .tint(.blue)
                 } else {
                     Image(systemName: "apple.logo")
                         .font(.title2)
@@ -920,7 +920,7 @@ struct AnonymousSignInButton: View {
             HStack(spacing: 12) {
                 if isLoading {
                     ProgressView()
-                        .tint(.white)
+                        .tint(.blue)
                 } else {
                     Image(systemName: "person.crop.circle")
                         .font(.title2)
