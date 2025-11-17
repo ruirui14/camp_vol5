@@ -296,10 +296,14 @@ struct AuthView: View {
                             .foregroundColor(.accent)
                         }
 
-                        Text(viewModel.primaryButtonTitle)
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.text)
+                        Text(
+                            viewModel.isEmailLoading
+                                ? (viewModel.isSignUp ? "アカウント作成中..." : "サインイン中...")
+                                : (viewModel.isSignUp ? "アカウント作成" : "サインイン")
+                        )
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.text)
                     }
                     .frame(maxWidth: .infinity)
                     .frame(height: 50)
@@ -317,7 +321,7 @@ struct AuthView: View {
                             viewModel.toggleAuthMode()
                         }
                     }) {
-                        Text(viewModel.toggleModeText)
+                        Text(viewModel.isSignUp ? "既存のアカウントでサインイン" : "新しいアカウントを作成")
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(.white)

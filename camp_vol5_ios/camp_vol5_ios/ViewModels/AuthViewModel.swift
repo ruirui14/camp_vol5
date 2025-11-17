@@ -223,25 +223,6 @@ class AuthViewModel: BaseViewModel {
         authenticationManager.isLoading && selectedAuthMethod == .email
     }
 
-    var authModeTitle: String {
-        isSignUp ? "アカウント作成" : "サインイン"
-    }
-
-    var authModeSubtitle: String {
-        isSignUp ? "新しいアカウントを作成します" : "既存のアカウントでログインします"
-    }
-
-    var primaryButtonTitle: String {
-        if isLoading {
-            return isSignUp ? "アカウント作成中..." : "サインイン中..."
-        }
-        return isSignUp ? "アカウント作成" : "サインイン"
-    }
-
-    var toggleModeText: String {
-        isSignUp ? "既存のアカウントでサインイン" : "新しいアカウントを作成"
-    }
-
     var isFormValid: Bool {
         // 入力が空でないかどうかだけをチェック
         // 詳細なバリデーションはsignInWithEmailで行う
