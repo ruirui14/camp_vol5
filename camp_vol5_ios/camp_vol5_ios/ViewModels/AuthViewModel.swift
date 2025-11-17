@@ -17,8 +17,10 @@ class AuthViewModel: BaseViewModel {
     // メール認証関連
     @Published var email: String = ""
     @Published var password: String = ""
+    @Published var confirmPassword: String = ""
     @Published var isSignUp: Bool = false
     @Published var showPassword: Bool = false
+    @Published var showConfirmPassword: Bool = false
     @Published var needsEmailVerification: Bool = false
     @Published var isEmailVerified: Bool = false
     @Published var showPasswordReset: Bool = false
@@ -100,8 +102,10 @@ class AuthViewModel: BaseViewModel {
         // フォームをリセット
         email = ""
         password = ""
+        confirmPassword = ""
         isSignUp = false
         showPassword = false
+        showConfirmPassword = false
     }
 
     // MARK: - Email Authentication
@@ -131,6 +135,19 @@ class AuthViewModel: BaseViewModel {
         if password.count < 6 {
             authenticationManager.errorMessage = "パスワードは6文字以上で入力してください"
             return
+        }
+
+        // 新規登録時はパスワード確認が必要
+        if isSignUp {
+            if confirmPassword.isEmpty {
+                authenticationManager.errorMessage = "確認用パスワードを入力してください"
+                return
+            }
+
+            if password != confirmPassword {
+                authenticationManager.errorMessage = "パスワードが一致しません"
+                return
+            }
         }
 
         if isSignUp {
@@ -228,6 +245,12 @@ class AuthViewModel: BaseViewModel {
     var isFormValid: Bool {
         // 入力が空でないかどうかだけをチェック
         // 詳細なバリデーションはsignInWithEmailで行う
-        !email.isEmpty && !password.isEmpty
+        if isSignUp {
+            // 新規登録時はパスワード確認も必要
+            return !email.isEmpty && !password.isEmpty && !confirmPassword.isEmpty
+                && password == confirmPassword
+        } else {
+            return !email.isEmpty && !password.isEmpty
+        }
     }
 }

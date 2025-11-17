@@ -96,11 +96,6 @@ class ViewModelFactory: ObservableObject {
         AuthViewModel(authenticationManager: authenticationManager)
     }
 
-    /// EmailAuthViewModelを生成
-    func makeEmailAuthViewModel() -> EmailAuthViewModel {
-        EmailAuthViewModel(authenticationManager: authenticationManager)
-    }
-
     /// StreamViewModelを生成
     /// - Parameter heartbeatDetailViewModel: 心拍データを共有するHeartbeatDetailViewModel
     func makeStreamViewModel(heartbeatDetailViewModel: HeartbeatDetailViewModel) -> StreamViewModel

@@ -252,6 +252,32 @@ struct AuthView: View {
                     text: $viewModel.password,
                     showPassword: $viewModel.showPassword
                 )
+
+                // パスワード確認（新規登録時のみ）
+                if viewModel.isSignUp {
+                    GlassSecureField(
+                        icon: "lock.fill",
+                        placeholder: "パスワード（確認）",
+                        text: $viewModel.confirmPassword,
+                        showPassword: $viewModel.showConfirmPassword
+                    )
+                    .transition(.opacity)
+
+                    // パスワード不一致の警告
+                    if !viewModel.confirmPassword.isEmpty
+                        && viewModel.password != viewModel.confirmPassword
+                    {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundColor(Color(hex: "FF6B6B"))
+                            Text("パスワードが一致しません")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.9))
+                        }
+                        .transition(.opacity)
+                    }
+                }
             }
 
             // ボタンセクション
