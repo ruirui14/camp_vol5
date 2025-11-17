@@ -132,8 +132,8 @@ class AuthViewModel: BaseViewModel {
             return
         }
 
-        if password.count < 6 {
-            authenticationManager.errorMessage = "パスワードは6文字以上で入力してください"
+        if password.count < 8 {
+            authenticationManager.errorMessage = "パスワードは8文字以上で入力してください"
             return
         }
 
