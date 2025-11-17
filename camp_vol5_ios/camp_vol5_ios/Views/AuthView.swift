@@ -27,9 +27,6 @@ struct AuthView: View {
             // デフォルトのグラデーション背景
             MainAccentGradient()
 
-            // 浮遊する円（背景装飾）
-            FloatingCircles()
-
             ScrollView {
                 VStack(spacing: 0) {
                     Spacer(minLength: 30)
@@ -352,9 +349,6 @@ struct AuthView: View {
                 // 背景グラデーション
                 MainAccentGradient()
 
-                // 浮遊する円（背景装飾）
-                FloatingCircles()
-
                 ScrollView {
                     VStack(spacing: 28) {
                         if viewModel.passwordResetSent {
@@ -564,49 +558,6 @@ struct AuthView: View {
                     .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
             }
             .padding(.top, 20)
-        }
-    }
-}
-
-// MARK: - 浮遊する円の背景装飾
-
-struct FloatingCircles: View {
-    @State private var animate = false
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(Color.white.opacity(0.1))
-                .frame(width: 200, height: 200)
-                .blur(radius: 30)
-                .offset(x: animate ? -50 : 50, y: animate ? -100 : 100)
-                .animation(
-                    .easeInOut(duration: 4).repeatForever(autoreverses: true),
-                    value: animate
-                )
-
-            Circle()
-                .fill(Color.pink.opacity(0.15))
-                .frame(width: 150, height: 150)
-                .blur(radius: 25)
-                .offset(x: animate ? 100 : -100, y: animate ? 150 : -150)
-                .animation(
-                    .easeInOut(duration: 5).repeatForever(autoreverses: true).delay(0.5),
-                    value: animate
-                )
-
-            Circle()
-                .fill(Color.purple.opacity(0.1))
-                .frame(width: 180, height: 180)
-                .blur(radius: 35)
-                .offset(x: animate ? -80 : 80, y: animate ? 200 : -200)
-                .animation(
-                    .easeInOut(duration: 6).repeatForever(autoreverses: true).delay(1),
-                    value: animate
-                )
-        }
-        .onAppear {
-            animate = true
         }
     }
 }
