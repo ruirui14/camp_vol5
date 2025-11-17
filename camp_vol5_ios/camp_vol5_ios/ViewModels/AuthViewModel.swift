@@ -51,7 +51,13 @@ class AuthViewModel: BaseViewModel {
 
         authenticationManager.$errorMessage
             .receive(on: DispatchQueue.main)
-            .assign(to: \.errorMessage, on: self)
+            .sink { [weak self] errorMessage in
+                self?.errorMessage = errorMessage
+                // エラーが発生したら認証メソッドをリセット
+                if errorMessage != nil {
+                    self?.selectedAuthMethod = .none
+                }
+            }
             .store(in: &cancellables)
 
         // メール確認待ち状態の場合、EmailAuthシートを開いたままにする
@@ -116,14 +122,20 @@ class AuthViewModel: BaseViewModel {
     }
 
     func signInWithEmail() {
+        // 認証メソッドを設定
+        selectedAuthMethod = .email
+        authenticationManager.selectedAuthMethod = "email"
+
         // バリデーション
         if email.isEmpty {
             authenticationManager.errorMessage = "メールアドレスを入力してください"
+            selectedAuthMethod = .none
             return
         }
 
         if password.isEmpty {
             authenticationManager.errorMessage = "パスワードを入力してください"
+            selectedAuthMethod = .none
             return
         }
 
@@ -131,21 +143,25 @@ class AuthViewModel: BaseViewModel {
         if isSignUp {
             if !isValidEmail(email) {
                 authenticationManager.errorMessage = "有効なメールアドレスを入力してください"
+                selectedAuthMethod = .none
                 return
             }
 
             if password.count < 8 {
                 authenticationManager.errorMessage = "パスワードは8文字以上で入力してください"
+                selectedAuthMethod = .none
                 return
             }
 
             if confirmPassword.isEmpty {
                 authenticationManager.errorMessage = "確認用パスワードを入力してください"
+                selectedAuthMethod = .none
                 return
             }
 
             if password != confirmPassword {
                 authenticationManager.errorMessage = "パスワードが一致しません"
+                selectedAuthMethod = .none
                 return
             }
         }
