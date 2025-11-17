@@ -17,6 +17,7 @@ struct GlassTextField: View {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundColor(.white.opacity(0.8))
+                .frame(width: 24, height: 24)
 
             TextField(placeholder, text: $text)
                 .textContentType(.emailAddress)
@@ -24,9 +25,11 @@ struct GlassTextField: View {
                 .autocapitalization(.none)
                 .foregroundColor(.white)
                 .tint(.white)
+                .frame(height: 24)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
+        .frame(height: 56)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(
@@ -64,6 +67,7 @@ struct GlassSecureField: View {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundColor(.white.opacity(0.8))
+                .frame(width: 24, height: 24)
 
             Group {
                 if showPassword {
@@ -75,6 +79,7 @@ struct GlassSecureField: View {
             .textContentType(.password)
             .foregroundColor(.white)
             .tint(.white)
+            .frame(height: 24)
 
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -85,9 +90,11 @@ struct GlassSecureField: View {
                     .font(.title3)
                     .foregroundColor(.white.opacity(0.7))
             }
+            .frame(width: 24, height: 24)
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
+        .frame(height: 56)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(
