@@ -5,16 +5,24 @@
 import SwiftUI
 import UIKit
 
-/// 背景画像管理マネージャー
+/// 背景画像管理マネージャー（カード背景用、GIF対応）
 /// - ユーザーIDごとに背景画像（オリジナル/編集済み）と変形情報を管理
 /// - ImagePersistenceServiceとUserDefaultsImageServiceを組み合わせて永続化
+/// - GIFアニメーション画像のデータとフラグも管理
 /// - ObservableObjectとして状態変化をViewに通知
+/// - 注意：詳細画面の背景はPersistenceManagerで管理されており、こちらとは別システム
 class BackgroundImageManager: ObservableObject {
     /// 現在の編集済み画像
     @Published var currentEditedImage: UIImage?
 
     /// 現在のオリジナル画像
     @Published var currentOriginalImage: UIImage?
+
+    /// 現在の画像データ（GIF対応）
+    @Published var currentImageData: Data?
+
+    /// アニメーション画像かどうか
+    @Published var isAnimated: Bool = false
 
     /// 現在の変形情報
     @Published var currentTransform: ImageTransform = .init()
@@ -52,9 +60,19 @@ class BackgroundImageManager: ObservableObject {
                     fileName: savedData.originalImageFileName
                 )
 
+                // GIFデータを読み込み（アニメーション画像の場合）
+                var imageData: Data?
+                if savedData.isAnimated {
+                    imageData = self.persistenceService.loadImageData(
+                        fileName: savedData.originalImageFileName
+                    )
+                }
+
                 DispatchQueue.main.async {
                     self.currentEditedImage = editedImage
                     self.currentOriginalImage = originalImage
+                    self.currentImageData = imageData
+                    self.isAnimated = savedData.isAnimated
                     self.currentTransform = savedData.transform
                     self.isLoading = false
                 }
@@ -84,62 +102,6 @@ class BackgroundImageManager: ObservableObject {
         }
     }
 
-    /// 編集結果を保存（フルサイズ画像生成を含む）
-    /// - Parameter transform: 変形情報
-    func saveEditedResult(_ transform: ImageTransform) {
-        guard let originalImage = currentOriginalImage else {
-            return
-        }
-
-        isSaving = true
-        currentTransform = transform
-
-        Task {
-            let screenSize = UIScreen.main.bounds.size
-
-            guard
-                let persistentData = await self.persistenceService.saveEditedImageSet(
-                    originalImage: originalImage,
-                    transform: transform,
-                    userId: self.userId,
-                    targetScreenSize: screenSize
-                )
-            else {
-                await MainActor.run {
-                    self.isSaving = false
-                }
-                return
-            }
-
-            self.userDefaultsService.saveBackgroundImageData(persistentData)
-
-            let editedImage = self.persistenceService.loadImage(
-                fileName: persistentData.editedImageFileName
-            )
-
-            await MainActor.run {
-                self.currentEditedImage = editedImage
-                self.isSaving = false
-            }
-        }
-    }
-
-    /// 編集状態を保存（画像と変形情報）
-    /// - Parameters:
-    ///   - selectedImage: 選択された画像
-    ///   - transform: 変形情報
-    func saveEditingState(selectedImage: UIImage?, transform: ImageTransform) {
-        if let newImage = selectedImage {
-            setOriginalImage(newImage)
-        }
-
-        currentTransform = transform
-
-        if currentOriginalImage != nil {
-            saveEditedResult(transform)
-        }
-    }
-
     /// 背景画像をリセット（ファイルとメタデータを削除）
     func resetBackgroundImage() {
         if let savedData = userDefaultsService.loadBackgroundImageData(for: userId) {
@@ -149,6 +111,8 @@ class BackgroundImageManager: ObservableObject {
 
         currentEditedImage = nil
         currentOriginalImage = nil
+        currentImageData = nil
+        isAnimated = false
         currentTransform = ImageTransform()
     }
 

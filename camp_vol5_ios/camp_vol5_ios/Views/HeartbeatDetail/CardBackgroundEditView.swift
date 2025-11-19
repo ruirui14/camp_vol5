@@ -1,0 +1,181 @@
+// CardBackgroundEditView.swift
+// カード背景画像編集ビュー - MVVM設計
+// 責務: カード背景画像の選択、配置、色指定のUIを提供
+
+import PhotosUI
+import SwiftUI
+
+struct CardBackgroundEditView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var authenticationManager: AuthenticationManager
+    @StateObject private var viewModel: CardBackgroundEditViewModel
+    @State private var transformableView: TransformableCardImageView?
+    @State private var currentImage: UIImage?
+
+    let userId: String
+
+    init(userId: String) {
+        self.userId = userId
+        self._viewModel = StateObject(
+            wrappedValue: CardBackgroundEditViewModel(userId: userId))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                // 背景
+                MainAccentGradient()
+
+                // 編集エリア
+                editingArea
+
+                // コントロールボタン（固定位置）
+                VStack {
+                    Spacer()
+                    controlButtons
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                    .foregroundColor(.white)
+                }
+
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("完了") {
+                        completeAndSave()
+                        // 保存処理完了を待ってから画面を閉じる
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            dismiss()
+                        }
+                    }
+                    .foregroundColor(.white)
+                    .disabled(viewModel.isSaving || currentImage == nil)
+                }
+            }
+        }
+        .sheet(isPresented: $viewModel.showingPhotoPicker) {
+            GifPhotoPickerView(
+                selectedImage: $viewModel.selectedImage,
+                selectedImageData: $viewModel.selectedImageData
+            )
+        }
+        .onChange(of: viewModel.selectedImageData) { _, newData in
+            // 画像データが変更されたときにGIFかどうかを判定
+            if let data = newData {
+                viewModel.isAnimated = ImagePersistenceService.shared.isAnimatedImage(data: data)
+            } else {
+                viewModel.isAnimated = false
+            }
+        }
+        .onAppear {
+            viewModel.onAppear()
+            currentImage = viewModel.selectedImage
+        }
+        .onChange(of: viewModel.isLoading) { _, isLoading in
+            viewModel.onLoadingChanged(isLoading: isLoading)
+            if !isLoading {
+                currentImage = viewModel.selectedImage
+            }
+        }
+        .onChange(of: viewModel.selectedImage) { _, newImage in
+            viewModel.onSelectedImageChanged(newImage: newImage)
+            currentImage = newImage
+        }
+    }
+
+    private var editingArea: some View {
+        GeometryReader { geometry in
+            let cardWidth = CardConstants.cardWidth(for: geometry.size.width)
+            let cardSize = CGSize(width: cardWidth, height: CardConstants.cardHeight)
+
+            ZStack {
+                // 背景色（カード範囲のみ）
+                if viewModel.selectedBackgroundColor != Color.clear {
+                    viewModel.selectedBackgroundColor
+                        .mask(
+                            RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
+                                .fill(Color.black)
+                                .frame(width: cardWidth, height: CardConstants.cardHeight)
+                        )
+                }
+
+                // 画像があるときはTransformableCardImageViewを使用（GIF対応）
+                if let image = currentImage {
+                    let view = TransformableCardImageView(
+                        image: image,
+                        imageData: viewModel.selectedImageData,
+                        isAnimated: viewModel.isAnimated,
+                        cardSize: cardSize,
+                        transformState: viewModel.transformState
+                    )
+                    view
+                        .onAppear {
+                            transformableView = view
+                        }
+                }
+
+                // 画像の有無に関わらずカードを中央に表示
+                VStack {
+                    Spacer()
+                    UserHeartbeatCard(
+                        customBackgroundImage: nil,
+                        displayName: "プレビュー",
+                        displayBPM: "72"
+                    )
+                    Spacer()
+                }
+                .allowsHitTesting(false)  // プレビューカードの下の画像を操作可能にする
+            }
+            .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+    }
+
+    private var controlButtons: some View {
+        HStack(alignment: .top, spacing: 20) {
+            Button {
+                viewModel.showingPhotoPicker = true
+            } label: {
+                IconLabelButtonContent(icon: "photo.on.rectangle.angled", label: "写真を選択")
+            }
+            .gradientButtonStyle(colors: [Color.pink.opacity(0.8), Color.purple.opacity(0.7)])
+
+            ColorPickerButtonOverlay(
+                selectedColor: $viewModel.selectedBackgroundColor,
+                gradientColors: [Color.yellow.opacity(0.8), Color.orange.opacity(0.7)]
+            ) {
+                IconLabelButtonContent(icon: "paintpalette", label: "背景色")
+            }
+
+            Button(action: viewModel.resetImagePosition) {
+                IconLabelButtonContent(icon: "arrow.counterclockwise", label: "位置をリセット")
+            }
+            .gradientButtonStyle(
+                colors: [Color.blue.opacity(0.8), Color.cyan.opacity(0.7)],
+                isDisabled: currentImage == nil
+            )
+            .disabled(currentImage == nil)
+        }
+    }
+
+    /// 完了ボタンの処理：画像をキャプチャして永続化
+    private func completeAndSave() {
+        guard
+            let capturedImage = transformableView?.captureImage(
+                backgroundColor: viewModel.selectedBackgroundColor,
+                sourceImage: currentImage
+            )
+        else {
+            return
+        }
+
+        viewModel.saveCapturedImageDirectly(capturedImage)
+    }
+}
+
+#Preview {
+    CardBackgroundEditView(userId: "preview-user")
+}

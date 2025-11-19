@@ -30,7 +30,7 @@ struct StreamWebViewWrapper: View {
         let videoID = youtubeURLService.extractVideoID(from: urlString)
         _youtubePlayer = State(
             initialValue: YouTubePlayer(
-                source: .video(id: videoID.isEmpty ? "dQw4w9WgXcQ" : videoID),
+                source: .video(id: videoID),
                 configuration: .init(
                     fullscreenMode: .system,
                     allowsInlineMediaPlayback: true

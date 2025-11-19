@@ -52,6 +52,17 @@ struct ConnectionsRankingView: View {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
                                     .padding()
+                            } else if !viewModel.rankingUsers.isEmpty {
+                                // フッターメッセージ
+                                VStack(spacing: 8) {
+                                    Divider()
+                                        .padding(.horizontal, 40)
+                                    Text("TOP 100まで表示しています")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .padding(.bottom, 20)
+                                }
+                                .padding(.top, 8)
                             }
                         }
                         .padding()
@@ -78,10 +89,15 @@ struct ConnectionsRankingView: View {
                 }
 
                 ToolbarItem(placement: .principal) {
-                    Text("同接ランキング")
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
+                    VStack(spacing: 0) {
+                        Text("同接ランキング")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                        Text("TOP 100")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {

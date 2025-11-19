@@ -52,7 +52,7 @@ struct ContentView: View {
         case "anonymous":
             return .anonymous
         default:
-            return .anonymous
+            return .none
         }
     }
 }

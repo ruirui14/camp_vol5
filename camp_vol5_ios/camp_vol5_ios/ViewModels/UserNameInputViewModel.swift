@@ -7,6 +7,7 @@ import Foundation
 import SwiftUI
 
 enum SelectedAuthMethod {
+    case none
     case anonymous
     case google
     case email
@@ -51,6 +52,9 @@ class UserNameInputViewModel: BaseViewModel {
         clearError()
 
         switch selectedAuthMethod {
+        case .none:
+            // 認証メソッドが選択されていない場合は何もしない
+            setLoading(false)
         case .anonymous:
             handleAnonymousUserSave(name: trimmedName)
         case .google, .email:

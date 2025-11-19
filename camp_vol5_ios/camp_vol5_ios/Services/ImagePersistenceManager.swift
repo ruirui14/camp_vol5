@@ -66,107 +66,38 @@ struct EnhancedPersistentImageData: Codable {
     let createdAt: Date
     let userId: String
     let imageSize: CGSize
-}
+    let isAnimated: Bool  // GIFアニメーション画像かどうか
 
-// MARK: - 画像処理サービス
-
-class ImageProcessingService {
-    static let shared = ImageProcessingService()
-    private init() {}
-
-    /// バックグラウンドで画像編集処理を実行
-    /// - Parameters:
-    ///   - originalImage: 元画像
-    ///   - transform: 変換情報
-    ///   - outputSize: 出力サイズ
-    /// - Returns: 編集済み画像（失敗時はnil）
-    func createEditedImage(
-        from originalImage: UIImage,
+    // 後方互換性のための初期化
+    init(
+        originalImageFileName: String,
+        editedImageFileName: String,
         transform: ImageTransform,
-        outputSize: CGSize
-    ) async -> UIImage? {
-        await Task.detached(priority: .userInitiated) {
-            let renderer = UIGraphicsImageRenderer(size: outputSize)
-
-            return renderer.image { context in
-                let cgContext = context.cgContext
-
-                // 背景をクリア
-                cgContext.clear(CGRect(origin: .zero, size: outputSize))
-
-                // 背景色が指定されている場合は塗りつぶす
-                if let backgroundColor = transform.backgroundColor {
-                    cgContext.setFillColor(backgroundColor.cgColor)
-                    cgContext.fill(CGRect(origin: .zero, size: outputSize))
-                }
-
-                // 画像のアスペクト比を維持してフィット
-                let imageSize = ImageProcessingService.shared.aspectFitSize(
-                    originalImage.size, in: outputSize)
-
-                // 中央配置の基準点を計算
-                let centerX = outputSize.width / 2
-                let centerY = outputSize.height / 2
-
-                // 正規化されたオフセットを実際のピクセル値に変換
-                let offsetX = transform.normalizedOffset.x * outputSize.width / 2
-                let offsetY = transform.normalizedOffset.y * outputSize.height / 2
-
-                // コンテキストの状態を保存
-                cgContext.saveGState()
-
-                // 回転の適用（中心点を基準に回転）
-                cgContext.translateBy(x: centerX + offsetX, y: centerY + offsetY)
-                cgContext.rotate(by: CGFloat(transform.rotation * .pi / 180))
-                cgContext.translateBy(x: -(centerX + offsetX), y: -(centerY + offsetY))
-
-                // 最終的な描画矩形を計算
-                let drawRect = CGRect(
-                    x: centerX - (imageSize.width * transform.scale) / 2 + offsetX,
-                    y: centerY - (imageSize.height * transform.scale) / 2 + offsetY,
-                    width: imageSize.width * transform.scale,
-                    height: imageSize.height * transform.scale
-                )
-
-                originalImage.draw(in: drawRect)
-
-                // コンテキストの状態を復元
-                cgContext.restoreGState()
-            }
-        }.value
+        createdAt: Date,
+        userId: String,
+        imageSize: CGSize,
+        isAnimated: Bool = false
+    ) {
+        self.originalImageFileName = originalImageFileName
+        self.editedImageFileName = editedImageFileName
+        self.transform = transform
+        self.createdAt = createdAt
+        self.userId = userId
+        self.imageSize = imageSize
+        self.isAnimated = isAnimated
     }
 
-    /// バックグラウンドでフルサイズ画像編集処理を実行
-    /// - Parameters:
-    ///   - originalImage: 元画像
-    ///   - transform: 変換情報
-    ///   - targetScreenSize: ターゲット画面サイズ（2倍に拡大される）
-    /// - Returns: 高解像度編集済み画像（失敗時はnil）
-    func createFullSizeEditedImage(
-        from originalImage: UIImage,
-        transform: ImageTransform,
-        targetScreenSize: CGSize
-    ) async -> UIImage? {
-        let fullSize = CGSize(
-            width: targetScreenSize.width * 2,
-            height: targetScreenSize.height * 2
-        )
-        return await createEditedImage(
-            from: originalImage,
-            transform: transform,
-            outputSize: fullSize
-        )
-    }
-
-    func aspectFitSize(_ imageSize: CGSize, in containerSize: CGSize) -> CGSize {
-        let scale = min(
-            containerSize.width / imageSize.width,
-            containerSize.height / imageSize.height
-        )
-        return CGSize(
-            width: imageSize.width * scale,
-            height: imageSize.height * scale
-        )
+    // デコード時の後方互換性
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        originalImageFileName = try container.decode(String.self, forKey: .originalImageFileName)
+        editedImageFileName = try container.decode(String.self, forKey: .editedImageFileName)
+        transform = try container.decode(ImageTransform.self, forKey: .transform)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        userId = try container.decode(String.self, forKey: .userId)
+        imageSize = try container.decode(CGSize.self, forKey: .imageSize)
+        // 古いデータにはisAnimatedがないので、デフォルトfalse
+        isAnimated = try container.decodeIfPresent(Bool.self, forKey: .isAnimated) ?? false
     }
 }
 
@@ -174,77 +105,10 @@ class ImageProcessingService {
 
 class ImagePersistenceService {
     static let shared = ImagePersistenceService()
-    private let imageProcessor: ImageProcessingService
     private let fileManager: FileManager
 
     private init() {
-        self.imageProcessor = ImageProcessingService.shared
         self.fileManager = FileManager.default
-    }
-
-    /// バックグラウンドで画像セットの保存を実行
-    /// - Parameters:
-    ///   - originalImage: 元画像
-    ///   - transform: 変換情報
-    ///   - userId: ユーザーID
-    ///   - targetScreenSize: ターゲット画面サイズ
-    /// - Returns: 永続化データ（失敗時はnil）
-    func saveEditedImageSet(
-        originalImage: UIImage,
-        transform: ImageTransform,
-        userId: String,
-        targetScreenSize: CGSize
-    ) async -> EnhancedPersistentImageData? {
-        await Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self = self else { return nil }
-
-            FileManager.ensureBackgroundImagesDirectory()
-
-            let timestamp = UUID().uuidString
-            let originalFileName = "\(userId)_original_\(timestamp).png"
-            let editedFileName = "\(userId)_edited_\(timestamp).png"
-
-            guard self.saveImage(originalImage, fileName: originalFileName) else {
-                return nil
-            }
-
-            guard
-                let editedImage = await self.imageProcessor.createFullSizeEditedImage(
-                    from: originalImage,
-                    transform: transform,
-                    targetScreenSize: targetScreenSize
-                ), self.saveImage(editedImage, fileName: editedFileName)
-            else {
-                self.deleteImage(fileName: originalFileName)
-                return nil
-            }
-
-            let persistentData = EnhancedPersistentImageData(
-                originalImageFileName: originalFileName,
-                editedImageFileName: editedFileName,
-                transform: transform,
-                createdAt: Date(),
-                userId: userId,
-                imageSize: editedImage.size
-            )
-
-            return persistentData
-        }.value
-    }
-
-    private func saveImage(_ image: UIImage, fileName: String) -> Bool {
-        let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
-
-        guard let imageData = image.pngData() else {
-            return false
-        }
-
-        do {
-            try imageData.write(to: fileURL)
-            return true
-        } catch {
-            return false
-        }
     }
 
     func loadImage(fileName: String) -> UIImage? {
@@ -261,6 +125,26 @@ class ImagePersistenceService {
         }
 
         return image
+    }
+
+    /// 画像データを読み込み（GIF対応）
+    func loadImageData(fileName: String) -> Data? {
+        let fileURL = FileManager.backgroundImagesDirectory.appendingPathComponent(fileName)
+
+        guard FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+
+        return try? Data(contentsOf: fileURL)
+    }
+
+    /// 画像データがアニメーション画像かどうか判定
+    func isAnimatedImage(data: Data) -> Bool {
+        guard let imageSource = CGImageSourceCreateWithData(data as CFData, nil) else {
+            return false
+        }
+        let frameCount = CGImageSourceGetCount(imageSource)
+        return frameCount > 1
     }
 
     func deleteImage(fileName: String) {

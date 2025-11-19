@@ -22,9 +22,13 @@ extension License {
         License(
             name: "Firebase iOS SDK",
             licenseName: "Apache License 2.0",
-            copyright: "Copyright 2024 Google LLC",
+            copyright: "Copyright Google LLC",
             url: "https://github.com/firebase/firebase-ios-sdk",
             licenseText: """
+                Apache License
+                Version 2.0, January 2004
+                http://www.apache.org/licenses/
+
                 Licensed under the Apache License, Version 2.0 (the "License");
                 you may not use this file except in compliance with the License.
                 You may obtain a copy of the License at
@@ -43,9 +47,13 @@ extension License {
         License(
             name: "GoogleSignIn-iOS",
             licenseName: "Apache License 2.0",
-            copyright: "Copyright 2024 Google LLC",
+            copyright: "Copyright Google LLC",
             url: "https://github.com/google/GoogleSignIn-iOS",
             licenseText: """
+                Apache License
+                Version 2.0, January 2004
+                http://www.apache.org/licenses/
+
                 Licensed under the Apache License, Version 2.0 (the "License");
                 you may not use this file except in compliance with the License.
                 You may obtain a copy of the License at
@@ -64,10 +72,10 @@ extension License {
         License(
             name: "RiveRuntime",
             licenseName: "MIT License",
-            copyright: "Copyright (c) 2024 Rive",
+            copyright: "Copyright (c) 2020 Rive",
             url: "https://github.com/rive-app/rive-ios",
             licenseText: """
-                MIT License
+                Copyright (c) 2020 Rive
 
                 Permission is hereby granted, free of charge, to any person obtaining a copy
                 of this software and associated documentation files (the "Software"), to deal
@@ -93,10 +101,10 @@ extension License {
         License(
             name: "swift-markdown-ui",
             licenseName: "MIT License",
-            copyright: "Copyright (c) 2021 Guille Gonzalez",
+            copyright: "Copyright (c) 2020 Guillermo Gonzalez",
             url: "https://github.com/gonzalezreal/swift-markdown-ui",
             licenseText: """
-                MIT License
+                Copyright (c) 2020 Guillermo Gonzalez
 
                 Permission is hereby granted, free of charge, to any person obtaining a copy
                 of this software and associated documentation files (the "Software"), to deal
@@ -122,10 +130,68 @@ extension License {
         License(
             name: "YouTubePlayerKit",
             licenseName: "MIT License",
-            copyright: "Copyright (c) 2025 Sven Tiigi",
+            copyright: "Copyright (c) Sven Tiigi",
             url: "https://github.com/SvenTiigi/YouTubePlayerKit",
             licenseText: """
-                MIT License
+                Copyright (c) Sven Tiigi <sven.tiigi@gmail.com>
+
+                Permission is hereby granted, free of charge, to any person obtaining a copy
+                of this software and associated documentation files (the "Software"), to deal
+                in the Software without restriction, including without limitation the rights
+                to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                copies of the Software, and to permit persons to whom the Software is
+                furnished to do so, subject to the following conditions:
+
+                The above copyright notice and this permission notice shall be included in all
+                copies or substantial portions of the Software.
+
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                SOFTWARE.
+                """
+        ),
+
+        // SDWebImage
+        License(
+            name: "SDWebImage",
+            licenseName: "MIT License",
+            copyright: "Copyright (c) 2009-2020 Olivier Poitrey rs@dailymotion.com",
+            url: "https://github.com/SDWebImage/SDWebImage",
+            licenseText: """
+                Copyright (c) 2009-2020 Olivier Poitrey rs@dailymotion.com
+
+                Permission is hereby granted, free of charge, to any person obtaining a copy
+                of this software and associated documentation files (the "Software"), to deal
+                in the Software without restriction, including without limitation the rights
+                to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                copies of the Software, and to permit persons to whom the Software is
+                furnished to do so, subject to the following conditions:
+
+                The above copyright notice and this permission notice shall be included in all
+                copies or substantial portions of the Software.
+
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                SOFTWARE.
+                """
+        ),
+
+        // SDWebImageSwiftUI
+        License(
+            name: "SDWebImageSwiftUI",
+            licenseName: "MIT License",
+            copyright: "Copyright (c) 2019 lizhuoli1126@126.com",
+            url: "https://github.com/SDWebImage/SDWebImageSwiftUI",
+            licenseText: """
+                Copyright (c) 2019 lizhuoli1126@126.com <lizhuoli1126@126.com>
 
                 Permission is hereby granted, free of charge, to any person obtaining a copy
                 of this software and associated documentation files (the "Software"), to deal

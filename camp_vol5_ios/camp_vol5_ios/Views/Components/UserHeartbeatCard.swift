@@ -1,31 +1,109 @@
 // UserHeartbeatCard.swift
 // フォローユーザーの心拍数情報を表示するカードコンポーネント
 // NavigationLinkの中で使用されるリスト項目として設計
-// 背景画像カスタマイズ対応
+// 背景画像カスタマイズ対応（GIF対応）
 
+import SDWebImageSwiftUI
 import SwiftUI
 
 struct UserHeartbeatCard: View {
-    @StateObject private var viewModel: UserHeartbeatCardViewModel
+    let userWithHeartbeat: UserWithHeartbeat?
+    let backgroundImageManager: BackgroundImageManager?
     let customBackgroundImage: UIImage?
+    let displayName: String?
+    let displayBPM: String?
 
     init(
         userWithHeartbeat: UserWithHeartbeat? = nil,
+        backgroundImageManager: BackgroundImageManager? = nil,
         customBackgroundImage: UIImage? = nil,
         displayName: String? = nil,
         displayBPM: String? = nil
     ) {
+        self.userWithHeartbeat = userWithHeartbeat
+        self.backgroundImageManager = backgroundImageManager
         self.customBackgroundImage = customBackgroundImage
+        self.displayName = displayName
+        self.displayBPM = displayBPM
+    }
+
+    var body: some View {
+        if let manager = backgroundImageManager {
+            // BackgroundImageManagerがある場合は@ObservedObjectで監視（GIF対応）
+            UserHeartbeatCardWithObservedManager(
+                userWithHeartbeat: userWithHeartbeat,
+                backgroundImageManager: manager,
+                customBackgroundImage: customBackgroundImage,
+                displayName: displayName,
+                displayBPM: displayBPM
+            )
+        } else {
+            // BackgroundImageManagerがない場合は直接表示
+            UserHeartbeatCardContent(
+                userWithHeartbeat: userWithHeartbeat,
+                backgroundImage: customBackgroundImage,
+                backgroundImageData: nil,
+                isAnimated: false,
+                displayName: displayName,
+                displayBPM: displayBPM
+            )
+        }
+    }
+}
+
+// BackgroundImageManagerを@ObservedObjectとして監視する内部ビュー（GIF対応）
+private struct UserHeartbeatCardWithObservedManager: View {
+    let userWithHeartbeat: UserWithHeartbeat?
+    @ObservedObject var backgroundImageManager: BackgroundImageManager
+    let customBackgroundImage: UIImage?
+    let displayName: String?
+    let displayBPM: String?
+
+    var body: some View {
+        UserHeartbeatCardContent(
+            userWithHeartbeat: userWithHeartbeat,
+            backgroundImage: backgroundImageManager.currentEditedImage ?? customBackgroundImage,
+            backgroundImageData: backgroundImageManager.currentImageData,
+            isAnimated: backgroundImageManager.isAnimated,
+            transform: backgroundImageManager.isAnimated
+                ? backgroundImageManager.currentTransform : nil,
+            displayName: displayName,
+            displayBPM: displayBPM
+        )
+    }
+}
+
+// カードの実際のUI実装（GIF対応）
+private struct UserHeartbeatCardContent: View {
+    @StateObject private var viewModel: UserHeartbeatCardViewModel
+    let backgroundImage: UIImage?
+    let backgroundImageData: Data?
+    let isAnimated: Bool
+    let transform: ImageTransform?
+
+    init(
+        userWithHeartbeat: UserWithHeartbeat?,
+        backgroundImage: UIImage?,
+        backgroundImageData: Data?,
+        isAnimated: Bool,
+        transform: ImageTransform? = nil,
+        displayName: String?,
+        displayBPM: String?
+    ) {
+        self.backgroundImage = backgroundImage
+        self.backgroundImageData = backgroundImageData
+        self.isAnimated = isAnimated
+        self.transform = transform
 
         if let userWithHeartbeat = userWithHeartbeat {
             self._viewModel = StateObject(
                 wrappedValue: UserHeartbeatCardViewModel(
                     userWithHeartbeat: userWithHeartbeat,
-                    customBackgroundImage: customBackgroundImage))
+                    customBackgroundImage: backgroundImage))
         } else {
             self._viewModel = StateObject(
                 wrappedValue: UserHeartbeatCardViewModel(
-                    customBackgroundImage: customBackgroundImage,
+                    customBackgroundImage: backgroundImage,
                     displayName: displayName,
                     displayBPM: displayBPM
                 )
@@ -39,24 +117,8 @@ struct UserHeartbeatCard: View {
             let heartRightOffset = CardConstants.heartRightOffset(for: cardWidth)
 
             ZStack(alignment: .bottomLeading) {
-                // 背景画像の表示
-                if let customImage = customBackgroundImage {
-                    Image(uiImage: customImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: cardWidth, height: CardConstants.cardHeight)
-                        .clipped()
-                        .cornerRadius(CardConstants.cornerRadius)
-                } else {
-                    // カード背景色（画像がない場合）
-                    RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: cardWidth, height: CardConstants.cardHeight)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
-                                .stroke(Color.white, lineWidth: 2)
-                        )
-                }
+                // 背景画像の表示（GIF・静止画対応）
+                backgroundView(cardWidth: cardWidth)
 
                 // 心拍数表示（右上）
                 ZStack {
@@ -94,6 +156,84 @@ struct UserHeartbeatCard: View {
             .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
         }
         .frame(height: CardConstants.cardHeight)
+    }
+
+    /// 背景画像ビューを生成（GIF・静止画・背景色対応）
+    @ViewBuilder
+    private func backgroundView(cardWidth: CGFloat) -> some View {
+        if let imageData = backgroundImageData, isAnimated, let transform = transform {
+            // GIFアニメーション（transform適用）
+            animatedGifBackgroundView(
+                imageData: imageData, transform: transform, cardWidth: cardWidth)
+        } else if let imageData = backgroundImageData, isAnimated {
+            // GIFアニメーション（transformなし）
+            simpleAnimatedGifView(imageData: imageData, cardWidth: cardWidth)
+        } else if let backgroundImage = backgroundImage {
+            // 静止画像（背景色は既に含まれている）
+            staticImageView(image: backgroundImage, cardWidth: cardWidth)
+        } else {
+            // デフォルト背景色
+            defaultBackgroundView(cardWidth: cardWidth)
+        }
+    }
+
+    /// GIF背景（transform適用）
+    private func animatedGifBackgroundView(
+        imageData: Data, transform: ImageTransform, cardWidth: CGFloat
+    ) -> some View {
+        ZStack {
+            // 背景色
+            if let bgColor = transform.backgroundColor {
+                RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
+                    .fill(Color(bgColor))
+            }
+
+            // GIF画像
+            AnimatedImage(data: imageData)
+                .resizable()
+                .scaledToFit()
+                .frame(width: cardWidth * 2, height: CardConstants.cardHeight * 2)
+                .scaleEffect(transform.scale)
+                .rotationEffect(Angle(degrees: transform.rotation))
+                .offset(
+                    x: transform.normalizedOffset.x * UIScreen.main.bounds.width,
+                    y: transform.normalizedOffset.y * UIScreen.main.bounds.height
+                )
+                .frame(width: cardWidth, height: CardConstants.cardHeight)
+                .clipShape(RoundedRectangle(cornerRadius: CardConstants.cornerRadius))
+        }
+        .frame(width: cardWidth, height: CardConstants.cardHeight)
+    }
+
+    /// シンプルGIF背景（transformなし）
+    private func simpleAnimatedGifView(imageData: Data, cardWidth: CGFloat) -> some View {
+        AnimatedImage(data: imageData)
+            .resizable()
+            .scaledToFit()
+            .frame(width: cardWidth, height: CardConstants.cardHeight)
+            .clipped()
+            .cornerRadius(CardConstants.cornerRadius)
+    }
+
+    /// 静止画像背景
+    private func staticImageView(image: UIImage, cardWidth: CGFloat) -> some View {
+        Image(uiImage: image)
+            .resizable()
+            .scaledToFill()
+            .frame(width: cardWidth, height: CardConstants.cardHeight)
+            .clipped()
+            .cornerRadius(CardConstants.cornerRadius)
+    }
+
+    /// デフォルト背景色
+    private func defaultBackgroundView(cardWidth: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
+            .fill(Color.gray.opacity(0.3))
+            .frame(width: cardWidth, height: CardConstants.cardHeight)
+            .overlay(
+                RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
+                    .stroke(Color.white, lineWidth: 2)
+            )
     }
 }
 

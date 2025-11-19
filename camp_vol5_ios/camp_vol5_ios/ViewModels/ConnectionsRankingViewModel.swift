@@ -15,8 +15,7 @@ class ConnectionsRankingViewModel: BaseViewModel {
     // MARK: - Private Properties
     private let userService: UserServiceProtocol
     private let pageSize: Int
-    private var currentPage = 0
-    private var allUsers: [User] = []  // 全データをキャッシュ
+    private let maxItems = 100  // 最大取得件数
 
     // MARK: - Initialization
     init(
@@ -37,15 +36,13 @@ class ConnectionsRankingViewModel: BaseViewModel {
 
         isLoading = true
         clearError()
-        currentPage = 0
-        allUsers = []
         rankingUsers = []
         hasMoreData = true
 
         let startTime = Date()
 
-        // 最大100件を取得してキャッシュ（初回ロードはキャッシュ利用）
-        userService.getMaxConnectionsRanking(limit: 100, forceRefresh: false)
+        // 最初のページを取得
+        userService.getMaxConnectionsRanking(offset: 0, limit: pageSize)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
@@ -75,8 +72,12 @@ class ConnectionsRankingViewModel: BaseViewModel {
                 receiveValue: { [weak self] users in
                     guard let self = self else { return }
 
-                    self.allUsers = users
-                    self.loadNextPage()
+                    self.rankingUsers = users
+
+                    // データが取得件数未満なら、これ以上データがない
+                    if users.count < self.pageSize {
+                        self.hasMoreData = false
+                    }
 
                     // 取得件数をメトリクスに記録
                     if let trace = trace {
@@ -87,7 +88,7 @@ class ConnectionsRankingViewModel: BaseViewModel {
                         )
                     }
 
-                    print("✅ ランキング取得成功: \(users.count)件（初回表示: \(self.rankingUsers.count)件）")
+                    print("✅ ランキング取得成功: \(users.count)件")
                 }
             )
             .store(in: &cancellables)
@@ -97,26 +98,51 @@ class ConnectionsRankingViewModel: BaseViewModel {
     func loadNextPage() {
         guard hasMoreData, !isLoadingMore else { return }
 
-        let startIndex = currentPage * pageSize
-        let endIndex = min(startIndex + pageSize, allUsers.count)
-
-        guard startIndex < allUsers.count else {
+        // 最大件数に達したらロードしない
+        if rankingUsers.count >= maxItems {
             hasMoreData = false
             return
         }
 
-        let nextPageUsers = Array(allUsers[startIndex..<endIndex])
-        rankingUsers.append(contentsOf: nextPageUsers)
-        currentPage += 1
+        isLoadingMore = true
 
-        // 全データを表示し終わったか確認
-        if rankingUsers.count >= allUsers.count {
-            hasMoreData = false
-        }
+        let offset = rankingUsers.count
+        let limit = min(pageSize, maxItems - offset)
 
-        print(
-            "📄 ページ\(currentPage)読み込み: \(nextPageUsers.count)件追加（合計: \(rankingUsers.count)/\(allUsers.count)件）"
-        )
+        print("📄 次のページを読み込み中: offset=\(offset), limit=\(limit)")
+
+        userService.getMaxConnectionsRanking(offset: offset, limit: limit)
+            .receive(on: DispatchQueue.main)
+            .sink(
+                receiveCompletion: { [weak self] completion in
+                    self?.isLoadingMore = false
+
+                    if case let .failure(error) = completion {
+                        self?.handleError(error)
+                        print("❌ 次のページ読み込みエラー: \(error.localizedDescription)")
+                    }
+                },
+                receiveValue: { [weak self] users in
+                    guard let self = self else { return }
+
+                    self.rankingUsers.append(contentsOf: users)
+
+                    // データが取得件数未満なら、これ以上データがない
+                    if users.count < limit {
+                        self.hasMoreData = false
+                    }
+
+                    // 最大件数に達したか確認
+                    if self.rankingUsers.count >= self.maxItems {
+                        self.hasMoreData = false
+                    }
+
+                    print(
+                        "✅ 次のページ読み込み成功: \(users.count)件追加（合計: \(self.rankingUsers.count)件）"
+                    )
+                }
+            )
+            .store(in: &cancellables)
     }
 
     /// スクロールで追加読み込みをトリガー
@@ -134,22 +160,20 @@ class ConnectionsRankingViewModel: BaseViewModel {
         }
     }
 
-    /// リフレッシュ（強制的に最新データを取得）
+    /// リフレッシュ（最新データを取得）
     func refresh() {
         let trace = PerformanceMonitor.shared.startTrace(
             PerformanceMonitor.UITrace.loadConnectionsRanking)
 
         isLoading = true
         clearError()
-        currentPage = 0
-        allUsers = []
         rankingUsers = []
         hasMoreData = true
 
         let startTime = Date()
 
-        // 強制リフレッシュ：キャッシュをスキップして最新データを取得
-        userService.getMaxConnectionsRanking(limit: 100, forceRefresh: true)
+        // 最初のページを取得
+        userService.getMaxConnectionsRanking(offset: 0, limit: pageSize)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
@@ -178,8 +202,12 @@ class ConnectionsRankingViewModel: BaseViewModel {
                 receiveValue: { [weak self] users in
                     guard let self = self else { return }
 
-                    self.allUsers = users
-                    self.loadNextPage()
+                    self.rankingUsers = users
+
+                    // データが取得件数未満なら、これ以上データがない
+                    if users.count < self.pageSize {
+                        self.hasMoreData = false
+                    }
 
                     if let trace = trace {
                         PerformanceMonitor.shared.setAttribute(
@@ -189,7 +217,7 @@ class ConnectionsRankingViewModel: BaseViewModel {
                         )
                     }
 
-                    print("🔄 ランキングリフレッシュ成功: \(users.count)件（初回表示: \(self.rankingUsers.count)件）")
+                    print("🔄 ランキングリフレッシュ成功: \(users.count)件")
                 }
             )
             .store(in: &cancellables)

@@ -164,7 +164,17 @@ struct AccountDeletionConfirmationSection: View {
                 .foregroundColor(.secondary)
 
             TextField("ここに入力", text: $confirmationText)
-                .textFieldStyle(ModernTextFieldStyle())
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6).opacity(0.5))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray4).opacity(0.5), lineWidth: 1)
+                )
+                .font(.body)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
         }
