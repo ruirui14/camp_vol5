@@ -1,4 +1,4 @@
-// Views/Components/GifPhotoPickerView.swift
+// Views/HeartbeatDetail/GifPhotoPickerView.swift
 // GIF対応のフォトピッカー - PHPickerViewControllerをラップ
 // 通常の画像とGIFアニメーションの両方を選択可能
 

@@ -1,4 +1,4 @@
-// Views/Components/StreamWebViewWrapper.swift
+// Views/HeartbeatDetail/Stream/StreamWebViewWrapper.swift
 // YouTubePlayerKitを使用したYouTube動画再生ラッパー
 // YouTube動画をフルスクリーンで再生し、テキストオーバーレイをサポート
 // YouTube IFrame Player APIの制限を回避し、安定した動画再生を実現

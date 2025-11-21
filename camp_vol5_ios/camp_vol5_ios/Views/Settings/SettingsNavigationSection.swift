@@ -1,4 +1,4 @@
-// Views/Components/SettingsNavigationSection.swift
+// Views/Settings/SettingsNavigationSection.swift
 // 設定画面のナビゲーションセクションコンポーネント - 各設定項目への導線を提供
 // SwiftUIベストプラクティスに従い、ナビゲーション要素を集約
 

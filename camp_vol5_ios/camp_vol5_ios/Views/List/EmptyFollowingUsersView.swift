@@ -1,4 +1,4 @@
-// Views/Components/EmptyFollowingUsersView.swift
+// Views/List/EmptyFollowingUsersView.swift
 // フォローユーザーが空の場合の表示コンポーネント - ユーザー追加を促すUI
 // SwiftUIベストプラクティスに従い、アクションを外部に委譲
 

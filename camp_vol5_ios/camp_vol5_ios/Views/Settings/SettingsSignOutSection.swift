@@ -1,4 +1,4 @@
-// Views/Components/SettingsSignOutSection.swift
+// Views/Settings/SettingsSignOutSection.swift
 // 設定画面のサインアウトセクションコンポーネント - サインアウト機能を提供
 // SwiftUIベストプラクティスに従い、アクションを外部に委譲
 

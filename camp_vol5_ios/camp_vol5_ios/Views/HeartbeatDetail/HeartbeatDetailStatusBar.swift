@@ -1,4 +1,4 @@
-// Views/Components/HeartbeatDetailStatusBar.swift
+// Views/HeartbeatDetail/HeartbeatDetailStatusBar.swift
 // 心拍詳細画面のステータス表示コンポーネント - 振動状態、自動ロック状態、最終更新時刻を表示
 // SwiftUIベストプラクティスに従い、単一責任の原則を適用
 // モダンなグラスモルフィズムデザインを採用

@@ -1,4 +1,4 @@
-// Views/Components/SettingsToolbar.swift
+// Views/Settings/SettingsToolbar.swift
 // 設定画面のツールバーコンポーネント - ナビゲーションバーのカスタマイズを提供
 // SwiftUIベストプラクティスに従い、プレゼンテーション制御を外部に委譲
 

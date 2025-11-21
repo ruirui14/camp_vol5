@@ -1,4 +1,4 @@
-// Views/Components/FollowingUsersListView.swift
+// Views/List/FollowingUsersListView.swift
 // フォローユーザー一覧表示コンポーネント - ユーザーカードのリスト表示を担当
 // SwiftUIベストプラクティスに従い、アクションを外部に委譲
 

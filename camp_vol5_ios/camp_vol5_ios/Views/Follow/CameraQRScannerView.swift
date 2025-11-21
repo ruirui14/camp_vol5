@@ -1,4 +1,4 @@
-// Views/Components/CameraQRScannerView.swift
+// Views/Follow/CameraQRScannerView.swift
 
 import AVFoundation
 import SwiftUI
