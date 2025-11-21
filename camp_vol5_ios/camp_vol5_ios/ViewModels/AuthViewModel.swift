@@ -92,28 +92,6 @@ class AuthViewModel: BaseViewModel {
         authenticationManager.signInAnonymously()
     }
 
-    func showEmailAuthModal() {
-        if selectedAuthMethod == .email {
-            // 既に選択されている場合は閉じる
-            selectedAuthMethod = .none
-        } else {
-            // メール認証を選択
-            selectedAuthMethod = .email
-        }
-        authenticationManager.selectedAuthMethod = "email"
-    }
-
-    func dismissEmailAuth() {
-        selectedAuthMethod = .none
-        // フォームをリセット
-        email = ""
-        password = ""
-        confirmPassword = ""
-        isSignUp = false
-        showPassword = false
-        showConfirmPassword = false
-    }
-
     // MARK: - Email Authentication
 
     func toggleAuthMode() {
