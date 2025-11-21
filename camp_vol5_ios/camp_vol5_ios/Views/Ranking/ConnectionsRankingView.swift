@@ -19,7 +19,7 @@ struct ConnectionsRankingView: View {
         GeometryReader { geometry in
             Group {
                 if viewModel.isLoading {
-                    ProgressView("読み込み中...")
+                    RankingSkeletonList()
                 } else if let errorMessage = viewModel.errorMessage {
                     VStack(spacing: 16) {
                         Text("エラー")
@@ -215,19 +215,184 @@ struct RankingRow: View {
     }
 }
 
-#Preview {
-    let authManager = AuthenticationManager()
-    let userService = UserService.shared
-    let heartbeatService = HeartbeatService.shared
-    let vibrationService = VibrationService.shared
+#Preview("ランキング表示") {
+    RankingPreviewContainer()
+}
 
-    let factory = ViewModelFactory(
-        authenticationManager: authManager,
-        userService: userService,
-        heartbeatService: heartbeatService,
-        vibrationService: vibrationService
-    )
+#Preview("スケルトン表示") {
+    RankingSkeletonList()
+        .background(Color(.systemGroupedBackground))
+}
 
-    return ConnectionsRankingView(viewModelFactory: factory)
-        .environmentObject(factory)
+// MARK: - Preview Helper
+
+struct RankingPreviewContainer: View {
+    @StateObject private var viewModel = MockConnectionsRankingViewModel()
+
+    var body: some View {
+        NavigationView {
+            GeometryReader { geometry in
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(Array(viewModel.rankingUsers.enumerated()), id: \.element.id) {
+                            index, user in
+                            RankingRow(rank: index + 1, user: user)
+                        }
+                    }
+                    .padding()
+                }
+                .background(Color(.systemGroupedBackground).ignoresSafeArea())
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(.hidden, for: .navigationBar)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {}) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "chevron.left")
+                                Text("戻る")
+                            }
+                        }
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                    }
+
+                    ToolbarItem(placement: .principal) {
+                        VStack(spacing: 0) {
+                            Text("同接ランキング")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                            Text("TOP 100")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                    }
+
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+                .overlay(alignment: .top) {
+                    NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Mock ViewModel
+
+class MockConnectionsRankingViewModel: ObservableObject {
+    @Published var rankingUsers: [User] = []
+
+    init() {
+        // モックデータを作成（10位まで）
+        rankingUsers = [
+            User(
+                id: "user1",
+                name: "田中太郎",
+                inviteCode: "CODE1",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 150,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-3600)
+            ),
+            User(
+                id: "user2",
+                name: "佐藤花子",
+                inviteCode: "CODE2",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 142,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-7200)
+            ),
+            User(
+                id: "user3",
+                name: "鈴木一郎",
+                inviteCode: "CODE3",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 138,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-10800)
+            ),
+            User(
+                id: "user4",
+                name: "高橋美咲",
+                inviteCode: "CODE4",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 125,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-14400)
+            ),
+            User(
+                id: "user5",
+                name: "伊藤健太",
+                inviteCode: "CODE5",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 118,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-18000)
+            ),
+            User(
+                id: "user6",
+                name: "渡辺愛",
+                inviteCode: "CODE6",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 112,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-21600)
+            ),
+            User(
+                id: "user7",
+                name: "山本大輔",
+                inviteCode: "CODE7",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 105,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-25200)
+            ),
+            User(
+                id: "user8",
+                name: "中村さくら",
+                inviteCode: "CODE8",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 98,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-28800)
+            ),
+            User(
+                id: "user9",
+                name: "小林翔太",
+                inviteCode: "CODE9",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 92,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-32400)
+            ),
+            User(
+                id: "user10",
+                name: "加藤結衣",
+                inviteCode: "CODE10",
+                allowQRRegistration: true,
+                createdAt: Date(),
+                updatedAt: Date(),
+                maxConnections: 87,
+                maxConnectionsUpdatedAt: Date().addingTimeInterval(-36000)
+            ),
+        ]
+    }
 }
