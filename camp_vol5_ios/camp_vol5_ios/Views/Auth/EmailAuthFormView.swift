@@ -52,50 +52,64 @@ private struct EmailVerificationView: View {
             }
 
             // ボタン
-            HStack(spacing: 12) {
-                Button(action: {
-                    viewModel.checkEmailVerification()
-                }) {
-                    HStack(spacing: 6) {
-                        if viewModel.isAnonymousLoading {
-                            ProgressView()
-                                .tint(.white)
-                                .scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill")
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    Button(action: {
+                        viewModel.checkEmailVerification()
+                    }) {
+                        HStack(spacing: 6) {
+                            if viewModel.isAnonymousLoading {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.callout)
+                            }
+                            Text("確認完了")
                                 .font(.callout)
+                                .fontWeight(.semibold)
                         }
-                        Text("確認完了")
-                            .font(.callout)
-                            .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.25))
+                        )
+                        .foregroundColor(.white)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.25))
-                    )
-                    .foregroundColor(.white)
-                }
-                .disabled(authenticationManager.isLoading)
+                    .disabled(authenticationManager.isLoading)
 
-                Button(action: {
-                    viewModel.sendVerificationEmail()
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.callout)
-                        Text("再送信")
-                            .font(.callout)
-                            .fontWeight(.semibold)
+                    Button(action: {
+                        viewModel.sendVerificationEmail()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.callout)
+                            Text("再送信")
+                                .font(.callout)
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.25))
+                        )
+                        .foregroundColor(.white)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.25))
-                    )
-                    .foregroundColor(.white)
+                    .disabled(authenticationManager.isLoading)
+                }
+
+                // 別のメールアドレスで登録
+                Button(action: {
+                    viewModel.toggleEmailVerification()
+                }) {
+                    Text("別のメールアドレスで登録")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .underline()
                 }
                 .disabled(authenticationManager.isLoading)
             }
@@ -195,28 +209,56 @@ private struct AuthenticationFormView: View {
                 .opacity(viewModel.isFormValid ? 1.0 : 0.6)
 
                 // サブボタン（小さめ）
-                HStack(spacing: 16) {
-                    Button(action: {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                            viewModel.toggleAuthMode()
+                VStack(spacing: 12) {
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                viewModel.toggleAuthMode()
+                            }
+                        }) {
+                            Text(viewModel.isSignUp ? "既存のアカウントでサインイン" : "新しいアカウントを作成")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .underline()
                         }
-                    }) {
-                        Text(viewModel.isSignUp ? "既存のアカウントでサインイン" : "新しいアカウントを作成")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                            .underline()
+
+                        if !viewModel.isSignUp {
+                            Button(action: {
+                                viewModel.showPasswordResetSheet()
+                            }) {
+                                Text("パスワードを忘れた")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .underline()
+                            }
+                        }
                     }
 
-                    if !viewModel.isSignUp {
+                    // メール確認待ちユーザーの場合、確認画面に戻るボタンを表示
+                    if viewModel.hasUnverifiedEmailUser {
                         Button(action: {
-                            viewModel.showPasswordResetSheet()
+                            viewModel.toggleEmailVerification()
                         }) {
-                            Text("パスワードを忘れた")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(.white.opacity(0.9))
-                                .underline()
+                            HStack(spacing: 8) {
+                                Image(systemName: "envelope.badge.shield.half.filled")
+                                    .font(.callout)
+                                Text("メール確認画面に戻る")
+                                    .font(.callout)
+                                    .fontWeight(.semibold)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.yellow.opacity(0.7))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color(hex: "FFD93D").opacity(0.5), lineWidth: 1)
+                            )
+                            .foregroundColor(.white)
                         }
                     }
                 }
@@ -269,5 +311,38 @@ private struct AuthenticationFormView: View {
             }
         }
         .padding(.horizontal, 8)
+    }
+}
+
+// MARK: - Preview
+
+#Preview("Authentication Form") {
+    ZStack {
+        LinearGradient(
+            colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+
+        EmailAuthFormView(viewModel: AuthViewModel())
+            .environmentObject(AuthenticationManager())
+    }
+}
+
+#Preview("Email Verification") {
+    let authManager = AuthenticationManager()
+    authManager.needsEmailVerification = true
+
+    return ZStack {
+        LinearGradient(
+            colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+
+        EmailAuthFormView(viewModel: AuthViewModel(authenticationManager: authManager))
+            .environmentObject(authManager)
     }
 }

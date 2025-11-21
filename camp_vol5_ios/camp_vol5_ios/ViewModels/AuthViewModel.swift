@@ -159,6 +159,10 @@ class AuthViewModel: BaseViewModel {
         authenticationManager.reloadUserAndCheckVerification()
     }
 
+    func toggleEmailVerification() {
+        authenticationManager.toggleEmailVerification()
+    }
+
     // MARK: - Password Reset
 
     func showPasswordResetSheet() {
@@ -231,5 +235,9 @@ class AuthViewModel: BaseViewModel {
         } else {
             return !email.isEmpty && !password.isEmpty
         }
+    }
+
+    var hasUnverifiedEmailUser: Bool {
+        authenticationManager.hasUnverifiedEmailUser
     }
 }

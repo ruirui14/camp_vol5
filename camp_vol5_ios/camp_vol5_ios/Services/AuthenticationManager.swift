@@ -551,6 +551,19 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
         }
     }
 
+    /// メール確認画面とフォーム画面を切り替える
+    func toggleEmailVerification() {
+        needsEmailVerification.toggle()
+        errorMessage = nil
+    }
+
+    /// メール未確認のユーザーが存在するかどうか
+    var hasUnverifiedEmailUser: Bool {
+        guard let firebaseUser = user else { return false }
+        return !firebaseUser.isEmailVerified
+            && firebaseUser.providerData.contains(where: { $0.providerID == "password" })
+    }
+
     /// パスワードリセットメールを送信
     /// - Parameter email: リセットするメールアドレス
     func sendPasswordResetEmail(email: String) {
