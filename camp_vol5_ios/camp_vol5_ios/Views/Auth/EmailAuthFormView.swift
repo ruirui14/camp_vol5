@@ -45,61 +45,39 @@ private struct EmailVerificationView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.white)
 
-                Text("登録したメールアドレスに確認メールを送信しました。")
+                Text("登録したメールアドレスに確認メールを送信しました。\nメール内のリンクをタップしてください。")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.9))
                     .multilineTextAlignment(.center)
+
+                Text("確認後、アプリに戻ると自動的に認証が完了します。")
+                    .font(.caption2)
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
             }
 
             // ボタン
             VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    Button(action: {
-                        viewModel.checkEmailVerification()
-                    }) {
-                        HStack(spacing: 6) {
-                            if viewModel.isAnonymousLoading {
-                                ProgressView()
-                                    .tint(.white)
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.callout)
-                            }
-                            Text("確認完了")
-                                .font(.callout)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.25))
-                        )
-                        .foregroundColor(.white)
+                Button(action: {
+                    viewModel.sendVerificationEmail()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.callout)
+                        Text("確認メールを再送信")
+                            .font(.callout)
+                            .fontWeight(.semibold)
                     }
-                    .disabled(authenticationManager.isLoading)
-
-                    Button(action: {
-                        viewModel.sendVerificationEmail()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.callout)
-                            Text("再送信")
-                                .font(.callout)
-                                .fontWeight(.semibold)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.25))
-                        )
-                        .foregroundColor(.white)
-                    }
-                    .disabled(authenticationManager.isLoading)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.25))
+                    )
+                    .foregroundColor(.white)
                 }
+                .disabled(authenticationManager.isLoading)
 
                 // 別のメールアドレスで登録
                 Button(action: {
