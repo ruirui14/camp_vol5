@@ -8,17 +8,15 @@ import Foundation
 import SwiftUI
 
 @MainActor
-class HeartbeatDetailViewModel: ObservableObject {
+class HeartbeatDetailViewModel: BaseViewModel {
     // MARK: - Published Properties
     @Published var user: User?
     @Published var currentHeartbeat: Heartbeat?
     @Published var isMonitoring: Bool = false
-    @Published var errorMessage: String?
     @Published var isSleepMode: Bool = false
 
     // MARK: - Private Properties
     private let userId: String
-    private var cancellables = Set<AnyCancellable>()
     private var heartbeatSubscription: AnyCancellable?
 
     // MARK: - Dependencies
@@ -47,6 +45,8 @@ class HeartbeatDetailViewModel: ObservableObject {
         self.userService = userService
         self.heartbeatService = heartbeatService
         self.vibrationService = vibrationService ?? VibrationService.shared
+
+        super.init()
 
         print("HeartbeatDetailViewModel init with userId: \(userId)")
         loadUserInfo()
@@ -170,14 +170,6 @@ class HeartbeatDetailViewModel: ObservableObject {
 
     private func disableVibration() {
         vibrationService.stopVibration()
-    }
-
-    private func handleError(_ error: Error) {
-        errorMessage = error.localizedDescription
-    }
-
-    func clearError() {
-        errorMessage = nil
     }
 
     // MARK: - Lifecycle
