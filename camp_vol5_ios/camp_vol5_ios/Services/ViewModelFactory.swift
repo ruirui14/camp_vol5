@@ -14,6 +14,8 @@ class ViewModelFactory: ObservableObject {
     private let userService: UserServiceProtocol
     private let heartbeatService: HeartbeatServiceProtocol
     private let vibrationService: any VibrationServiceProtocol
+    private let autoLockManager: AutoLockManager
+    private let orientationManager: DeviceOrientationManager
 
     // MARK: - Initialization
 
@@ -21,12 +23,16 @@ class ViewModelFactory: ObservableObject {
         authenticationManager: AuthenticationManager,
         userService: UserServiceProtocol,
         heartbeatService: HeartbeatServiceProtocol,
-        vibrationService: any VibrationServiceProtocol
+        vibrationService: any VibrationServiceProtocol,
+        autoLockManager: AutoLockManager = AutoLockManager.shared,
+        orientationManager: DeviceOrientationManager = DeviceOrientationManager.shared
     ) {
         self.authenticationManager = authenticationManager
         self.userService = userService
         self.heartbeatService = heartbeatService
         self.vibrationService = vibrationService
+        self.autoLockManager = autoLockManager
+        self.orientationManager = orientationManager
     }
 
     // MARK: - Factory Methods
@@ -69,7 +75,9 @@ class ViewModelFactory: ObservableObject {
             userId: userId,
             userService: userService,
             heartbeatService: heartbeatService,
-            vibrationService: vibrationService
+            vibrationService: vibrationService,
+            autoLockManager: autoLockManager,
+            orientationManager: orientationManager
         )
     }
 

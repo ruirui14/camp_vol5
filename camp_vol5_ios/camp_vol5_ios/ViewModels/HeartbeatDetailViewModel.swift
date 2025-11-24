@@ -23,6 +23,8 @@ class HeartbeatDetailViewModel: BaseViewModel {
     private let userService: UserServiceProtocol
     private let heartbeatService: HeartbeatServiceProtocol
     private let vibrationService: any VibrationServiceProtocol
+    let autoLockManager: AutoLockManager
+    let orientationManager: DeviceOrientationManager
 
     // MARK: - Computed Properties
     var hasValidHeartbeat: Bool {
@@ -34,17 +36,35 @@ class HeartbeatDetailViewModel: BaseViewModel {
         vibrationService.isEnabled
     }
 
+    var isVibrating: Bool {
+        vibrationService.isVibrating
+    }
+
+    var vibrationStatus: String {
+        if !vibrationService.isEnabled {
+            return "オフ"
+        } else if vibrationService.isVibrating {
+            return "アクティブ"
+        } else {
+            return "待機中"
+        }
+    }
+
     // MARK: - Initialization
     init(
         userId: String,
         userService: UserServiceProtocol = UserService.shared,
         heartbeatService: HeartbeatServiceProtocol = HeartbeatService.shared,
-        vibrationService: (any VibrationServiceProtocol)? = nil
+        vibrationService: (any VibrationServiceProtocol)? = nil,
+        autoLockManager: AutoLockManager = AutoLockManager.shared,
+        orientationManager: DeviceOrientationManager = DeviceOrientationManager.shared
     ) {
         self.userId = userId
         self.userService = userService
         self.heartbeatService = heartbeatService
         self.vibrationService = vibrationService ?? VibrationService.shared
+        self.autoLockManager = autoLockManager
+        self.orientationManager = orientationManager
 
         super.init()
 
@@ -80,6 +100,18 @@ class HeartbeatDetailViewModel: BaseViewModel {
 
     func refreshData() {
         refreshHeartbeat()
+    }
+
+    func stopVibration() {
+        vibrationService.stopVibration()
+    }
+
+    func isValidBPM(_ bpm: Int) -> Bool {
+        vibrationService.isValidBPM(bpm)
+    }
+
+    func startHeartbeatVibration(bpm: Int) {
+        vibrationService.startHeartbeatVibration(bpm: bpm)
     }
 
     // MARK: - Private Methods

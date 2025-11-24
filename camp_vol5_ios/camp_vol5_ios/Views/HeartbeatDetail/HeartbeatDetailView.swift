@@ -14,9 +14,6 @@ struct ImageWrapper: Identifiable {
 struct HeartbeatDetailView: View {
     // MARK: - ViewModels & Services
     @StateObject private var viewModel: HeartbeatDetailViewModel
-    @ObservedObject private var vibrationService = VibrationService.shared
-    @StateObject private var autoLockManager = AutoLockManager.shared
-    @StateObject private var orientationManager = DeviceOrientationManager.shared
 
     // MARK: - Environment & Presentation
     @Environment(\.presentationMode) var presentationMode
@@ -96,10 +93,10 @@ struct HeartbeatDetailView: View {
                     // ステータス表示コンポーネント
                     HeartbeatDetailStatusBar(
                         isVibrationEnabled: viewModel.isVibrationEnabled,
-                        isVibrating: vibrationService.isVibrating,
-                        vibrationStatus: vibrationService.getVibrationStatus(),
-                        autoLockDisabled: autoLockManager.autoLockDisabled,
-                        remainingTime: autoLockManager.remainingTime,
+                        isVibrating: viewModel.isVibrating,
+                        vibrationStatus: viewModel.vibrationStatus,
+                        autoLockDisabled: viewModel.autoLockManager.autoLockDisabled,
+                        remainingTime: viewModel.autoLockManager.remainingTime,
                         isSleepMode: viewModel.isSleepMode,
                         heartbeat: viewModel.currentHeartbeat
                     )
@@ -168,11 +165,11 @@ struct HeartbeatDetailView: View {
                         showingStreamView = true
                     },
                     onEditCardBackground: {
-                        vibrationService.stopVibration()
+                        viewModel.stopVibration()
                         showingCardBackgroundEditSheet = true
                     },
                     onEditBackgroundImage: {
-                        vibrationService.stopVibration()
+                        viewModel.stopVibration()
                         showingImageEditor = true
                     },
                     onResetBackgroundImage: {
@@ -191,7 +188,7 @@ struct HeartbeatDetailView: View {
         .onChange(of: viewModel.isSleepMode) {
             updateSystemUIVisibility()
         }
-        .onChange(of: orientationManager.isFaceDown) { _, isFaceDown in
+        .onChange(of: viewModel.orientationManager.isFaceDown) { _, isFaceDown in
             handleOrientationChange(isFaceDown: isFaceDown)
         }
         .fullScreenCover(
@@ -262,7 +259,7 @@ struct HeartbeatDetailView: View {
         loadPersistedData()
         loadSavedBackgroundColor()
         setupAutoLock()
-        orientationManager.startMonitoring()
+        viewModel.orientationManager.startMonitoring()
     }
 
     private func teardownView() {
@@ -271,8 +268,8 @@ struct HeartbeatDetailView: View {
         if !showingStreamView {
             viewModel.stopMonitoring()
         }
-        autoLockManager.disableAutoLockDisabling()
-        orientationManager.stopMonitoring()
+        viewModel.autoLockManager.disableAutoLockDisabling()
+        viewModel.orientationManager.stopMonitoring()
     }
 
     private func updateSystemUIVisibility() {
@@ -285,8 +282,8 @@ struct HeartbeatDetailView: View {
     }
 
     private func setupAutoLock() {
-        if autoLockManager.autoLockDisabled {
-            autoLockManager.enableAutoLockDisabling()
+        if viewModel.autoLockManager.autoLockDisabled {
+            viewModel.autoLockManager.enableAutoLockDisabling()
         }
     }
 
@@ -313,7 +310,7 @@ struct HeartbeatDetailView: View {
 
     private func handleOrientationChange(isFaceDown: Bool) {
         // 自動スリープが有効で、まだスリープモードでない場合のみ自動でスリープモードに移行
-        if isFaceDown && orientationManager.autoSleepEnabled && !viewModel.isSleepMode {
+        if isFaceDown && viewModel.orientationManager.autoSleepEnabled && !viewModel.isSleepMode {
             viewModel.toggleSleepMode()
             updateSystemUIVisibility()
         }
@@ -349,8 +346,8 @@ struct HeartbeatDetailView: View {
 
         // 振動を再開
         if viewModel.isVibrationEnabled, let heartbeat = viewModel.currentHeartbeat {
-            if vibrationService.isValidBPM(heartbeat.bpm) {
-                vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
+            if viewModel.isValidBPM(heartbeat.bpm) {
+                viewModel.startHeartbeatVibration(bpm: heartbeat.bpm)
             }
         }
     }
