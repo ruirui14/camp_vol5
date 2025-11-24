@@ -36,7 +36,7 @@ opt_in_rules:
   - overridden_super_call
   - private_outlet
   - prohibited_super_call
-  - redundant_nil_coalescing
+  # - redundant_nil_coalescing  # Dictionary[Key]??の場合に必要なため無効化
   - sorted_first_last
   - toggle_bool
   - unneeded_parentheses_in_closure_argument
@@ -54,6 +54,7 @@ disabled_rules:
   - closure_parameter_position # swift-formatと競合するため無効化
   - opening_brace # swift-formatと競合するため無効化
   - blanket_disable_command # 大きなファイルで包括的な無効化が必要なため
+  - redundant_nil_coalescing # Dictionary[Key]??の場合に ?? nil が必要なため
 
 # ルールのカスタマイズ
 line_length:

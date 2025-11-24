@@ -283,7 +283,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
                         userFollowerPairs.map { user, follower in
                             UserWithHeartbeat(
                                 user: user,
-                                heartbeat: heartbeatsDict[user.id],
+                                heartbeat: heartbeatsDict[user.id] ?? nil,
                                 notificationEnabled: follower?.notificationEnabled ?? true
                             )
                         }
