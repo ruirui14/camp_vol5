@@ -31,67 +31,7 @@ class ConnectionsRankingViewModel: BaseViewModel {
 
     /// 初回ランキング読み込み
     func loadRanking() {
-        let trace = PerformanceMonitor.shared.startTrace(
-            PerformanceMonitor.UITrace.loadConnectionsRanking)
-
-        isLoading = true
-        clearError()
-        rankingUsers = []
-        hasMoreData = true
-
-        let startTime = Date()
-
-        // 最初のページを取得
-        userService.getMaxConnectionsRanking(offset: 0, limit: pageSize)
-            .receive(on: DispatchQueue.main)
-            .sink(
-                receiveCompletion: { [weak self] completion in
-                    self?.isLoading = false
-
-                    // UI読み込み時間を記録
-                    let loadDuration = Date().timeIntervalSince(startTime)
-                    if let trace = trace {
-                        PerformanceMonitor.shared.incrementMetric(
-                            trace,
-                            key: "ui_load_duration_ms",
-                            by: Int64(loadDuration * 1000)
-                        )
-                    }
-
-                    PerformanceMonitor.shared.stopTrace(trace)
-
-                    if case let .failure(error) = completion {
-                        self?.handleError(error)
-                        print("❌ ランキング画面読み込みエラー: \(error.localizedDescription)")
-                    } else {
-                        print(
-                            "✅ ランキング画面読み込み完了 (所要時間: \(String(format: "%.2f", loadDuration * 1000))ms)"
-                        )
-                    }
-                },
-                receiveValue: { [weak self] users in
-                    guard let self = self else { return }
-
-                    self.rankingUsers = users
-
-                    // データが取得件数未満なら、これ以上データがない
-                    if users.count < self.pageSize {
-                        self.hasMoreData = false
-                    }
-
-                    // 取得件数をメトリクスに記録
-                    if let trace = trace {
-                        PerformanceMonitor.shared.setAttribute(
-                            trace,
-                            key: "result_count",
-                            value: String(users.count)
-                        )
-                    }
-
-                    print("✅ ランキング取得成功: \(users.count)件")
-                }
-            )
-            .store(in: &cancellables)
+        loadRankingData(action: "初回読み込み")
     }
 
     /// 次のページを読み込む
@@ -162,6 +102,13 @@ class ConnectionsRankingViewModel: BaseViewModel {
 
     /// リフレッシュ（最新データを取得）
     func refresh() {
+        loadRankingData(action: "リフレッシュ")
+    }
+
+    // MARK: - Private Methods
+
+    /// ランキングデータの共通読み込みロジック
+    private func loadRankingData(action: String) {
         let trace = PerformanceMonitor.shared.startTrace(
             PerformanceMonitor.UITrace.loadConnectionsRanking)
 
@@ -179,6 +126,7 @@ class ConnectionsRankingViewModel: BaseViewModel {
                 receiveCompletion: { [weak self] completion in
                     self?.isLoading = false
 
+                    // UI読み込み時間を記録
                     let loadDuration = Date().timeIntervalSince(startTime)
                     if let trace = trace {
                         PerformanceMonitor.shared.incrementMetric(
@@ -192,10 +140,10 @@ class ConnectionsRankingViewModel: BaseViewModel {
 
                     if case let .failure(error) = completion {
                         self?.handleError(error)
-                        print("❌ ランキングリフレッシュエラー: \(error.localizedDescription)")
+                        print("❌ ランキング\(action)エラー: \(error.localizedDescription)")
                     } else {
                         print(
-                            "✅ ランキングリフレッシュ完了 (所要時間: \(String(format: "%.2f", loadDuration * 1000))ms)"
+                            "✅ ランキング\(action)完了 (所要時間: \(String(format: "%.2f", loadDuration * 1000))ms)"
                         )
                     }
                 },
@@ -209,6 +157,7 @@ class ConnectionsRankingViewModel: BaseViewModel {
                         self.hasMoreData = false
                     }
 
+                    // 取得件数をメトリクスに記録
                     if let trace = trace {
                         PerformanceMonitor.shared.setAttribute(
                             trace,
@@ -217,7 +166,7 @@ class ConnectionsRankingViewModel: BaseViewModel {
                         )
                     }
 
-                    print("🔄 ランキングリフレッシュ成功: \(users.count)件")
+                    print("✅ ランキング\(action)成功: \(users.count)件")
                 }
             )
             .store(in: &cancellables)

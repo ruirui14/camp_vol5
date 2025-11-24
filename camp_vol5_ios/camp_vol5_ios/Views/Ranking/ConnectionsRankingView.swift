@@ -125,6 +125,49 @@ struct RankingRow: View {
     let rank: Int
     let user: User
 
+    // MARK: - Static Date Formatter
+    private static let relativeDateFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.unitsStyle = .full
+        return formatter
+    }()
+
+    // MARK: - Cached Properties
+    private let rankFontSize: CGFloat
+    private let rankColor: Color
+    private let medalIcon: String
+    private let medalColor: Color
+
+    init(rank: Int, user: User) {
+        self.rank = rank
+        self.user = user
+
+        // 計算プロパティの結果をキャッシュ
+        switch rank {
+        case 1:
+            self.rankFontSize = 32
+            self.rankColor = .yellow
+            self.medalIcon = "medal.fill"
+            self.medalColor = .yellow
+        case 2:
+            self.rankFontSize = 28
+            self.rankColor = Color(red: 0.75, green: 0.75, blue: 0.75)
+            self.medalIcon = "medal.fill"
+            self.medalColor = Color(red: 0.75, green: 0.75, blue: 0.75)
+        case 3:
+            self.rankFontSize = 24
+            self.rankColor = Color(red: 0.8, green: 0.5, blue: 0.2)
+            self.medalIcon = "medal.fill"
+            self.medalColor = Color(red: 0.8, green: 0.5, blue: 0.2)
+        default:
+            self.rankFontSize = 20
+            self.rankColor = .primary
+            self.medalIcon = ""
+            self.medalColor = .clear
+        }
+    }
+
     var body: some View {
         HStack(spacing: 16) {
             // ランク表示
@@ -171,47 +214,8 @@ struct RankingRow: View {
         )
     }
 
-    private var rankFontSize: CGFloat {
-        switch rank {
-        case 1: return 32
-        case 2: return 28
-        case 3: return 24
-        default: return 20
-        }
-    }
-
-    private var rankColor: Color {
-        switch rank {
-        case 1: return .yellow
-        case 2: return Color(red: 0.75, green: 0.75, blue: 0.75)  // Silver
-        case 3: return Color(red: 0.8, green: 0.5, blue: 0.2)  // Bronze
-        default: return .primary
-        }
-    }
-
-    private var medalIcon: String {
-        switch rank {
-        case 1: return "medal.fill"
-        case 2: return "medal.fill"
-        case 3: return "medal.fill"
-        default: return ""
-        }
-    }
-
-    private var medalColor: Color {
-        switch rank {
-        case 1: return .yellow
-        case 2: return Color(red: 0.75, green: 0.75, blue: 0.75)
-        case 3: return Color(red: 0.8, green: 0.5, blue: 0.2)
-        default: return .clear
-        }
-    }
-
     private func formatDate(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.unitsStyle = .full
-        return formatter.localizedString(for: date, relativeTo: Date())
+        Self.relativeDateFormatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

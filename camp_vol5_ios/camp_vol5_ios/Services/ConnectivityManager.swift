@@ -504,15 +504,24 @@ struct HeartRateRecord: Identifiable, Codable {
     let timestamp: Date
     let userId: String
 
-    var formattedTime: String {
+    // MARK: - Static Date Formatters
+    private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.timeStyle = .medium
-        return formatter.string(from: timestamp)
+        return formatter
+    }()
+
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }()
+
+    var formattedTime: String {
+        Self.timeFormatter.string(from: timestamp)
     }
 
     var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: timestamp)
+        Self.dateFormatter.string(from: timestamp)
     }
 }

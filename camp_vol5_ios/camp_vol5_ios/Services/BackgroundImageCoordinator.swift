@@ -56,18 +56,23 @@ class BackgroundImageCoordinator: ObservableObject {
     // MARK: - Private Methods
 
     private func loadImagesTask(for users: [UserWithHeartbeat]) async {
-        for userWithHeartbeat in users {
-            let userId = userWithHeartbeat.user.id
-            print(
-                "Loading background image for user: \(userWithHeartbeat.user.name) (ID: \(userId))")
+        // 並列処理で全ユーザーの画像を同時に読み込む
+        await withTaskGroup(of: Void.self) { group in
+            for userWithHeartbeat in users {
+                group.addTask {
+                    let userId = userWithHeartbeat.user.id
+                    print(
+                        "Loading background image for user: \(userWithHeartbeat.user.name) (ID: \(userId))"
+                    )
 
-            await createOrRefreshManager(for: userId, userName: userWithHeartbeat.user.name)
+                    await self.createOrRefreshManager(
+                        for: userId, userName: userWithHeartbeat.user.name)
 
-            // BackgroundImageManagerの初期化を少し待つ
-            try? await Task.sleep(nanoseconds: 300_000_000)  // 0.3秒待機
-
-            let hasImage = backgroundImageManagers[userId]?.currentEditedImage != nil
-            print("  Image loaded for \(userWithHeartbeat.user.name): \(hasImage)")
+                    let hasImage =
+                        await self.backgroundImageManagers[userId]?.currentEditedImage != nil
+                    print("  Image loaded for \(userWithHeartbeat.user.name): \(hasImage)")
+                }
+            }
         }
 
         await finalizeLoading()

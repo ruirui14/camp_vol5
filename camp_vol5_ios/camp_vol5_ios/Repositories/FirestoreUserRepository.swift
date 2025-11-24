@@ -195,33 +195,48 @@ class FirestoreUserRepository: UserRepositoryProtocol {
         let trace = PerformanceMonitor.shared.startTrace(
             PerformanceMonitor.DataTrace.fetchMultipleUsers)
 
-        return Future { [weak self] promise in
-            guard let self = self else {
-                PerformanceMonitor.shared.stopTrace(trace)
-                promise(.failure(RepositoryError.serviceUnavailable))
-                return
-            }
+        // Firestoreの`whereField("id", in:)`は最大10件までの制限があるため、チャンク分割
+        let chunks = userIds.chunked(into: 10)
 
-            self.db.collection("users")
-                .whereField("id", in: userIds)
-                .getDocuments { snapshot, error in
-                    PerformanceMonitor.shared.stopTrace(trace)
-                    if let error = error {
-                        promise(.failure(error))
-                    } else if let documents = snapshot?.documents {
-                        // データ変換をバックグラウンドで実行
-                        Task.detached(priority: .userInitiated) {
-                            let users = documents.compactMap { doc in
-                                self.fromFirestore(doc.data(), userId: doc.documentID)
-                            }
-                            promise(.success(users))
-                        }
-                    } else {
-                        promise(.success([]))
-                    }
+        // 各チャンクを並列に取得
+        let publishers = chunks.map { chunk -> AnyPublisher<[User], Error> in
+            Future { [weak self] promise in
+                guard let self = self else {
+                    promise(.failure(RepositoryError.serviceUnavailable))
+                    return
                 }
+
+                self.db.collection("users")
+                    .whereField("id", in: Array(chunk))
+                    .getDocuments { snapshot, error in
+                        if let error = error {
+                            promise(.failure(error))
+                        } else if let documents = snapshot?.documents {
+                            // データ変換をバックグラウンドで実行
+                            Task.detached(priority: .userInitiated) {
+                                let users = documents.compactMap { doc in
+                                    self.fromFirestore(doc.data(), userId: doc.documentID)
+                                }
+                                promise(.success(users))
+                            }
+                        } else {
+                            promise(.success([]))
+                        }
+                    }
+            }
+            .eraseToAnyPublisher()
         }
-        .eraseToAnyPublisher()
+
+        // すべてのチャンクの結果を結合
+        return Publishers.MergeMany(publishers)
+            .collect()
+            .map { usersArrays in
+                usersArrays.flatMap { $0 }
+            }
+            .handleEvents(receiveCompletion: { _ in
+                PerformanceMonitor.shared.stopTrace(trace)
+            })
+            .eraseToAnyPublisher()
     }
 
     // MARK: - Private: Data Transformation
@@ -344,6 +359,17 @@ enum RepositoryError: LocalizedError {
             return "データが破損しています"
         case .notFound:
             return "データが見つかりません"
+        }
+    }
+}
+
+// MARK: - Array Extension
+
+extension Array {
+    /// 配列を指定されたサイズのチャンクに分割
+    func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
         }
     }
 }

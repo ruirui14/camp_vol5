@@ -248,6 +248,17 @@ class ListHeartBeatsViewModel: BaseViewModel {
             return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
+        // Note: 現在の実装はN+1問題が存在します
+        // 各ユーザーごとに個別にFirebase呼び出しを実行しているため、
+        // ユーザー数が増えると線形にリクエスト数が増加します。
+        //
+        // 将来の最適化案:
+        // 1. Firebaseバッチリクエストを使用して複数のハートビートを一度に取得
+        // 2. フォロワー情報も一括取得するAPIを実装
+        // 3. クライアント側でキャッシュ機構を導入
+        //
+        // ただし、現状はPublishers.MergeMany()により並列実行されているため、
+        // 直列実行よりは高速です。
         let userPublishers = users.map { user in
             // ハートビート情報とフォロワー情報を並行して取得
             Publishers.Zip(

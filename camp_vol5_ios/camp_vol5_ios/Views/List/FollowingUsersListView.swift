@@ -17,12 +17,13 @@ struct FollowingUsersListView: View {
         ScrollView {
             LazyVStack(spacing: CardConstants.cardVerticalSpacing) {
                 ForEach(users, id: \.user.id) { userWithHeartbeat in
+                    let backgroundManager = backgroundImageCoordinator.backgroundImageManagers[
+                        userWithHeartbeat.user.id]
+
                     ZStack(alignment: .topLeading) {
                         UserHeartbeatCard(
                             userWithHeartbeat: userWithHeartbeat,
-                            backgroundImageManager:
-                                backgroundImageCoordinator.backgroundImageManagers[
-                                    userWithHeartbeat.user.id]
+                            backgroundImageManager: backgroundManager
                         )
                         .contentShape(Rectangle())
                         .allowsHitTesting(!isEditMode)
@@ -30,10 +31,7 @@ struct FollowingUsersListView: View {
                             print(
                                 "Tapping card for user: \(userWithHeartbeat.user.name), id: \(userWithHeartbeat.user.id)"
                             )
-                            let hasImage =
-                                backgroundImageCoordinator
-                                .backgroundImageManagers[userWithHeartbeat.user.id]?
-                                .currentEditedImage != nil
+                            let hasImage = backgroundManager?.currentEditedImage != nil
                             print(
                                 "Background image for \(userWithHeartbeat.user.id): \(hasImage ? "present" : "nil")"
                             )
