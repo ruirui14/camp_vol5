@@ -28,7 +28,6 @@ struct ListHeartBeatsView: View {
     @EnvironmentObject private var authenticationManager: AuthenticationManager
     @EnvironmentObject private var viewModelFactory: ViewModelFactory
     @StateObject private var viewModel = ListHeartBeatsViewModel()
-    @StateObject private var backgroundImageCoordinator = BackgroundImageCoordinator()
     @ObservedObject private var themeManager = ColorThemeManager.shared
     @State private var navigationPath = NavigationPath()
     @State private var isStatusBarHidden = false
@@ -67,7 +66,6 @@ struct ListHeartBeatsView: View {
                     } else {
                         FollowingUsersListView(
                             users: viewModel.followingUsersWithHeartbeats,
-                            backgroundImageCoordinator: backgroundImageCoordinator,
                             isEditMode: isEditMode,
                             onUserTapped: { userWithHeartbeat in
                                 navigationPath.append(
@@ -76,8 +74,6 @@ struct ListHeartBeatsView: View {
                             },
                             onRefresh: {
                                 viewModel.refreshData()
-                                backgroundImageCoordinator.loadBackgroundImages(
-                                    for: viewModel.followingUsersWithHeartbeats)
                             },
                             onUnfollow: { userId in
                                 viewModel.unfollowUser(userId: userId)
@@ -102,14 +98,6 @@ struct ListHeartBeatsView: View {
             }
             .onReceive(
                 NotificationCenter.default.publisher(
-                    for: UIApplication.willEnterForegroundNotification
-                )
-            ) { _ in
-                // アプリがフォアグラウンドに戻った時に背景画像を更新
-                loadBackgroundImagesIfNeeded()
-            }
-            .onReceive(
-                NotificationCenter.default.publisher(
                     for: ColorThemeManager.didResetToDefaultsNotification
                 )
             ) { _ in
@@ -118,19 +106,6 @@ struct ListHeartBeatsView: View {
                 selectedThemeColor = themeManager.mainColor
                 DispatchQueue.main.async {
                     ignoreColorChange = false
-                }
-            }
-            .onReceive(viewModel.$followingUsersWithHeartbeats) { users in
-                // フォローユーザーのデータが更新された時に背景画像を更新
-                // 空でない場合のみ実行
-                if !users.isEmpty {
-                    loadBackgroundImagesIfNeeded()
-                }
-            }
-            .onChange(of: viewModel.isLoading) { _, isLoading in
-                // データ読み込み完了時に背景画像を更新（初回ロード対応）
-                if !isLoading && !viewModel.followingUsersWithHeartbeats.isEmpty {
-                    loadBackgroundImagesIfNeeded()
                 }
             }
             .toolbar {
@@ -216,18 +191,6 @@ struct ListHeartBeatsView: View {
         }
         .statusBarHidden(isStatusBarHidden)
         .persistentSystemOverlays(persistentSystemOverlaysVisibility)
-    }
-
-    // MARK: - Helper Methods
-
-    /// 背景画像を必要に応じて読み込む（重複呼び出しを防ぐ）
-    private func loadBackgroundImagesIfNeeded() {
-        let users = viewModel.followingUsersWithHeartbeats
-        guard !users.isEmpty,
-            backgroundImageCoordinator.needsLoading(for: users)
-        else { return }
-
-        backgroundImageCoordinator.loadBackgroundImages(for: users)
     }
 }
 

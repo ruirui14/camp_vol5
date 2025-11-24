@@ -155,10 +155,12 @@ class ListHeartBeatsViewModel: BaseViewModel {
 
         // ローカルの状態を即座に更新（楽観的更新）
         if let index = followingUsersWithHeartbeats.firstIndex(where: { $0.user.id == userId }) {
+            let existingUserWithHeartbeat = followingUsersWithHeartbeats[index]
             followingUsersWithHeartbeats[index] = UserWithHeartbeat(
-                user: followingUsersWithHeartbeats[index].user,
-                heartbeat: followingUsersWithHeartbeats[index].heartbeat,
-                notificationEnabled: enabled
+                user: existingUserWithHeartbeat.user,
+                heartbeat: existingUserWithHeartbeat.heartbeat,
+                notificationEnabled: enabled,
+                backgroundImageManager: existingUserWithHeartbeat.backgroundImageManager
             )
         }
 
@@ -281,10 +283,14 @@ class ListHeartBeatsViewModel: BaseViewModel {
                     .map { userFollowerPairs in
                         // ハートビートとフォロワー情報を結合
                         userFollowerPairs.map { user, follower in
-                            UserWithHeartbeat(
+                            // 背景画像マネージャーを作成
+                            let backgroundManager = BackgroundImageManager(userId: user.id)
+
+                            return UserWithHeartbeat(
                                 user: user,
                                 heartbeat: heartbeatsDict[user.id] ?? nil,
-                                notificationEnabled: follower?.notificationEnabled ?? true
+                                notificationEnabled: follower?.notificationEnabled ?? true,
+                                backgroundImageManager: backgroundManager
                             )
                         }
                     }
@@ -351,15 +357,18 @@ struct UserWithHeartbeat: Identifiable, Hashable {
     let user: User
     var heartbeat: Heartbeat?
     var notificationEnabled: Bool  // フォロー先ユーザーからの通知設定
+    var backgroundImageManager: BackgroundImageManager?  // 背景画像マネージャー
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(user.id)
         hasher.combine(user.name)
         hasher.combine(heartbeat?.bpm)
         hasher.combine(notificationEnabled)
+        // backgroundImageManagerはHashableではないため、ハッシュには含めない
     }
 
     static func == (lhs: UserWithHeartbeat, rhs: UserWithHeartbeat) -> Bool {
         return lhs.user.id == rhs.user.id && lhs.notificationEnabled == rhs.notificationEnabled
+        // backgroundImageManagerは比較から除外（同じuserIdなら同じManager）
     }
 }
