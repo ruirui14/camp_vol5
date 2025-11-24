@@ -7,6 +7,7 @@ import SwiftUI
 
 /// カラーテーマを管理するシングルトンサービス
 /// UserDefaultsにカスタムカラーを保存し、アプリ全体で使用可能にする
+@MainActor
 class ColorThemeManager: ObservableObject {
     static let shared = ColorThemeManager()
 
