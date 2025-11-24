@@ -86,29 +86,7 @@ struct HeartbeatDetailStatusBar: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(
-                    Capsule()
-                        .fill(Color.white.opacity(0.15))
-                        .background(
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.3),
-                                            Color.white.opacity(0.1),
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
-                        )
-                )
-                .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                .vibrationStatusGlassCapsule()
             }
 
             // 自動ロック無効化残り時間
@@ -130,19 +108,7 @@ struct HeartbeatDetailStatusBar: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(Color.white.opacity(0.12))
-                        .background(
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white.opacity(0.2), lineWidth: 0.5)
-                        )
-                )
-                .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+                .simpleGlassCapsule()
             }
 
             // 最終更新時刻 - エレガントなタイムスタンプ表示
@@ -164,29 +130,7 @@ struct HeartbeatDetailStatusBar: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(Color.white.opacity(0.12))
-                        .background(
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.25),
-                                            Color.white.opacity(0.1),
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 0.5
-                                )
-                        )
-                )
-                .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+                .statusGlassCapsule()
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
@@ -199,19 +143,7 @@ struct HeartbeatDetailStatusBar: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(Color.white.opacity(0.1))
-                        .background(
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.white.opacity(0.15), lineWidth: 0.5)
-                        )
-                )
-                .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+                .simpleGlassCapsule()
             }
         }
     }
