@@ -16,6 +16,21 @@ struct HeartbeatDetailStatusBar: View {
 
     @State private var pulseAnimation = false
 
+    // MARK: - Static Date Formatters
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    private static let longDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M/d HH:mm"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter
+    }()
+
     var body: some View {
         VStack(spacing: 12) {
             // 振動状態表示 - モダンなカプセル型デザイン
@@ -224,18 +239,8 @@ struct HeartbeatDetailStatusBar: View {
             return "\(hours)時間前"
         } else {
             // 1日以上経過している場合は日時を表示
-            let formatter = DateFormatter()
-            formatter.dateFormat = "M/d HH:mm"
-            formatter.locale = Locale(identifier: "ja_JP")
-            return formatter.string(from: date)
+            return Self.longDateFormatter.string(from: date)
         }
-    }
-
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
     }
 }
 

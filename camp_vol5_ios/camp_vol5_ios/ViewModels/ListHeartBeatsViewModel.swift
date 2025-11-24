@@ -324,8 +324,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
 
 struct UserWithHeartbeat: Identifiable, Hashable {
     var id: String {
-        print("UserWithHeartbeat.id accessed for user: \(user.name), returning: \(user.id)")
-        return user.id
+        user.id
     }
     let user: User
     var heartbeat: Heartbeat?

@@ -15,7 +15,7 @@ struct FollowingUsersListView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: CardConstants.cardVerticalSpacing) {
+            LazyVStack(spacing: CardConstants.cardVerticalSpacing) {
                 ForEach(users, id: \.user.id) { userWithHeartbeat in
                     ZStack(alignment: .topLeading) {
                         UserHeartbeatCard(
