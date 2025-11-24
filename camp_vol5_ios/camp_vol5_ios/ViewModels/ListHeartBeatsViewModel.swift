@@ -248,26 +248,48 @@ class ListHeartBeatsViewModel: BaseViewModel {
             return Just([]).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
 
-        let userPublishers = users.map { user in
-            // ハートビート情報とフォロワー情報を並行して取得
-            Publishers.Zip(
-                heartbeatService.getHeartbeatOnce(userId: user.id)
-                    .catch { _ in Just(nil).setFailureType(to: Error.self) },
-                followerRepository.fetchFollower(userId: user.id, followerId: currentUserId)
-                    .catch { _ in Just(nil).setFailureType(to: Error.self) }
-            )
-            .map { heartbeat, follower in
-                UserWithHeartbeat(
-                    user: user,
-                    heartbeat: heartbeat,
-                    notificationEnabled: follower?.notificationEnabled ?? true  // デフォルトはtrue
-                )
-            }
-            .eraseToAnyPublisher()
-        }
+        // N+1問題を部分解決: ハートビートのみバッチ取得
+        //
+        // ハートビート取得の最適化:
+        // - 従来: 各ユーザーごとに個別にFirebase Realtime Database呼び出し (N回)
+        // - 改善: 全ユーザー分をバッチ取得 (1回)
+        //
+        // フォロワー情報取得について:
+        // - Firestoreルールにより users/{userId}/followers は本人のみ読み取り可能
+        // - そのため、フォロワー情報は並列取得を維持（N回だが並列実行）
+        // - 将来的にはfollowingサブコレクションにnotificationEnabledを保存することで完全解決可能
+        let userIds = users.map { $0.id }
 
-        return Publishers.MergeMany(userPublishers)
-            .collect()
+        return heartbeatService.getHeartbeatsForMultipleUsers(userIds: userIds)
+            .flatMap { [weak self] heartbeatsDict -> AnyPublisher<[UserWithHeartbeat], Error> in
+                guard let self = self else {
+                    return Fail(error: RepositoryError.serviceUnavailable).eraseToAnyPublisher()
+                }
+
+                // フォロワー情報は並列取得
+                let followerPublishers = users.map { user in
+                    self.followerRepository.fetchFollower(
+                        userId: user.id, followerId: currentUserId
+                    )
+                    .catch { _ in Just(nil).setFailureType(to: Error.self) }
+                    .map { follower in (user, follower) }
+                    .eraseToAnyPublisher()
+                }
+
+                return Publishers.MergeMany(followerPublishers)
+                    .collect()
+                    .map { userFollowerPairs in
+                        // ハートビートとフォロワー情報を結合
+                        userFollowerPairs.map { user, follower in
+                            UserWithHeartbeat(
+                                user: user,
+                                heartbeat: heartbeatsDict[user.id],
+                                notificationEnabled: follower?.notificationEnabled ?? true
+                            )
+                        }
+                    }
+                    .eraseToAnyPublisher()
+            }
             .eraseToAnyPublisher()
     }
 
@@ -324,8 +346,7 @@ class ListHeartBeatsViewModel: BaseViewModel {
 
 struct UserWithHeartbeat: Identifiable, Hashable {
     var id: String {
-        print("UserWithHeartbeat.id accessed for user: \(user.name), returning: \(user.id)")
-        return user.id
+        user.id
     }
     let user: User
     var heartbeat: Heartbeat?

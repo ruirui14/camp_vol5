@@ -30,4 +30,9 @@ protocol HeartbeatRepositoryProtocol {
     /// 接続数の監視を停止
     /// - Parameter userId: ユーザーID
     func unsubscribeFromConnectionCount(userId: String)
+
+    /// 複数ユーザーの心拍データを一度に取得（N+1問題の解決）
+    /// - Parameter userIds: ユーザーIDの配列
+    /// - Returns: ユーザーIDをキーとするHeartbeat辞書のPublisher
+    func fetchMultiple(userIds: [String]) -> AnyPublisher<[String: Heartbeat?], Error>
 }

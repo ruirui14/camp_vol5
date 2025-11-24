@@ -98,12 +98,6 @@ struct ListHeartBeatsView: View {
                 if !hasAppearedOnce {
                     hasAppearedOnce = true
                     viewModel.loadFollowingUsersWithHeartbeats()
-
-                    // データが既に存在する場合は背景画像を読み込み
-                    if !viewModel.followingUsersWithHeartbeats.isEmpty {
-                        backgroundImageCoordinator.loadBackgroundImages(
-                            for: viewModel.followingUsersWithHeartbeats)
-                    }
                 }
             }
             .onReceive(
@@ -112,8 +106,7 @@ struct ListHeartBeatsView: View {
                 )
             ) { _ in
                 // アプリがフォアグラウンドに戻った時に背景画像を更新
-                backgroundImageCoordinator.loadBackgroundImages(
-                    for: viewModel.followingUsersWithHeartbeats)
+                loadBackgroundImagesIfNeeded()
             }
             .onReceive(
                 NotificationCenter.default.publisher(
@@ -127,19 +120,14 @@ struct ListHeartBeatsView: View {
                     ignoreColorChange = false
                 }
             }
-            .onReceive(viewModel.$followingUsersWithHeartbeats) { usersWithHeartbeats in
+            .onReceive(viewModel.$followingUsersWithHeartbeats) { _ in
                 // フォローユーザーのデータが更新された時に背景画像を更新
-                if !usersWithHeartbeats.isEmpty
-                    && backgroundImageCoordinator.needsLoading(for: usersWithHeartbeats)
-                {
-                    backgroundImageCoordinator.loadBackgroundImages(for: usersWithHeartbeats)
-                }
+                loadBackgroundImagesIfNeeded()
             }
             .onChange(of: viewModel.isLoading) { _, isLoading in
                 // データ読み込み完了時に背景画像を更新
-                if !isLoading && !viewModel.followingUsersWithHeartbeats.isEmpty {
-                    backgroundImageCoordinator.loadBackgroundImages(
-                        for: viewModel.followingUsersWithHeartbeats)
+                if !isLoading {
+                    loadBackgroundImagesIfNeeded()
                 }
             }
             .toolbar {
@@ -225,6 +213,18 @@ struct ListHeartBeatsView: View {
         }
         .statusBarHidden(isStatusBarHidden)
         .persistentSystemOverlays(persistentSystemOverlaysVisibility)
+    }
+
+    // MARK: - Helper Methods
+
+    /// 背景画像を必要に応じて読み込む（重複呼び出しを防ぐ）
+    private func loadBackgroundImagesIfNeeded() {
+        let users = viewModel.followingUsersWithHeartbeats
+        guard !users.isEmpty,
+            backgroundImageCoordinator.needsLoading(for: users)
+        else { return }
+
+        backgroundImageCoordinator.loadBackgroundImages(for: users)
     }
 }
 

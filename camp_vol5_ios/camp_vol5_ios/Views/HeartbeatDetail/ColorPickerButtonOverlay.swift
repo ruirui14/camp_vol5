@@ -1,4 +1,4 @@
-// Views/Components/ColorPickerButtonOverlay.swift
+// Views/HeartbeatDetail/ColorPickerButtonOverlay.swift
 // ColorPickerを透明にしてボタンに重ねるコンポーネント
 // 背景色選択ボタンで使用
 

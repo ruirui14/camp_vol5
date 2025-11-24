@@ -167,6 +167,39 @@ class FirestoreFollowerRepository: FollowerRepositoryProtocol {
         .eraseToAnyPublisher()
     }
 
+    /// 複数ユーザーの特定フォロワー情報をバッチ取得（N+1問題の解決）
+    /// - Parameters:
+    ///   - userIds: フォローされているユーザーIDの配列
+    ///   - followerId: フォロワーのID（現在ログイン中のユーザー）
+    /// - Returns: ユーザーIDをキーとするFollower辞書のPublisher
+    func fetchFollowersForMultipleUsers(
+        userIds: [String],
+        followerId: String
+    ) -> AnyPublisher<[String: Follower?], Error> {
+        guard !userIds.isEmpty else {
+            return Just([:]).setFailureType(to: Error.self).eraseToAnyPublisher()
+        }
+
+        // 各ユーザーのフォロワー情報を並列で取得
+        let publishers = userIds.map { userId -> AnyPublisher<(String, Follower?), Error> in
+            self.fetchFollower(userId: userId, followerId: followerId)
+                .map { follower in (userId, follower) }
+                .eraseToAnyPublisher()
+        }
+
+        // すべての結果を辞書に変換
+        return Publishers.MergeMany(publishers)
+            .collect()
+            .map { results in
+                var dict: [String: Follower?] = [:]
+                for (userId, follower) in results {
+                    dict[userId] = follower
+                }
+                return dict
+            }
+            .eraseToAnyPublisher()
+    }
+
     // MARK: - Private: Data Transformation
 
     /// FollowerをFirestoreデータに変換

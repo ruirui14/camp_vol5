@@ -55,6 +55,13 @@ struct HeartbeatDisplaySection: View {
 struct ActiveHeartbeatView: View {
     let heartbeat: Heartbeat
 
+    // MARK: - Static Date Formatter
+    private static let relativeDateFormatter: RelativeDateTimeFormatter = {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter
+    }()
+
     var body: some View {
         VStack(spacing: 8) {
             HeartAnimationView(
@@ -73,9 +80,7 @@ struct ActiveHeartbeatView: View {
     }
 
     private func formattedTime(_ date: Date) -> String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: Date())
+        Self.relativeDateFormatter.localizedString(for: date, relativeTo: Date())
     }
 }
 

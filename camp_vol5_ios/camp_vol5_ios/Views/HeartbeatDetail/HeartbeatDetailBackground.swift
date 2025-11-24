@@ -1,4 +1,4 @@
-// Views/Components/HeartbeatDetailBackground.swift
+// Views/HeartbeatDetail/HeartbeatDetailBackground.swift
 // 心拍詳細画面の背景コンポーネント - 背景色と背景画像（GIF対応）の表示を担当
 // SwiftUIベストプラクティスに従い、再利用可能なコンポーネントとして設計
 

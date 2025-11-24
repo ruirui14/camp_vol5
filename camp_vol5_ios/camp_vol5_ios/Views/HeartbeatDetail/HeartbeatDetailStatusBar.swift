@@ -1,4 +1,4 @@
-// Views/Components/HeartbeatDetailStatusBar.swift
+// Views/HeartbeatDetail/HeartbeatDetailStatusBar.swift
 // 心拍詳細画面のステータス表示コンポーネント - 振動状態、自動ロック状態、最終更新時刻を表示
 // SwiftUIベストプラクティスに従い、単一責任の原則を適用
 // モダンなグラスモルフィズムデザインを採用
@@ -15,6 +15,21 @@ struct HeartbeatDetailStatusBar: View {
     let heartbeat: Heartbeat?
 
     @State private var pulseAnimation = false
+
+    // MARK: - Static Date Formatters
+    private static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
+    private static let longDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M/d HH:mm"
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter
+    }()
 
     var body: some View {
         VStack(spacing: 12) {
@@ -224,18 +239,8 @@ struct HeartbeatDetailStatusBar: View {
             return "\(hours)時間前"
         } else {
             // 1日以上経過している場合は日時を表示
-            let formatter = DateFormatter()
-            formatter.dateFormat = "M/d HH:mm"
-            formatter.locale = Locale(identifier: "ja_JP")
-            return formatter.string(from: date)
+            return Self.longDateFormatter.string(from: date)
         }
-    }
-
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
     }
 }
 

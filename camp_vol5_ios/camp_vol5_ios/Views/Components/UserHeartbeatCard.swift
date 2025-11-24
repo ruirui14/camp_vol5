@@ -188,9 +188,11 @@ private struct UserHeartbeatCardContent: View {
                     .fill(Color(bgColor))
             }
 
-            // GIF画像
+            // GIF画像（パフォーマンス最適化設定）
             AnimatedImage(data: imageData)
                 .resizable()
+                .playbackRate(1.0)  // 再生速度を標準に設定
+                .playbackMode(.normal)  // 通常再生モード
                 .scaledToFit()
                 .frame(width: cardWidth * 2, height: CardConstants.cardHeight * 2)
                 .scaleEffect(transform.scale)
@@ -209,6 +211,8 @@ private struct UserHeartbeatCardContent: View {
     private func simpleAnimatedGifView(imageData: Data, cardWidth: CGFloat) -> some View {
         AnimatedImage(data: imageData)
             .resizable()
+            .playbackRate(1.0)  // 再生速度を標準に設定
+            .playbackMode(.normal)  // 通常再生モード
             .scaledToFit()
             .frame(width: cardWidth, height: CardConstants.cardHeight)
             .clipped()

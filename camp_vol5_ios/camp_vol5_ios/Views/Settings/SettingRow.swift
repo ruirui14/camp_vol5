@@ -1,4 +1,4 @@
-// Views/Components/SettingRow.swift
+// Views/Settings/SettingRow.swift
 // 設定項目の行コンポーネント - 統一されたレイアウトとスタイリングを提供
 // SwiftUIベストプラクティスに従い、再利用可能な設定行として実装
 

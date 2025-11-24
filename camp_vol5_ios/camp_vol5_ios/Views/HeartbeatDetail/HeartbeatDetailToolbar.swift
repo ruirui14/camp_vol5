@@ -1,4 +1,4 @@
-// Views/Components/HeartbeatDetailToolbar.swift
+// Views/HeartbeatDetail/HeartbeatDetailToolbar.swift
 // 心拍詳細画面のツールバーコンポーネント - ナビゲーションアクションを担当
 // SwiftUIベストプラクティスに従い、アクションを外部に委譲
 

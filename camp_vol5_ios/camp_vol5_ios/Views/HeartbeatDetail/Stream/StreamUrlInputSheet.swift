@@ -1,4 +1,4 @@
-// Views/Components/StreamUrlInputSheet.swift
+// Views/HeartbeatDetail/Stream/StreamUrlInputSheet.swift
 // 配信URL入力シート
 // ユーザーが配信URLをペーストして設定できるUI
 

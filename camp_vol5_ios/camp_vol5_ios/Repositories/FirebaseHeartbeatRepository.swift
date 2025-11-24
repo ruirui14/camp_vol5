@@ -153,6 +153,40 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
         return Heartbeat(userId: userId, bpm: bpm, timestamp: date)
     }
 
+    /// 複数ユーザーの心拍データを一度に取得（N+1問題の解決）
+    /// - Parameter userIds: ユーザーIDの配列
+    /// - Returns: ユーザーIDをキーとするHeartbeat辞書のPublisher
+    func fetchMultiple(userIds: [String]) -> AnyPublisher<[String: Heartbeat?], Error> {
+        guard !userIds.isEmpty else {
+            return Just([:]).setFailureType(to: Error.self).eraseToAnyPublisher()
+        }
+
+        let trace = PerformanceMonitor.shared.startTrace(
+            PerformanceMonitor.DataTrace.fetchHeartbeat)
+
+        // 各ユーザーのハートビートデータを並列で取得
+        let publishers = userIds.map { userId -> AnyPublisher<(String, Heartbeat?), Error> in
+            self.fetchOnce(userId: userId)
+                .map { heartbeat in (userId, heartbeat) }
+                .eraseToAnyPublisher()
+        }
+
+        // すべての結果を辞書に変換
+        return Publishers.MergeMany(publishers)
+            .collect()
+            .map { results in
+                var dict: [String: Heartbeat?] = [:]
+                for (userId, heartbeat) in results {
+                    dict[userId] = heartbeat
+                }
+                return dict
+            }
+            .handleEvents(receiveCompletion: { _ in
+                PerformanceMonitor.shared.stopTrace(trace)
+            })
+            .eraseToAnyPublisher()
+    }
+
     // MARK: - Connection Count Subscription
 
     /// 接続数をリアルタイムで監視

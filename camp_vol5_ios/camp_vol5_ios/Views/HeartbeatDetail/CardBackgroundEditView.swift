@@ -1,4 +1,4 @@
-// CardBackgroundEditView.swift
+// Views/HeartbeatDetailCardBackgroundEditView.swift
 // カード背景画像編集ビュー - MVVM設計
 // 責務: カード背景画像の選択、配置、色指定のUIを提供
 

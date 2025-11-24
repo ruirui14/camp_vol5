@@ -58,6 +58,8 @@ struct camp_vol5_iosApp: App {
         )
     }
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             switch appStateManager.currentState {
@@ -71,6 +73,36 @@ struct camp_vol5_iosApp: App {
                         GIDSignIn.sharedInstance.handle(url)
                     }
             }
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            handleScenePhaseChange(oldPhase: oldPhase, newPhase: newPhase)
+        }
+    }
+
+    /// scenePhaseの変更を処理
+    private func handleScenePhaseChange(oldPhase: ScenePhase, newPhase: ScenePhase) {
+        switch newPhase {
+        case .active:
+            // バックグラウンドから復帰した時のみチェック（inactive->activeは無視）
+            guard oldPhase == .background else { return }
+
+            print("🔄 アプリがバックグラウンドから復帰")
+
+            // メール確認待ちの場合のみ、認証状態を再チェック
+            if authenticationManager.needsEmailVerification {
+                print("📧 メール認証状態を自動チェック中...")
+                authenticationManager.reloadUserAndCheckVerification()
+            }
+
+        case .background:
+            print("📱 アプリがバックグラウンドに移行")
+
+        case .inactive:
+            // 何もしない（ログも出さない）
+            break
+
+        @unknown default:
+            break
         }
     }
 }
