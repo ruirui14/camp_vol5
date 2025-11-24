@@ -57,4 +57,14 @@ protocol FollowerRepositoryProtocol {
         followerId: String,
         fcmToken: String
     ) -> AnyPublisher<Void, Error>
+
+    /// 複数ユーザーの特定フォロワー情報をバッチ取得（N+1問題の解決）
+    /// - Parameters:
+    ///   - userIds: フォローされているユーザーIDの配列
+    ///   - followerId: フォロワーのID（現在ログイン中のユーザー）
+    /// - Returns: ユーザーIDをキーとするFollower辞書のPublisher
+    func fetchFollowersForMultipleUsers(
+        userIds: [String],
+        followerId: String
+    ) -> AnyPublisher<[String: Follower?], Error>
 }

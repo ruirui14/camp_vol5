@@ -73,4 +73,29 @@ class HeartbeatService: HeartbeatServiceProtocol {
     func unsubscribeFromConnectionCount(userId: String) {
         repository.unsubscribeFromConnectionCount(userId: userId)
     }
+
+    /// 複数ユーザーの心拍データを一度に取得（N+1問題の解決）
+    /// - Parameter userIds: ユーザーIDの配列
+    /// - Returns: ユーザーIDをキーとするHeartbeat辞書のPublisher
+    func getHeartbeatsForMultipleUsers(userIds: [String]) -> AnyPublisher<
+        [String: Heartbeat?], Error
+    > {
+        return repository.fetchMultiple(userIds: userIds)
+            .map { heartbeatsDict in
+                // 各ハートビートに対して5分チェックを適用（現在は無効化）
+                var result: [String: Heartbeat?] = [:]
+                for (userId, heartbeat) in heartbeatsDict {
+                    result[userId] = heartbeat
+                    // 5分以内のデータかどうか確認（現在は無効化）
+                    // if let heartbeat = heartbeat {
+                    //     let timeDifference = Date().timeIntervalSince(heartbeat.timestamp)
+                    //     result[userId] = timeDifference <= self.heartbeatValidityDuration ? heartbeat : nil
+                    // } else {
+                    //     result[userId] = nil
+                    // }
+                }
+                return result
+            }
+            .eraseToAnyPublisher()
+    }
 }
