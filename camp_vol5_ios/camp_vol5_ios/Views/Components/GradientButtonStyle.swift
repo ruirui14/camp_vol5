@@ -1,4 +1,4 @@
-// Views/HeartbeatDetail/GradientButtonStyle.swift
+// Views/Components/GradientButtonStyle.swift
 // グラデーションボタンの共通スタイル
 
 import SwiftUI
