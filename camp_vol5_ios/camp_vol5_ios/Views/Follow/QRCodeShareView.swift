@@ -261,16 +261,10 @@ struct QRCodeShareView: View {
     @ViewBuilder
     private var errorMessageView: some View {
         if let errorMessage = viewModel.errorMessage {
-            HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .font(.callout)
+            MessageBanner.error(message: errorMessage) {
+                viewModel.clearError()
             }
-            .padding()
-            .background(Color.red.opacity(0.1))
-            .cornerRadius(8)
+            .padding(.horizontal)
         }
     }
 }

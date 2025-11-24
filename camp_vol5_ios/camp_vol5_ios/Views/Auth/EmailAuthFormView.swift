@@ -243,47 +243,9 @@ private struct AuthenticationFormView: View {
 
                 // エラーメッセージ
                 if let errorMessage = viewModel.errorMessage {
-                    HStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(Color(hex: "FF6B6B"))
-                            .font(.callout)
-
-                        Text(errorMessage)
-                            .font(.callout)
-                            .foregroundColor(.white)
-                            .lineLimit(3)
-
-                        Spacer()
-
-                        Button(action: {
-                            viewModel.clearError()
-                        }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.white.opacity(0.7))
-                                .font(.callout)
-                        }
+                    MessageBanner.error(message: errorMessage) {
+                        viewModel.clearError()
                     }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color(hex: "FF6B6B").opacity(0.4),
-                                        Color(hex: "EE5A6F").opacity(0.3),
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .background(.ultraThinMaterial.opacity(0.7))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "FF6B6B").opacity(0.5), lineWidth: 1)
-                    )
-                    .shadow(color: Color(hex: "FF6B6B").opacity(0.3), radius: 8, x: 0, y: 4)
                     .transition(.opacity.combined(with: .scale))
                 }
             }

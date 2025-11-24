@@ -103,9 +103,10 @@ struct HeartbeatDetailView: View {
 
                     // エラーメッセージ
                     if let errorMessage = viewModel.errorMessage {
-                        Text(errorMessage)
-                            .foregroundColor(.red)
-                            .padding()
+                        MessageBanner.error(message: errorMessage) {
+                            viewModel.clearError()
+                        }
+                        .padding(.horizontal)
                     }
 
                     Spacer()
