@@ -39,31 +39,29 @@ class FirestoreUserRepository: UserRepositoryProtocol {
 
             let firestoreData = self.toFirestore(user)
 
-            // メインのユーザードキュメントを作成
-            self.db.collection("users").document(userId).setData(firestoreData) { error in
-                if let error = error {
-                    PerformanceMonitor.shared.stopTrace(trace)
-                    promise(.failure(error))
-                    return
-                }
+            // Batch Writeで2つのドキュメントを1回のリクエストで書き込み
+            let batch = self.db.batch()
 
-                // タイムスタンプをprivate/metadataに保存
-                self.db
-                    .collection("users")
-                    .document(userId)
-                    .collection("private")
-                    .document("metadata")
-                    .setData([
-                        "created_at": FieldValue.serverTimestamp(),
-                        "updated_at": FieldValue.serverTimestamp(),
-                    ]) { metadataError in
-                        PerformanceMonitor.shared.stopTrace(trace)
-                        if let metadataError = metadataError {
-                            promise(.failure(metadataError))
-                        } else {
-                            promise(.success(user))
-                        }
-                    }
+            // メインのユーザードキュメント
+            let userRef = self.db.collection("users").document(userId)
+            batch.setData(firestoreData, forDocument: userRef)
+
+            // タイムスタンプをprivate/metadata に保存
+            let metadataRef = userRef.collection("private").document("metadata")
+            batch.setData(
+                [
+                    "created_at": FieldValue.serverTimestamp(),
+                    "updated_at": FieldValue.serverTimestamp(),
+                ], forDocument: metadataRef)
+
+            // バッチをコミット
+            batch.commit { error in
+                PerformanceMonitor.shared.stopTrace(trace)
+                if let error = error {
+                    promise(.failure(error))
+                } else {
+                    promise(.success(user))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -106,30 +104,30 @@ class FirestoreUserRepository: UserRepositoryProtocol {
 
             let updateData = self.toFirestore(user)
 
-            // メインのユーザードキュメントを更新
-            self.db.collection("users").document(user.id).updateData(updateData) { error in
-                if let error = error {
-                    PerformanceMonitor.shared.stopTrace(trace)
-                    promise(.failure(error))
-                    return
-                }
+            // Batch Writeで2つのドキュメントを1回のリクエストで更新
+            let batch = self.db.batch()
 
-                // private/metadataのupdated_atを更新
-                self.db
-                    .collection("users")
-                    .document(user.id)
-                    .collection("private")
-                    .document("metadata")
-                    .updateData([
-                        "updated_at": FieldValue.serverTimestamp()
-                    ]) { metadataError in
-                        PerformanceMonitor.shared.stopTrace(trace)
-                        if let metadataError = metadataError {
-                            promise(.failure(metadataError))
-                        } else {
-                            promise(.success(()))
-                        }
-                    }
+            // メインのユーザードキュメント
+            let userRef = self.db.collection("users").document(user.id)
+            batch.updateData(updateData, forDocument: userRef)
+
+            // private/metadataのupdated_atを更新
+            // setData(merge: true)を使用して、ドキュメントが存在しない場合も対応
+            let metadataRef = userRef.collection("private").document("metadata")
+            batch.setData(
+                ["updated_at": FieldValue.serverTimestamp()],
+                forDocument: metadataRef,
+                merge: true
+            )
+
+            // バッチをコミット
+            batch.commit { error in
+                PerformanceMonitor.shared.stopTrace(trace)
+                if let error = error {
+                    promise(.failure(error))
+                } else {
+                    promise(.success(()))
+                }
             }
         }
         .eraseToAnyPublisher()
