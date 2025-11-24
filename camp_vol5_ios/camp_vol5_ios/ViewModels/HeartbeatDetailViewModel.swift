@@ -206,7 +206,7 @@ class HeartbeatDetailViewModel: BaseViewModel {
 
     // MARK: - Lifecycle
     deinit {
-        // Note: stopMonitoring() should be called from view lifecycle (onDisappear)
-        // to ensure proper MainActor context
+        heartbeatSubscription?.cancel()
+        heartbeatService.unsubscribeFromHeartbeat(userId: userId)
     }
 }
