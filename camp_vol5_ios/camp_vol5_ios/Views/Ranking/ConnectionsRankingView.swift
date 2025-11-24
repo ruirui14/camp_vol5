@@ -16,105 +16,105 @@ struct ConnectionsRankingView: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            Group {
-                if viewModel.isLoading {
-                    RankingSkeletonList()
-                } else if let errorMessage = viewModel.errorMessage {
-                    VStack(spacing: 16) {
-                        Text("エラー")
-                            .font(.headline)
-                        Text(errorMessage)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        Button("再試行") {
-                            viewModel.refresh()
+        // GeometryReaderの使用を最小化: safeAreaInsetsは@Environmentで取得
+        Group {
+            if viewModel.isLoading {
+                RankingSkeletonList()
+            } else if let errorMessage = viewModel.errorMessage {
+                VStack(spacing: 16) {
+                    Text("エラー")
+                        .font(.headline)
+                    Text(errorMessage)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("再試行") {
+                        viewModel.refresh()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding()
+            } else if viewModel.rankingUsers.isEmpty {
+                Text("ランキングデータがありません")
+                    .foregroundColor(.secondary)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(Array(viewModel.rankingUsers.enumerated()), id: \.element.id) {
+                            index, user in
+                            RankingRow(rank: index + 1, user: user)
+                                .onAppear {
+                                    viewModel.loadMoreIfNeeded(currentItem: user)
+                                }
                         }
-                        .buttonStyle(.borderedProminent)
+
+                        // ローディングインジケーター
+                        if viewModel.hasMoreData {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        } else if !viewModel.rankingUsers.isEmpty {
+                            // フッターメッセージ
+                            VStack(spacing: 8) {
+                                Divider()
+                                    .padding(.horizontal, 40)
+                                Text("TOP 100まで表示しています")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .padding(.bottom, 20)
+                            }
+                            .padding(.top, 8)
+                        }
                     }
                     .padding()
-                } else if viewModel.rankingUsers.isEmpty {
-                    Text("ランキングデータがありません")
-                        .foregroundColor(.secondary)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(Array(viewModel.rankingUsers.enumerated()), id: \.element.id) {
-                                index, user in
-                                RankingRow(rank: index + 1, user: user)
-                                    .onAppear {
-                                        viewModel.loadMoreIfNeeded(currentItem: user)
-                                    }
-                            }
+                }
+            }
+        }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("戻る")
+                    }
+                }
+                .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+            }
 
-                            // ローディングインジケーター
-                            if viewModel.hasMoreData {
-                                ProgressView()
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                            } else if !viewModel.rankingUsers.isEmpty {
-                                // フッターメッセージ
-                                VStack(spacing: 8) {
-                                    Divider()
-                                        .padding(.horizontal, 40)
-                                    Text("TOP 100まで表示しています")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .padding(.bottom, 20)
-                                }
-                                .padding(.top, 8)
-                            }
-                        }
-                        .padding()
-                    }
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 0) {
+                    Text("同接ランキング")
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                    Text("TOP 100")
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.8))
                 }
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                            Text("戻る")
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                }
 
-                ToolbarItem(placement: .principal) {
-                    VStack(spacing: 0) {
-                        Text("同接ランキング")
-                            .font(.headline)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
-                        Text("TOP 100")
-                            .font(.caption2)
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        viewModel.refresh()
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(.white)
-                    }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    viewModel.refresh()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundColor(.white)
                 }
             }
-            .overlay(alignment: .top) {
-                NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
-            }
-            .onAppear {
-                viewModel.loadRanking()
-            }
+        }
+        .overlay(alignment: .top) {
+            // Safe areaの高さはNavigationBarGradient内で直接取得
+            NavigationBarGradient()
+        }
+        .onAppear {
+            viewModel.loadRanking()
         }
     }
 }
@@ -235,7 +235,7 @@ struct RankingPreviewContainer: View {
 
     var body: some View {
         NavigationView {
-            GeometryReader { geometry in
+            GeometryReader { _ in
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         ForEach(Array(viewModel.rankingUsers.enumerated()), id: \.element.id) {
@@ -282,7 +282,8 @@ struct RankingPreviewContainer: View {
                     }
                 }
                 .overlay(alignment: .top) {
-                    NavigationBarGradient(safeAreaHeight: geometry.safeAreaInsets.top)
+                    // Safe areaの高さはNavigationBarGradient内で直接取得
+                    NavigationBarGradient()
                 }
             }
         }

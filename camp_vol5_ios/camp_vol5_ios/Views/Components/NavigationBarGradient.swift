@@ -7,19 +7,28 @@ import SwiftUI
 
 struct NavigationBarGradient: View {
     @ObservedObject private var themeManager = ColorThemeManager.shared
-    let safeAreaHeight: CGFloat
+    let safeAreaHeight: CGFloat?
+
+    init(safeAreaHeight: CGFloat? = nil) {
+        self.safeAreaHeight = safeAreaHeight
+    }
 
     var body: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    gradient: Gradient(colors: [themeManager.mainColor, themeManager.accentColor]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            themeManager.mainColor, themeManager.accentColor,
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                 )
-            )
-            .frame(height: safeAreaHeight)
-            .ignoresSafeArea(.container, edges: .top)
+                .frame(height: safeAreaHeight ?? geometry.safeAreaInsets.top)
+                .ignoresSafeArea(.container, edges: .top)
+        }
+        .frame(height: 0)  // GeometryReaderが親のレイアウトに影響しないようにする
     }
 }
 

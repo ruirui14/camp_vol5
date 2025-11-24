@@ -97,11 +97,10 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
             """
         )
         setupAuthStateListener()
-        // 初期化時に現在の認証状態をチェック（遅延実行でFirebase初期化完了を待つ）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            print("🔥 Calling updateAuthenticationState after 0.5s delay")
-            self.updateAuthenticationState(with: Auth.auth().currentUser)
-        }
+        // 初期化時に現在の認証状態をチェック
+        // authStateListenerが即座に呼ばれるため、遅延は不要
+        print("🔥 AuthenticationManager initialized, listener will handle state updates")
+        // 初回の状態更新は authStateListener により自動的に実行される
     }
 
     deinit {
@@ -485,7 +484,11 @@ final class AuthenticationManager: NSObject, ObservableObject, AuthenticationPro
     func resetAppState() {
         UserDefaults.standard.set(false, forKey: "hasStartedWithoutAuth")
         // 認証状態の変更を通知（ContentViewの更新をトリガー）
-        objectWillChange.send()
+        // @Publishedプロパティの更新により自動的に再描画される
+        isLoading = true
+        DispatchQueue.main.async {
+            self.isLoading = false
+        }
     }
 
     /// メール確認メールを送信

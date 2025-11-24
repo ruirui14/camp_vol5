@@ -112,128 +112,129 @@ private struct UserHeartbeatCardContent: View {
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            let cardWidth = CardConstants.cardWidth(for: geometry.size.width)
-            let heartRightOffset = CardConstants.heartRightOffset(for: cardWidth)
+        // GeometryReaderの使用を最小化: padding-basedレイアウトを採用
+        ZStack(alignment: .bottomLeading) {
+            // 背景画像の表示（GIF・静止画対応）
+            backgroundView()
 
-            ZStack(alignment: .bottomLeading) {
-                // 背景画像の表示（GIF・静止画対応）
-                backgroundView(cardWidth: cardWidth)
+            // 心拍数表示（右上）
+            ZStack {
+                Image("heart_beat")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: CardConstants.heartSize, height: CardConstants.heartSize)
+                    .clipShape(Circle())
 
-                // 心拍数表示（右上）
-                ZStack {
-                    Image("heart_beat")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: CardConstants.heartSize, height: CardConstants.heartSize)
-                        .clipShape(Circle())
-
-                    if !viewModel.displayBPM.isEmpty {
-                        Text(viewModel.displayBPM)
-                            .font(
-                                .system(
-                                    size: CardConstants.heartFontSize,
-                                    weight: .heavy,
-                                    design: .rounded
-                                )
+                if !viewModel.displayBPM.isEmpty {
+                    Text(viewModel.displayBPM)
+                        .font(
+                            .system(
+                                size: CardConstants.heartFontSize,
+                                weight: .heavy,
+                                design: .rounded
                             )
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.5)
-                            .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
-                    }
+                        )
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
                 }
-                .offset(x: heartRightOffset, y: -CardConstants.heartBottomMargin)
-
-                // ユーザー名（左下）
-                Text(viewModel.displayName)
-                    .font(.system(size: CardConstants.nameFontSize(for: cardWidth), weight: .bold))
-                    .foregroundColor(.base)
-                    .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-                    .offset(x: CardConstants.nameLeftMargin, y: -CardConstants.nameBottomMargin)
             }
-            .frame(width: cardWidth, height: CardConstants.cardHeight)
-            .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+            .frame(width: CardConstants.heartSize, height: CardConstants.heartSize)
+            .offset(y: -CardConstants.heartBottomMargin)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.trailing, CardConstants.heartRightMargin)
+
+            // ユーザー名（左下）
+            Text(viewModel.displayName)
+                .font(.system(size: CardConstants.nameFontSizeBase, weight: .bold))
+                .foregroundColor(.base)
+                .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+                .padding(.leading, CardConstants.nameLeftMargin)
+                .padding(.bottom, CardConstants.nameBottomMargin)
         }
         .frame(height: CardConstants.cardHeight)
+        .padding(.horizontal, CardConstants.cardHorizontalMargin)
     }
 
     /// 背景画像ビューを生成（GIF・静止画・背景色対応）
     @ViewBuilder
-    private func backgroundView(cardWidth: CGFloat) -> some View {
+    private func backgroundView() -> some View {
         if let imageData = backgroundImageData, isAnimated, let transform = transform {
             // GIFアニメーション（transform適用）
-            animatedGifBackgroundView(
-                imageData: imageData, transform: transform, cardWidth: cardWidth)
+            animatedGifBackgroundView(imageData: imageData, transform: transform)
         } else if let imageData = backgroundImageData, isAnimated {
             // GIFアニメーション（transformなし）
-            simpleAnimatedGifView(imageData: imageData, cardWidth: cardWidth)
+            simpleAnimatedGifView(imageData: imageData)
         } else if let backgroundImage = backgroundImage {
             // 静止画像（背景色は既に含まれている）
-            staticImageView(image: backgroundImage, cardWidth: cardWidth)
+            staticImageView(image: backgroundImage)
         } else {
             // デフォルト背景色
-            defaultBackgroundView(cardWidth: cardWidth)
+            defaultBackgroundView()
         }
     }
 
     /// GIF背景（transform適用）
     private func animatedGifBackgroundView(
-        imageData: Data, transform: ImageTransform, cardWidth: CGFloat
+        imageData: Data, transform: ImageTransform
     ) -> some View {
-        ZStack {
-            // 背景色
-            if let bgColor = transform.backgroundColor {
-                RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
-                    .fill(Color(bgColor))
-            }
+        GeometryReader { geometry in
+            ZStack {
+                // 背景色
+                if let bgColor = transform.backgroundColor {
+                    RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
+                        .fill(Color(bgColor))
+                }
 
-            // GIF画像（パフォーマンス最適化設定）
-            AnimatedImage(data: imageData)
-                .resizable()
-                .playbackRate(1.0)  // 再生速度を標準に設定
-                .playbackMode(.normal)  // 通常再生モード
-                .scaledToFit()
-                .frame(width: cardWidth * 2, height: CardConstants.cardHeight * 2)
-                .scaleEffect(transform.scale)
-                .rotationEffect(Angle(degrees: transform.rotation))
-                .offset(
-                    x: transform.normalizedOffset.x * UIScreen.main.bounds.width,
-                    y: transform.normalizedOffset.y * UIScreen.main.bounds.height
-                )
-                .frame(width: cardWidth, height: CardConstants.cardHeight)
-                .clipShape(RoundedRectangle(cornerRadius: CardConstants.cornerRadius))
+                // GIF画像（パフォーマンス最適化設定）
+                AnimatedImage(data: imageData)
+                    .resizable()
+                    .playbackRate(1.0)  // 再生速度を標準に設定
+                    .playbackMode(.normal)  // 通常再生モード
+                    .scaledToFit()
+                    .frame(width: geometry.size.width * 2, height: CardConstants.cardHeight * 2)
+                    .scaleEffect(transform.scale)
+                    .rotationEffect(Angle(degrees: transform.rotation))
+                    .offset(
+                        x: transform.normalizedOffset.x * UIScreen.main.bounds.width,
+                        y: transform.normalizedOffset.y * UIScreen.main.bounds.height
+                    )
+                    .frame(width: geometry.size.width, height: CardConstants.cardHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: CardConstants.cornerRadius))
+            }
         }
-        .frame(width: cardWidth, height: CardConstants.cardHeight)
+        .frame(height: CardConstants.cardHeight)
+        .clipShape(RoundedRectangle(cornerRadius: CardConstants.cornerRadius))
     }
 
     /// シンプルGIF背景（transformなし）
-    private func simpleAnimatedGifView(imageData: Data, cardWidth: CGFloat) -> some View {
+    private func simpleAnimatedGifView(imageData: Data) -> some View {
         AnimatedImage(data: imageData)
             .resizable()
             .playbackRate(1.0)  // 再生速度を標準に設定
             .playbackMode(.normal)  // 通常再生モード
-            .scaledToFit()
-            .frame(width: cardWidth, height: CardConstants.cardHeight)
+            .scaledToFill()
+            .frame(height: CardConstants.cardHeight)
             .clipped()
             .cornerRadius(CardConstants.cornerRadius)
     }
 
     /// 静止画像背景
-    private func staticImageView(image: UIImage, cardWidth: CGFloat) -> some View {
+    private func staticImageView(image: UIImage) -> some View {
         Image(uiImage: image)
             .resizable()
             .scaledToFill()
-            .frame(width: cardWidth, height: CardConstants.cardHeight)
+            .frame(height: CardConstants.cardHeight)
             .clipped()
             .cornerRadius(CardConstants.cornerRadius)
     }
 
     /// デフォルト背景色
-    private func defaultBackgroundView(cardWidth: CGFloat) -> some View {
+    private func defaultBackgroundView() -> some View {
         RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
             .fill(Color.gray.opacity(0.3))
-            .frame(width: cardWidth, height: CardConstants.cardHeight)
+            .frame(height: CardConstants.cardHeight)
             .overlay(
                 RoundedRectangle(cornerRadius: CardConstants.cornerRadius)
                     .stroke(Color.white, lineWidth: 2)

@@ -120,13 +120,16 @@ struct ListHeartBeatsView: View {
                     ignoreColorChange = false
                 }
             }
-            .onReceive(viewModel.$followingUsersWithHeartbeats) { _ in
+            .onReceive(viewModel.$followingUsersWithHeartbeats) { users in
                 // フォローユーザーのデータが更新された時に背景画像を更新
-                loadBackgroundImagesIfNeeded()
+                // 空でない場合のみ実行
+                if !users.isEmpty {
+                    loadBackgroundImagesIfNeeded()
+                }
             }
             .onChange(of: viewModel.isLoading) { _, isLoading in
-                // データ読み込み完了時に背景画像を更新
-                if !isLoading {
+                // データ読み込み完了時に背景画像を更新（初回ロード対応）
+                if !isLoading && !viewModel.followingUsersWithHeartbeats.isEmpty {
                     loadBackgroundImagesIfNeeded()
                 }
             }
