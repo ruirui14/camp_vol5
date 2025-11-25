@@ -50,39 +50,67 @@ struct HeartbeatDetailStatusBar: View {
                 .simpleGlassCapsule()
             }
 
-            // 最終更新時刻 - エレガントなタイムスタンプ表示
+            // 最終更新時刻 - モダンなタイムスタンプ表示
             if let heartbeat = heartbeat, let timestamp = heartbeat.timestamp {
-                HStack(spacing: 8) {
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.8), Color.cyan.opacity(0.8)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                HStack(spacing: 6) {
+                    // 時計アイコン
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.blue.opacity(0.3),
+                                        Color.cyan.opacity(0.2),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
+                            .frame(width: 20, height: 20)
+
+                        Image(systemName: "clock.fill")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [Color.blue, Color.cyan],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                    }
 
                     Text(relativeTimeString(from: timestamp))
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.95))
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color.white, Color.white.opacity(0.85)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .tracking(0.3)
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .statusGlassCapsule()
-            } else {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.orange.opacity(0.8))
-
-                    Text("データなし")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(.white.opacity(0.9))
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .simpleGlassCapsule()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule()
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.white.opacity(0.2),
+                                            Color.white.opacity(0.05),
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                )
             }
         }
     }

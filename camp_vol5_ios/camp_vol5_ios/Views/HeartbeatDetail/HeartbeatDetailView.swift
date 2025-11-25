@@ -85,21 +85,10 @@ struct HeartbeatDetailView: View {
                     isAnimated: isAnimatedBackground
                 )
 
-                // メインコンテンツ
-                VStack(spacing: 20) {
-                    Spacer()
-                    Spacer()
+                // エラーメッセージのみ中央に表示
+                VStack {
                     Spacer()
 
-                    // ステータス表示コンポーネント
-                    HeartbeatDetailStatusBar(
-                        autoLockDisabled: viewModel.autoLockManager.autoLockDisabled,
-                        remainingTime: viewModel.autoLockManager.remainingTime,
-                        isSleepMode: viewModel.isSleepMode,
-                        heartbeat: viewModel.currentHeartbeat
-                    )
-
-                    // エラーメッセージ
                     if let errorMessage = viewModel.errorMessage {
                         MessageBanner.error(message: errorMessage) {
                             viewModel.clearError()
@@ -109,8 +98,19 @@ struct HeartbeatDetailView: View {
 
                     Spacer()
                 }
-                .padding()
-                .padding(.top, 118)
+
+                // ステータス表示を画面最下部に固定配置（安全エリアを考慮）
+                VStack(spacing: 0) {
+                    Spacer()
+
+                    HeartbeatDetailStatusBar(
+                        autoLockDisabled: viewModel.autoLockManager.autoLockDisabled,
+                        remainingTime: viewModel.autoLockManager.remainingTime,
+                        isSleepMode: viewModel.isSleepMode,
+                        heartbeat: viewModel.currentHeartbeat
+                    )
+                    .padding(.bottom, 20)
+                }
 
                 // ハートアニメーション
                 HeartAnimationView(
