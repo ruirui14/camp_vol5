@@ -180,8 +180,8 @@ class HeartbeatDetailViewModel: BaseViewModel {
     private func updateVibrationBasedOnHeartbeat() {
         guard vibrationService.isEnabled else { return }
 
-        if hasValidHeartbeat, let bpm = currentHeartbeat?.bpm {
-            vibrationService.startHeartbeatVibration(bpm: bpm)
+        if hasValidHeartbeat, let heartbeat = currentHeartbeat {
+            vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
         } else {
             vibrationService.stopVibration()
         }
@@ -192,8 +192,8 @@ class HeartbeatDetailViewModel: BaseViewModel {
             return
         }
 
-        if hasValidHeartbeat, let bpm = currentHeartbeat?.bpm {
-            vibrationService.startHeartbeatVibration(bpm: bpm)
+        if hasValidHeartbeat, let heartbeat = currentHeartbeat {
+            vibrationService.startHeartbeatVibration(bpm: heartbeat.bpm)
         } else if currentHeartbeat == nil {
             // データがない場合は手動で更新を試みる
             refreshHeartbeat()

@@ -141,16 +141,21 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
     ///   - userId: ユーザーID
     /// - Returns: 変換されたHeartbeat、変換失敗時はnil
     private func fromRealtimeDatabase(_ data: [String: Any], userId: String) -> Heartbeat? {
-        guard let bpm = data["bpm"] as? Int,
-            let timestamp = data["timestamp"] as? TimeInterval
-        else {
+        // bpmは必須
+        guard let bpm = data["bpm"] as? Int else {
             return nil
         }
 
-        // Firebase Realtime Databaseのタイムスタンプはミリ秒単位
-        let date = Date(timeIntervalSince1970: timestamp / 1000)
+        // timestampはOptionalとして取得
+        let timestamp: Date?
+        if let timestampValue = data["timestamp"] as? TimeInterval {
+            // Firebase Realtime Databaseのタイムスタンプはミリ秒単位
+            timestamp = Date(timeIntervalSince1970: timestampValue / 1000)
+        } else {
+            timestamp = nil
+        }
 
-        return Heartbeat(userId: userId, bpm: bpm, timestamp: date)
+        return Heartbeat(userId: userId, bpm: bpm, timestamp: timestamp)
     }
 
     /// 複数ユーザーの心拍データを一度に取得（N+1問題の解決）

@@ -73,9 +73,11 @@ struct ActiveHeartbeatView: View {
             )
             .frame(height: 140)
 
-            Text("更新: \(formattedTime(heartbeat.timestamp))")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            if let timestamp = heartbeat.timestamp {
+                Text("更新: \(formattedTime(timestamp))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
     }
 

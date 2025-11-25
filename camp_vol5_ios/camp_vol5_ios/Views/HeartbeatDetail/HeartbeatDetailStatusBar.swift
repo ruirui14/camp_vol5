@@ -112,7 +112,7 @@ struct HeartbeatDetailStatusBar: View {
             }
 
             // 最終更新時刻 - エレガントなタイムスタンプ表示
-            if let heartbeat = heartbeat {
+            if let heartbeat = heartbeat, let timestamp = heartbeat.timestamp {
                 HStack(spacing: 8) {
                     Image(systemName: "clock.fill")
                         .font(.system(size: 11, weight: .semibold))
@@ -124,7 +124,7 @@ struct HeartbeatDetailStatusBar: View {
                             )
                         )
 
-                    Text(relativeTimeString(from: heartbeat.timestamp))
+                    Text(relativeTimeString(from: timestamp))
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundColor(.white.opacity(0.95))
                 }
