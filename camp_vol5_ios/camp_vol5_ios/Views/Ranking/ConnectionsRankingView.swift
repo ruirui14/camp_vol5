@@ -99,15 +99,6 @@ struct ConnectionsRankingView: View {
                         .foregroundColor(.white.opacity(0.8))
                 }
             }
-
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    viewModel.refresh()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundColor(.white)
-                }
-            }
         }
         .overlay(alignment: .top) {
             // Safe areaの高さはNavigationBarGradient内で直接取得
@@ -270,14 +261,6 @@ struct RankingPreviewContainer: View {
                             Text("TOP 100")
                                 .font(.caption2)
                                 .foregroundColor(.white.opacity(0.8))
-                        }
-                    }
-
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .foregroundColor(.white)
                         }
                     }
                 }
