@@ -36,6 +36,7 @@ struct HeartbeatDetailView: View {
     @State private var backgroundImageData: Data?
     @State private var isAnimatedBackground: Bool = false
     @State private var streamViewModel: StreamViewModel?
+    @State private var imageUpdateTrigger = false
 
     // MARK: - Dependencies
     private let persistenceManager = PersistenceManager.shared
@@ -204,6 +205,8 @@ struct HeartbeatDetailView: View {
                 heartSize: $heartSize,
                 onApply: {
                     showingImageEditor = false
+                    // 画像変更を即座に反映
+                    reloadImageData()
                 },
                 userId: userIdParams
             )
@@ -351,6 +354,40 @@ struct HeartbeatDetailView: View {
                 viewModel.startHeartbeatVibration(bpm: heartbeat.bpm)
             }
         }
+    }
+
+    private func reloadImageData() {
+        // 保存された画像を即座に再読み込み（ユーザーID別、GIF対応）
+        if let savedImage = persistenceManager.loadBackgroundImage(userId: userIdParams) {
+            selectedImage = savedImage
+            editedImage = savedImage
+        } else {
+            selectedImage = nil
+            editedImage = nil
+        }
+
+        // GIF画像データを再読み込み
+        if let savedImageData = persistenceManager.loadBackgroundImageData(userId: userIdParams) {
+            backgroundImageData = savedImageData
+            isAnimatedBackground = persistenceManager.isAnimatedImage(userId: userIdParams)
+        } else {
+            backgroundImageData = nil
+            isAnimatedBackground = false
+        }
+
+        // 変形情報を再読み込み
+        let transform = persistenceManager.loadImageTransform(userId: userIdParams)
+        imageOffset = transform.offset
+        imageScale = transform.scale
+        imageRotation = transform.rotation
+
+        // ハートの位置とサイズを再読み込み
+        let heartPosition = persistenceManager.loadHeartPosition(userId: userIdParams)
+        heartOffset = heartPosition
+        heartSize = persistenceManager.loadHeartSize(userId: userIdParams)
+
+        // 背景色の更新
+        savedBackgroundColor = persistenceManager.loadBackgroundColor(userId: userIdParams)
     }
 }
 
