@@ -76,6 +76,7 @@ private struct UserHeartbeatCardWithObservedManager: View {
 // カードの実際のUI実装（GIF対応）
 private struct UserHeartbeatCardContent: View {
     @StateObject private var viewModel: UserHeartbeatCardViewModel
+    @State private var isAnimating = false
     let backgroundImage: UIImage?
     let backgroundImageData: Data?
     let isAnimated: Bool
@@ -111,6 +112,11 @@ private struct UserHeartbeatCardContent: View {
         }
     }
 
+    // ローディング状態かどうかを判定
+    private var isLoading: Bool {
+        viewModel.displayName.isEmpty
+    }
+
     var body: some View {
         // GeometryReaderの使用を最小化: padding-basedレイアウトを採用
         ZStack(alignment: .bottomLeading) {
@@ -119,25 +125,32 @@ private struct UserHeartbeatCardContent: View {
 
             // 心拍数表示（右上）
             ZStack {
-                Image("heart_beat")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: CardConstants.heartSize, height: CardConstants.heartSize)
-                    .clipShape(Circle())
+                if isLoading {
+                    Circle()
+                        .fill(Color.gray.opacity(0.4))
+                        .frame(width: CardConstants.heartSize, height: CardConstants.heartSize)
+                        .shimmer(isAnimating: isAnimating)
+                } else {
+                    Image("heart_beat")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: CardConstants.heartSize, height: CardConstants.heartSize)
+                        .clipShape(Circle())
 
-                if !viewModel.displayBPM.isEmpty {
-                    Text(viewModel.displayBPM)
-                        .font(
-                            .system(
-                                size: CardConstants.heartFontSize,
-                                weight: .heavy,
-                                design: .rounded
+                    if !viewModel.displayBPM.isEmpty {
+                        Text(viewModel.displayBPM)
+                            .font(
+                                .system(
+                                    size: CardConstants.heartFontSize,
+                                    weight: .heavy,
+                                    design: .rounded
+                                )
                             )
-                        )
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .shadow(color: Color.black.opacity(0.5), radius: 2, x: 0, y: 1)
+                    }
                 }
             }
             .frame(width: CardConstants.heartSize, height: CardConstants.heartSize)
@@ -146,15 +159,27 @@ private struct UserHeartbeatCardContent: View {
             .padding(.trailing, CardConstants.heartRightMargin)
 
             // ユーザー名（左下）
-            Text(viewModel.displayName)
-                .font(.system(size: CardConstants.nameFontSizeBase, weight: .bold))
-                .foregroundColor(.base)
-                .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
-                .padding(.leading, CardConstants.nameLeftMargin)
-                .padding(.bottom, CardConstants.nameBottomMargin)
+            if isLoading {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.4))
+                    .frame(width: 120, height: 32)
+                    .shimmer(isAnimating: isAnimating)
+                    .padding(.leading, CardConstants.nameLeftMargin)
+                    .padding(.bottom, CardConstants.nameBottomMargin)
+            } else {
+                Text(viewModel.displayName)
+                    .font(.system(size: CardConstants.nameFontSizeBase, weight: .bold))
+                    .foregroundColor(.base)
+                    .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+                    .padding(.leading, CardConstants.nameLeftMargin)
+                    .padding(.bottom, CardConstants.nameBottomMargin)
+            }
         }
         .frame(height: CardConstants.cardHeight)
         .padding(.horizontal, CardConstants.cardHorizontalMargin)
+        .onAppear {
+            isAnimating = true
+        }
     }
 
     /// 背景画像ビューを生成（GIF・静止画・背景色対応）

@@ -23,6 +23,9 @@ class ListHeartBeatsViewModel: BaseViewModel {
 
     private var authenticationManager: AuthenticationManager
 
+    // UserDefaultsキー: 前回のフォロー数を保存
+    private static let lastFollowingCountKey = "lastFollowingCount"
+
     // MARK: - Dependencies
 
     private let userService: UserServiceProtocol
@@ -133,6 +136,8 @@ class ListHeartBeatsViewModel: BaseViewModel {
                 self?.authenticationManager.currentUser = updatedUser
                 // ローカルのリストから削除
                 self?.followingUsersWithHeartbeats.removeAll { $0.user.id == userId }
+                // フォロー数をUserDefaultsに保存
+                self?.saveFollowingCount()
             }
             .store(in: &cancellables)
     }
@@ -206,6 +211,15 @@ class ListHeartBeatsViewModel: BaseViewModel {
         followingUsersWithHeartbeats = []
         errorMessage = nil
         setLoading(false)
+    }
+
+    /// フォロー数をUserDefaultsに保存
+    private func saveFollowingCount() {
+        let count = followingUsersWithHeartbeats.count
+        if count > 0 {
+            UserDefaults.standard.set(count, forKey: Self.lastFollowingCountKey)
+            print("💾 [ListHeartBeatsViewModel] フォロー数を保存: \(count)")
+        }
     }
 
     private func loadFollowingUsersWithHeartbeatsIfNeeded() {
@@ -308,6 +322,8 @@ class ListHeartBeatsViewModel: BaseViewModel {
             await MainActor.run {
                 self?.followingUsersWithHeartbeats = sorted
                 self?.setLoading(false)
+                // フォロー数をUserDefaultsに保存
+                self?.saveFollowingCount()
             }
         }
     }

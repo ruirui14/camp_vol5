@@ -37,6 +37,18 @@ struct ListHeartBeatsView: View {
     @State private var selectedThemeColor: Color = ColorThemeManager.shared.mainColor
     @State private var ignoreColorChange = false
 
+    // UserDefaultsキー: 前回のフォロー数を保存
+    private static let lastFollowingCountKey = "lastFollowingCount"
+
+    // スケルトン表示数を計算（最小が保存数、最大6）
+    private var skeletonCount: Int {
+        let savedCount = UserDefaults.standard.integer(forKey: Self.lastFollowingCountKey)
+        if savedCount == 0 {
+            return 3  // 初回は3枚表示
+        }
+        return min(savedCount, 6)  // 最大6枚
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack {
@@ -45,8 +57,27 @@ struct ListHeartBeatsView: View {
 
                 VStack {
                     if viewModel.isLoading {
-                        ProgressView("読み込み中...")
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // ローディング中は前回のフォロー数に基づいた数のスケルトンを表示（最大6）
+                        FollowingUsersListView(
+                            users: (0..<skeletonCount).map { index in
+                                UserWithHeartbeat(
+                                    user: User(
+                                        id: "skeleton_\(index)",
+                                        name: "",
+                                        inviteCode: "",
+                                        allowQRRegistration: false
+                                    ),
+                                    heartbeat: nil,
+                                    notificationEnabled: false,
+                                    backgroundImageManager: nil
+                                )
+                            },
+                            isEditMode: false,
+                            onUserTapped: { _ in },
+                            onRefresh: {},
+                            onUnfollow: nil,
+                            onToggleNotification: nil
+                        )
                     } else if let errorMessage = viewModel.errorMessage {
                         ErrorStateView(
                             errorMessage: errorMessage,
