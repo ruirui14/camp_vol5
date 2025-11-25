@@ -93,9 +93,6 @@ struct HeartbeatDetailView: View {
 
                     // ステータス表示コンポーネント
                     HeartbeatDetailStatusBar(
-                        isVibrationEnabled: viewModel.isVibrationEnabled,
-                        isVibrating: viewModel.isVibrating,
-                        vibrationStatus: viewModel.vibrationStatus,
                         autoLockDisabled: viewModel.autoLockManager.autoLockDisabled,
                         remainingTime: viewModel.autoLockManager.remainingTime,
                         isSleepMode: viewModel.isSleepMode,

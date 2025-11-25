@@ -6,15 +6,10 @@
 import SwiftUI
 
 struct HeartbeatDetailStatusBar: View {
-    let isVibrationEnabled: Bool
-    let isVibrating: Bool
-    let vibrationStatus: String
     let autoLockDisabled: Bool
     let remainingTime: TimeInterval
     let isSleepMode: Bool
     let heartbeat: Heartbeat?
-
-    @State private var pulseAnimation = false
 
     // MARK: - Static Date Formatters
     private static let dateFormatter: DateFormatter = {
@@ -33,62 +28,6 @@ struct HeartbeatDetailStatusBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            // 振動状態表示 - モダンなカプセル型デザイン
-            if isVibrationEnabled {
-                HStack(spacing: 8) {
-                    // 心拍アイコンとパルスアニメーション
-                    ZStack {
-                        // 外側のパルス効果
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color.red.opacity(0.6), Color.pink.opacity(0.3)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 24, height: 24)
-                            .scaleEffect(pulseAnimation ? 1.3 : 1.0)
-                            .opacity(pulseAnimation ? 0 : 0.8)
-
-                        // メインアイコン
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [Color.red, Color.pink],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                            .scaleEffect(pulseAnimation ? 1.1 : 1.0)
-                    }
-                    .onAppear {
-                        if isVibrating {
-                            withAnimation(
-                                .easeInOut(duration: 1.2)
-                                    .repeatForever(autoreverses: false)
-                            ) {
-                                pulseAnimation = true
-                            }
-                        }
-                    }
-
-                    Text(vibrationStatus)
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [Color.white, Color.white.opacity(0.9)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .vibrationStatusGlassCapsule()
-            }
-
             // 自動ロック無効化残り時間
             if autoLockDisabled && remainingTime > 0 && !isSleepMode {
                 HStack(spacing: 8) {
@@ -178,9 +117,6 @@ struct HeartbeatDetailStatusBar: View {
 
 #Preview {
     HeartbeatDetailStatusBar(
-        isVibrationEnabled: true,
-        isVibrating: true,
-        vibrationStatus: "アクティブ",
         autoLockDisabled: true,
         remainingTime: 300,
         isSleepMode: false,
