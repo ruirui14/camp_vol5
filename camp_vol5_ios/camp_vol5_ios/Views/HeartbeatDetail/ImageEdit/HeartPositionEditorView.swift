@@ -39,7 +39,8 @@ struct HeartPositionEditorView: View {
             heartSize: tempHeartSize,
             showBPM: true,
             enableHaptic: false,
-            heartColor: .red
+            heartColor: .red,
+            isEditMode: true  // 編集モードでグレーにならないように
         )
         .offset(tempHeartOffset)
         .ignoresSafeArea()
