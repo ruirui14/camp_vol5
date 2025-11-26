@@ -168,7 +168,7 @@ class ColorThemeManager: ObservableObject {
 // MARK: - Color Extension for Hex Conversion
 
 extension Color {
-    /// ColorをHex文字列に変換 (例: "#FABDC2")
+    /// ColorをHex文字列に変換 (例: "#FABDC2" または "#FABDC2FF" (透明度付き))
     func toHex() -> String? {
         guard let components = UIColor(self).cgColor.components else { return nil }
 
@@ -176,7 +176,14 @@ extension Color {
         let green = Int(components[1] * 255)
         let blue = Int(components[2] * 255)
 
-        return String(format: "#%02X%02X%02X", red, green, blue)
+        // アルファ値を取得(RGB + Alphaの4要素の場合は最後の要素)
+        if components.count >= 4 {
+            let alpha = Int(components[3] * 255)
+            return String(format: "#%02X%02X%02X%02X", red, green, blue, alpha)
+        }
+
+        // アルファ値がない場合は不透明として保存
+        return String(format: "#%02X%02X%02XFF", red, green, blue)
     }
 
     /// 明度を調整した色を返す

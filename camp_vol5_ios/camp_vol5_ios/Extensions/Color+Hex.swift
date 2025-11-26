@@ -1,5 +1,6 @@
 // Color+Hex.swift
 // 16進数カラーコードをColorに変換するための拡張
+// #RRGGBB形式または#RRGGBBAA形式(透明度付き)に対応
 
 import SwiftUI
 
@@ -15,10 +16,25 @@ extension Color {
         var rgb: UInt64 = 0
         scanner.scanHexInt64(&rgb)
 
-        let red = Double((rgb >> 16) & 0xFF) / 255
-        let green = Double((rgb >> 8) & 0xFF) / 255
-        let blue = Double(rgb & 0xFF) / 255
+        // Hex文字列の長さを確認(# を除く)
+        let hexString = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+        let length = hexString.count
 
-        self.init(red: red, green: green, blue: blue)
+        if length == 8 {
+            // #RRGGBBAA形式(透明度付き)
+            let red = Double((rgb >> 24) & 0xFF) / 255
+            let green = Double((rgb >> 16) & 0xFF) / 255
+            let blue = Double((rgb >> 8) & 0xFF) / 255
+            let alpha = Double(rgb & 0xFF) / 255
+
+            self.init(red: red, green: green, blue: blue, opacity: alpha)
+        } else {
+            // #RRGGBB形式(透明度なし)
+            let red = Double((rgb >> 16) & 0xFF) / 255
+            let green = Double((rgb >> 8) & 0xFF) / 255
+            let blue = Double(rgb & 0xFF) / 255
+
+            self.init(red: red, green: green, blue: blue)
+        }
     }
 }
