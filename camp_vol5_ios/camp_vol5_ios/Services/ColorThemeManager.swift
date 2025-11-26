@@ -140,9 +140,28 @@ class ColorThemeManager: ObservableObject {
     }
 
     /// メインカラーに応じた適切なアイコン色を返す
-    /// 白の場合はグレー、それ以外の場合はメインカラーをそのまま返す
+    /// 透明度が低い場合や明るい色の場合は、コントラストを確保した色を返す
     var iconColor: Color {
-        mainColor.isWhite() ? .gray : mainColor
+        let opacity = mainColor.opacity()
+        let isLight = mainColor.isLightColor()
+
+        // 透明度が0.5未満の場合は、背景が透けて見えにくいので濃い色を使う
+        if opacity < 0.2 {
+            return .gray
+        }
+
+        // 明るい色(白やパステルカラー)の場合は暗い色を使う
+        if isLight {
+            // 白に近い場合はグレー、その他の明るい色は元の色を暗くする
+            if mainColor.isWhite() {
+                return .gray
+            } else {
+                return mainColor.adjustBrightness(by: -0.2)
+            }
+        }
+
+        // 暗い色の場合はそのまま使う
+        return mainColor
     }
 }
 
@@ -216,5 +235,40 @@ extension Color {
 
         // RGB値が全て0.95以上の場合に白とみなす（少しの誤差を許容）
         return red > 0.95 && green > 0.95 && blue > 0.95
+    }
+
+    /// 色の透明度(alpha値)を取得
+    /// 0.0(完全に透明) ~ 1.0(完全に不透明)
+    func opacity() -> CGFloat {
+        guard let components = UIColor(self).cgColor.components else {
+            return 1.0
+        }
+
+        // アルファ値を取得(RGB + Alphaの4要素の場合は最後の要素)
+        if components.count >= 4 {
+            return components[3]
+        }
+
+        // アルファ値がない場合は不透明とみなす
+        return 1.0
+    }
+
+    /// 色が明るいかどうかを判定
+    /// 相対輝度が0.6以上の場合に明るいとみなす
+    func isLightColor() -> Bool {
+        guard let components = UIColor(self).cgColor.components else {
+            return false
+        }
+
+        // RGB値を取得
+        let red = components[0]
+        let green = components[1]
+        let blue = components[2]
+
+        // 相対輝度を計算 (ITU-R BT.709の係数を使用)
+        let luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+        // 輝度が0.6以上の場合に明るい色とみなす(contrastingColor()より厳しめの閾値)
+        return luminance > 0.6
     }
 }
