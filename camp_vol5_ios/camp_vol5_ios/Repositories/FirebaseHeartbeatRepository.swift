@@ -149,9 +149,9 @@ class FirebaseHeartbeatRepository: HeartbeatRepositoryProtocol {
         // timestampはOptionalとして取得
         let timestamp: Date?
         if let timestampValue = data["timestamp"] as? TimeInterval {
-            // Firebase Realtime Databaseのタイムスタンプはミリ秒単位
-            timestamp = Date(timeIntervalSince1970: timestampValue / 1000)
+            timestamp = Date(timeIntervalSince1970: timestampValue)
         } else {
+            print("⚠️ timestamp not found in Firebase data")
             timestamp = nil
         }
 

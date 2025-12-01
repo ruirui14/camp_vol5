@@ -14,10 +14,12 @@ class HeartbeatDetailViewModel: BaseViewModel {
     @Published var currentHeartbeat: Heartbeat?
     @Published var isMonitoring: Bool = false
     @Published var isSleepMode: Bool = false
+    @Published var currentTime: Date = Date()
 
     // MARK: - Private Properties
     private let userId: String
     private var heartbeatSubscription: AnyCancellable?
+    private var timeUpdateTimer: AnyCancellable?
 
     // MARK: - Dependencies
     private let userService: UserServiceProtocol
@@ -77,11 +79,13 @@ class HeartbeatDetailViewModel: BaseViewModel {
     func startMonitoring() {
         startContinuousMonitoring()
         enableVibrationIfNeeded()
+        startTimeUpdateTimer()
     }
 
     func stopMonitoring() {
         stopContinuousMonitoring()
         disableVibration()
+        stopTimeUpdateTimer()
     }
 
     func toggleVibration() {
@@ -204,9 +208,29 @@ class HeartbeatDetailViewModel: BaseViewModel {
         vibrationService.stopVibration()
     }
 
+    // タイマーを開始して1秒ごとに現在時刻を更新
+    private func startTimeUpdateTimer() {
+        // 既存のタイマーがあればキャンセル
+        timeUpdateTimer?.cancel()
+
+        // 1秒ごとに現在時刻を更新するタイマー
+        timeUpdateTimer = Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.currentTime = Date()
+            }
+    }
+
+    // タイマーを停止
+    private func stopTimeUpdateTimer() {
+        timeUpdateTimer?.cancel()
+        timeUpdateTimer = nil
+    }
+
     // MARK: - Lifecycle
     deinit {
         heartbeatSubscription?.cancel()
         heartbeatService.unsubscribeFromHeartbeat(userId: userId)
+        timeUpdateTimer?.cancel()
     }
 }

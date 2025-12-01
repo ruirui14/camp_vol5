@@ -107,7 +107,8 @@ struct HeartbeatDetailView: View {
                         autoLockDisabled: viewModel.autoLockManager.autoLockDisabled,
                         remainingTime: viewModel.autoLockManager.remainingTime,
                         isSleepMode: viewModel.isSleepMode,
-                        heartbeat: viewModel.currentHeartbeat
+                        heartbeat: viewModel.currentHeartbeat,
+                        currentTime: viewModel.currentTime
                     )
                     .padding(.bottom, 20)
                 }

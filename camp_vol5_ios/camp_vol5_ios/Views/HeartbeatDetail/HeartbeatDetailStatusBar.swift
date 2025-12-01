@@ -10,6 +10,7 @@ struct HeartbeatDetailStatusBar: View {
     let remainingTime: TimeInterval
     let isSleepMode: Bool
     let heartbeat: Heartbeat?
+    let currentTime: Date
 
     // MARK: - Static Date Formatters
     private static let dateFormatter: DateFormatter = {
@@ -123,9 +124,7 @@ struct HeartbeatDetailStatusBar: View {
 
     // 相対時間を日本語で表示（"1分前"、"たった今"など）
     private func relativeTimeString(from date: Date) -> String {
-        let now = Date()
-        let interval = now.timeIntervalSince(date)
-
+        let interval = currentTime.timeIntervalSince(date)
         if interval < 10 {
             return "たった今"
         } else if interval < 60 {
@@ -148,7 +147,8 @@ struct HeartbeatDetailStatusBar: View {
         autoLockDisabled: true,
         remainingTime: 300,
         isSleepMode: false,
-        heartbeat: Heartbeat(userId: "test", bpm: 75, timestamp: Date())
+        heartbeat: Heartbeat(userId: "test", bpm: 75, timestamp: Date()),
+        currentTime: Date()
     )
     .background(Color.black)
 }
