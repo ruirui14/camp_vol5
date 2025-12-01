@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a **real-time heartbeat monitoring app with social features**, consisting of:
 - **iOS App** (`camp_vol5_ios/`): SwiftUI + Firebase using Clean Architecture + MVVM
 - **Apple Watch App** (`crazy_love Watch App/`): HealthKit integration for heart rate monitoring
-- **Firebase Backend** (`functions/`): Cloud Functions for push notifications
+- **Firebase Backend** (`functions/`): TypeScript Cloud Functions for push notifications and ranking system
 - **Firebase Security Rules** (`firebase/`): Firestore and Realtime Database rules
 
 ## Build & Development Commands
@@ -47,6 +47,18 @@ xcrun simctl list devices available
 # Install dependencies
 npm install
 
+# Build TypeScript
+npm run build
+
+# Type check without emitting
+npm run typecheck
+
+# Lint TypeScript code
+npm run lint
+
+# Format code with Prettier
+npm run format
+
 # Run local emulator
 npm run serve
 
@@ -59,12 +71,11 @@ npm run logs
 # Open Firebase Functions shell
 npm run shell
 
-# Delete all Firebase Auth users (development only)
-# After deploying, access via HTTPS:
-curl "https://asia-southeast1-heart-beat-23158.cloudfunctions.net/deleteAllAuthUsers?secret=delete-all-users-2024"
-
 # Delete Realtime Database heartbeats
 firebase database:remove /live_heartbeats --project heart-beat-23158 --confirm
+
+# Delete notification triggers
+firebase database:remove /notification_triggers --project heart-beat-23158 --confirm
 ```
 
 ### Firebase Rules Deployment
@@ -101,66 +112,146 @@ Views (SwiftUI) → ViewModels → Services → Repositories → Firebase
 ```
 
 **Key Architectural Patterns**:
-- **Repository Pattern**: Protocol-based data access (`UserRepositoryProtocol`, `HeartbeatRepositoryProtocol`)
+- **Repository Pattern**: Protocol-based data access (`UserRepositoryProtocol`, `HeartbeatRepositoryProtocol`, `FollowerRepositoryProtocol`, etc.)
 - **ViewModelFactory Pattern**: Centralized dependency injection for ViewModels
 - **BaseViewModel**: Shared error handling, loading states, Combine subscription management
 - **Protocol-Based Services**: All services use protocols for testability
 - **Reactive Programming**: Combine framework throughout for data flow
 - **@EnvironmentObject**: AuthenticationManager and ViewModelFactory injected from app root
 - **@StateObject**: ViewModels always declared with @StateObject in Views, never @State
+- **@MainActor Pattern**: Thread-safe UI state management (ViewModelFactory, AuthenticationManager, ColorThemeManager, etc.)
+- **Singleton Pattern**: Shared instances for stateless services (`.shared` instances)
 
 ### Layer Responsibilities
 
 **Models** (`Models/`):
 - Pure data structures with no business logic
-- `User.swift`: User profile with social connections
+- `User.swift`: User profile with social connections and maxConnections for ranking
 - `Heartbeat.swift`: Real-time heart rate data (5-minute validity)
 - `HeartUser.swift`: Apple Watch data exchange model
+- `Follower.swift`: Follower relationship with FCM token and notification settings
+- `Following.swift`: Following relationship
+- `CardImageTransformState.swift`: Background image transform state (scale, offset, opacity)
+- `License.swift`: Open source license information
 
 **Repositories** (`Repositories/`):
 - Data access abstraction with protocol-based design
-- `FirestoreUserRepository.swift`: User CRUD operations, follow relationships, QR code discovery
-  - Uses `setData(merge: true)` for `private/metadata` updates (backward compatible)
-  - Stores timestamps in separate `private/metadata` subcollection
-- `FirebaseHeartbeatRepository.swift`: Real-time heartbeat data access
-- Handle all Firebase ↔ Model data transformation
+- User Data:
+  - `FirestoreUserRepository.swift`: User CRUD operations, QR code discovery
+    - Uses `setData(merge: true)` for `private/metadata` updates (backward compatible)
+    - Stores timestamps in separate `private/metadata` subcollection
+- Heartbeat Data:
+  - `FirebaseHeartbeatRepository.swift`: Real-time heartbeat data access via Realtime Database
+- Follow Relationships:
+  - `FirestoreFollowerRepository.swift`: Follower data and FCM token management
+  - `FirestoreFollowingRepository.swift`: Following relationship management
+  - `FirestoreFollowRepository.swift`: Base follow/unfollow operations
+- Ranking:
+  - `RedisRankingRepository.swift`: Fetches rankings via Cloud Functions HTTPS callable
+- All repositories implement protocol interfaces for testability and dependency injection
 
 **Services** (`Services/`):
 - Business logic layer that uses Repositories
 - Return Combine publishers for reactive data flow
-- Core services:
-  - `AuthenticationManager.swift`: Firebase Auth + Google Sign-In + Email/Password, anonymous auth for guests
-  - `UserService.swift`: User management, follow/unfollow operations via Repository
-  - `HeartbeatService.swift`: Real-time monitoring, 5-minute data validity
-  - `ViewModelFactory.swift`: Centralized ViewModel creation with DI
+- Authentication & User Management:
+  - `AuthenticationManager.swift`: Firebase Auth + Google Sign-In + Email/Password, anonymous auth (@MainActor)
+  - `UserService.swift`: User operations, follow/unfollow, ranking retrieval (Singleton)
+- Heartbeat & Watch:
+  - `HeartbeatService.swift`: Real-time heartbeat monitoring, 5-minute data validity (Singleton)
   - `ConnectivityManager.swift`: Apple Watch communication via WatchConnectivity
   - `WatchHeartRateService.swift`: Watch heart rate integration
+- UI State & Theming:
+  - `AppStateManager.swift`: Splash screen and app initialization state (@MainActor)
+  - `ColorThemeManager.swift`: Theme color persistence with UserDefaults (@MainActor, Singleton)
+  - `BackgroundImageManager.swift`: Card background image management
+  - `BackgroundImageCoordinator.swift`: Background image selection coordination (@MainActor)
+  - `ImagePersistenceManager.swift`: Image compression and transform state storage
+- Device & System:
+  - `AutoLockManager.swift`: Prevents device auto-lock during active use
+  - `DeviceOrientationManager.swift`: Device orientation state management
+  - `VibrationService.swift`: Haptic feedback patterns (@MainActor, Singleton)
+- Firebase Integration:
+  - `NotificationService.swift`: FCM token management and push notification handling
+  - `PerformanceMonitor.swift`: Firebase Performance Monitoring
+  - `RemoteConfigManager.swift`: Firebase Remote Config for feature flags
+  - `FirebaseLogger.swift`: Centralized Firebase logging
+  - `FirebaseConfig.swift`: Firebase configuration management
+- Utilities:
+  - `ViewModelFactory.swift`: Centralized ViewModel creation with DI (@MainActor)
+  - `PersistenceManager.swift`: Local data persistence
+  - `YouTubeURLService.swift`: YouTube URL handling for streaming
 
 **ViewModels** (`ViewModels/`):
 - All extend `BaseViewModel` for shared functionality
 - UI state management with Combine
 - Created via ViewModelFactory for proper dependency injection
 - Always use @StateObject in Views
+- Key ViewModels:
+  - `AuthViewModel`: Authentication flow state
+  - `UserNameInputViewModel`: Username input validation
+  - `FollowUserViewModel`: QR-based follow operations
+  - `QRScannerViewModel`: QR code scanning state
+  - `QRCodeShareViewModel`: QR code generation for sharing
+  - `SettingsViewModel`: Settings screen state and operations
+  - `ListHeartBeatsViewModel`: Heartbeat list with real-time updates
+  - `HeartbeatDetailViewModel`: Individual heartbeat detail view
+  - `UserHeartbeatCardViewModel`: User card presentation logic
+  - `ConnectionsRankingViewModel`: Ranking list with pagination
+  - `StreamViewModel`: Real-time streaming integration
+  - `CardBackgroundEditViewModel`: Background image editing state
+  - `HeartAnimationViewModel`: Heart animation parameters
 
 **Views** (`Views/`):
 - SwiftUI components with reactive bindings
-- Main views: `ListHeartBeatsView`, `HeartbeatDetailView`
-- Auth flow: `AuthView`, `EmailAuthView`, `UserNameInputView`
+- Main views: `ListHeartBeatsView`, `HeartbeatDetailView`, `ConnectionsRankingView`
+- Auth flow: `AuthView`, `PasswordResetView`, `UserNameInputView`
 - Social: `FollowUserView`, `QRScannerSheet`, `QRCodeShareView`
-- Reusable components in `Components/`
+- Settings: `SettingsView`, `UserInfoSettingsView`, `UserNameEditView`, `AccountDeletionView`, `AutoLockSettingsView`
+- Streaming: `StreamView`, `StreamUrlInputSheet`, `StreamWebViewWrapper`
+- Background editing: `CardBackgroundEditView`, `TransformableCardImageView`, `GifPhotoPickerView`
+- Reusable components in `Components/`: `BackgroundGradient`, `ErrorStateView`, `IconLabelButtonContent`
+- View modifiers in `Modifiers/`: `GradientNavigationBarModifier`, `NavigationBarTransparentModifier`
 
 ### Firebase Backend Architecture
 
-**Cloud Functions** (`functions/index.js`):
-- **onHeartbeatUpdate**: Triggered on `live_heartbeats/{userId}` writes
-  - Rate limiting: 5-minute cooldown between notifications
-  - Fetches follower list from Firestore
-  - Sends push notifications to followers with `notificationEnabled: true`
-  - Updates `lastNotificationSent` timestamp in Realtime Database
-- **deleteAllAuthUsers**: HTTPS-triggered admin function (region: asia-southeast1)
-  - Deletes all Firebase Authentication users
-  - Requires secret key `?secret=delete-all-users-2024`
-  - Used for testing/development data cleanup
+**Cloud Functions** (`functions/src/`, **TypeScript**):
+
+All functions written in TypeScript with strict type checking. Entry point: `functions/src/index.ts`
+
+**Notification System**:
+- **onNotificationTrigger** (Realtime Database trigger):
+  - Triggered on `notification_triggers/{userId}` writes (not `live_heartbeats`)
+  - Fetches current heartbeat from `live_heartbeats/{userId}`
+  - Retrieves follower list from Firestore `users/{userId}/followers`
+  - Sends FCM push notifications to followers with `notificationEnabled: true`
+  - Rate limiting handled at iOS app level (5-minute cooldown)
+  - Cleans up trigger data after processing
+
+**Ranking System** (Upstash Redis integration):
+- **updateRankingScheduled** (Scheduled function, every 5 minutes):
+  - Syncs `maxConnections` field from Firestore to Redis Sorted Set
+  - Redis key: `user_ranking`, score = maxConnections
+  - Enables fast ranking queries without Firestore reads
+- **initialSyncRankingToRedis** (HTTPS callable):
+  - One-time full sync of all users to Redis
+  - Used for initial setup or manual re-sync
+- **getRanking** (HTTPS callable):
+  - Fetches top N users by maxConnections from Redis
+  - On-memory cache (5-minute validity) to reduce Redis reads
+  - Fallback to Firestore if Redis unavailable
+  - Returns: `{ users: Array<{userId, name, maxConnections, rank}> }`
+
+**Maintenance**:
+- **cleanupOldHeartbeats** (Scheduled function, daily at 18:00 UTC / 03:00 JST):
+  - Removes heartbeat data older than 1 hour from `live_heartbeats/`
+  - Removes notification triggers older than 1 hour from `notification_triggers/`
+  - Prevents database bloat from stale data
+
+**Configuration**:
+- Runtime: Node.js 20
+- Region: asia-southeast1
+- Dependencies: firebase-admin v12.0.0, firebase-functions v5.0.0, @upstash/redis v1.35.6
+- Redis config: Set via `firebase functions:config:set upstash.redis_url="..." upstash.redis_token="..."`
 
 **Data Structure**:
 
@@ -170,7 +261,11 @@ live_heartbeats/
   {userId}/
     bpm: number
     timestamp: number (milliseconds)
-    lastNotificationSent: number (milliseconds)
+
+notification_triggers/
+  {userId}/
+    trigger: boolean (always true, used to trigger function)
+    timestamp: number (milliseconds)
 ```
 
 Firestore:
@@ -181,6 +276,7 @@ users/
     name: string
     inviteCode: string (UUID)
     allowQRRegistration: boolean
+    maxConnections: number (calculated field for ranking)
     private/
       metadata/
         created_at: timestamp (server timestamp)
@@ -197,6 +293,15 @@ users/
         createdAt: timestamp
 ```
 
+**Redis** (Upstash):
+```
+user_ranking (Sorted Set)
+  member: userId
+  score: maxConnections
+
+Rankings cached in-memory for 5 minutes in getRanking function
+```
+
 ### Firebase Integration
 
 **Dual Authentication**:
@@ -205,8 +310,9 @@ users/
 - Email/Password authentication
 - Account linking for seamless migration
 
-**Firestore**: User profiles, follow relationships
-**Realtime Database**: Live heartbeat streaming (5-minute validity window)
+**Firestore**: User profiles, follow relationships, maxConnections for ranking
+**Realtime Database**: Live heartbeat streaming (5-minute validity window), notification triggers
+**Redis (Upstash)**: Ranking data cache for fast queries
 
 ## Key Dependencies
 
@@ -218,9 +324,12 @@ users/
 - Bundle ID: `com.rui.camp-vol5-ios-1950`
 
 **Firebase Functions**:
-- Node.js 18
+- Node.js 20
 - firebase-admin v12.0.0
 - firebase-functions v5.0.0
+- @upstash/redis v1.35.6
+- @google-cloud/functions-framework v4.0.0
+- TypeScript v5.3.3
 
 **Firebase Project**: `heart-beat-23158` (alias: `kyouai`)
 
@@ -238,6 +347,14 @@ users/
 - App Check with Debug Provider (DEBUG) or App Attest (RELEASE)
 - Crashlytics enabled for crash reporting
 - WatchConnectivity framework for Apple Watch sync
+- Firebase Performance Monitoring enabled
+- Remote Config for feature flags
+
+**Cloud Functions**:
+- Upstash Redis credentials via Firebase Functions config:
+  ```bash
+  firebase functions:config:set upstash.redis_url="https://..." upstash.redis_token="..."
+  ```
 
 ## Common Development Patterns
 
@@ -305,10 +422,12 @@ service.operation()
 
 ```bash
 cd functions
-npm run serve
+npm run serve  # Builds TypeScript and starts emulator
 ```
 
 Then trigger functions manually or use the Firebase emulator UI at `http://localhost:4000`
+
+**Note**: Scheduled functions won't automatically run in emulator. Trigger them manually via emulator UI or shell.
 
 ## Common Issues & Solutions
 
@@ -323,9 +442,17 @@ Then trigger functions manually or use the Firebase emulator UI at `http://local
 
 **Firebase Functions**:
 - **FCM token invalid**: Token may have expired, check Firebase console
-- **No notifications sent**: Verify `notificationEnabled: true` in follower documents
-- **Rate limiting not working**: Check `lastNotificationSent` field in Realtime Database
-- **"No document to update" error**: Fixed - Repository now uses `setData(merge: true)` for backward compatibility with existing users
+- **No notifications sent**:
+  - Verify `notificationEnabled: true` in follower documents
+  - Check that `notification_triggers/{userId}` is being written (not `live_heartbeats`)
+  - Verify follower's fcmToken exists in Firestore
+- **Rate limiting not working**: Rate limiting is handled at iOS app level (5-minute cooldown)
+- **"No document to update" error**: Fixed - Repository now uses `setData(merge: true)` for backward compatibility
+- **Ranking not updating**:
+  - Check `updateRankingScheduled` function logs (runs every 5 minutes)
+  - Verify Upstash Redis credentials in Firebase Functions config
+  - Manually trigger `initialSyncRankingToRedis` for full re-sync
+- **TypeScript compilation errors**: Run `npm run typecheck` to verify types before deployment
 
 ## Code Standards
 
@@ -343,7 +470,24 @@ Then trigger functions manually or use the Firebase emulator UI at `http://local
   - Inject services through constructor (protocol types)
 - **Combine**: Always store subscriptions in `cancellables`
 - **Error Handling**: Use BaseViewModel.handleError() for consistency
-- **Code Formatting**: Use swift-format for consistency
+- **Code Formatting**:
+  - Swift: Use swift-format for consistency
+  - TypeScript: Use Prettier (`npm run format` in functions/)
+- **MainActor Pattern**: Use `@MainActor` for services managing UI state (AuthenticationManager, ColorThemeManager, etc.)
+- **Singleton Pattern**: Use `.shared` for stateless service singletons (UserService, HeartbeatService, etc.)
+
+## Development Tools & Configuration
+
+**SwiftLint** (`.swiftlint.yml`):
+- 20+ opt-in rules enabled for code quality
+- Automatic linting enforced via git hooks
+
+**Lefthook** (`lefthook.yml`):
+- Pre-commit hooks for code formatting and linting
+- Ensures code quality before commits
+
+**Taskfile** (`Taskfile.yml`):
+- Task automation for common development workflows
 
 ## Recent Refactoring Notes
 
@@ -353,3 +497,12 @@ The codebase recently underwent Clean Architecture refactoring:
 - ViewModelFactory pattern for centralized dependency injection
 - BaseViewModel for shared functionality
 - Protocol-based design throughout for testability
+
+**New Features Since Refactoring**:
+- **Ranking System**: Redis-backed ranking with scheduled sync (every 5 minutes)
+- **Follower/Following Split**: Separate repositories for follower and following relationships
+- **Background Image Editing**: Transform state persistence with compression
+- **Streaming Integration**: YouTube URL handling for real-time streaming
+- **Enhanced Settings**: Comprehensive settings with account deletion, auto-lock control
+- **Cloud Functions Migration**: JavaScript → TypeScript with strict typing
+- **Notification Architecture**: Separated trigger mechanism from heartbeat data
